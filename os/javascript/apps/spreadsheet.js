@@ -114,9 +114,12 @@ const SCOPED_CSS = `
 .nexser-spreadsheet-app .ss-ribbon-panels {
     padding: 2px 4px;
     background-color: #C3C7CB;
-    min-height: 36px;
+    height: 74px;
+    min-height: 74px;
+    max-height: 74px;
     display: flex;
     align-items: stretch;
+    overflow: visible;
 }
 .nexser-spreadsheet-app .ss-ribbon-shell.collapsed .ss-ribbon-panels {
     display: none;
@@ -124,10 +127,12 @@ const SCOPED_CSS = `
 
 .nexser-spreadsheet-app .ss-ribbon-panel {
     display: none;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     align-items: stretch;
-    gap: 2px;
+    gap: 1px;
     width: 100%;
+    height: 100%;
+    transform-origin: left center;
 }
 .nexser-spreadsheet-app .ss-ribbon-panel.active {
     display: flex;
@@ -137,6 +142,7 @@ const SCOPED_CSS = `
     display: flex;
     flex-direction: column;
     justify-content: space-between;
+    flex-shrink: 0;
     padding: 1px 4px;
     border-right: 1px solid #808080;
     box-shadow: 1px 0 0 #fff;
@@ -150,36 +156,150 @@ const SCOPED_CSS = `
 .nexser-spreadsheet-app .ss-ribbon-group-body {
     display: flex;
     flex-wrap: nowrap;
+    align-items: stretch;
+    flex: 0 0 54px;
+    height: 54px;
+    gap: 2px;
+}
+
+.nexser-spreadsheet-app .ss-ribbon-col {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+}
+
+.nexser-spreadsheet-app .ss-ribbon-row {
+    display: flex;
+    flex-wrap: nowrap;
     align-items: center;
     gap: 2px;
-    min-height: 22px;
+}
+
+.nexser-spreadsheet-app .ss-ribbon-vsep {
+    width: 1px;
+    align-self: stretch;
+    background-color: #8c9094;
+    box-shadow: 1px 0 0 #e6e8ea;
+    margin: 2px 1px;
+    flex-shrink: 0;
+}
+
+.nexser-spreadsheet-app .ss-ribbon-group-body > .pulldown_menu_parent {
+    justify-content: center;
+    height: 100%;
 }
 
 .nexser-spreadsheet-app .ss-ribbon-group-title {
-    font-size: 11px;
-    color: #444;
+    font-size: 10px;
+    color: #333;
     text-align: center;
-    line-height: 1;
+    line-height: 12px;
+    height: 12px;
+    white-space: nowrap;
 }
 
 .nexser-spreadsheet-app .ss-ribbon-group-body label {
-    margin-right: 1px;
-    font-size: small;
+    margin-right: 0;
+    font-size: 11px;
     display: inline-flex;
     align-items: center;
 }
 
-/* リボン内のボタン・セレクトをスリム化 */
+/* リボン内の通常ボタン・セレクト */
 .nexser-spreadsheet-app .ss-ribbon-panels .button:not(th) {
     padding: 1px 4px;
-    min-height: 20px;
-    font-size: small;
+    min-height: 22px;
+    height: 22px;
+    font-size: 11px;
 }
-    
+
+.nexser-spreadsheet-app .ss-ribbon-panels .pulldown_menu .button:not(th) {
+    height: auto;
+    min-height: 22px;
+}
+
+/* 縦3段積み用のコンパクトボタン（切り取り・コピー・書式コピー等） */
+.nexser-spreadsheet-app .ss-ribbon-panels .ss-ribbon-col-stack {
+    gap: 1px;
+}
+.nexser-spreadsheet-app .ss-ribbon-panels .ss-ribbon-col-stack .button:not(th) {
+    justify-content: flex-start;
+    min-height: 17px;
+    height: 17px;
+    padding: 0 4px;
+    font-size: 10px;
+    width: 100%;
+}
+
+/* Excel準拠：縦型の大アイコンボタン（2行ラベル対応でスリム化） */
+.nexser-spreadsheet-app .ss-ribbon-panels .button.ss-btn-large:not(th) {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    min-height: 52px;
+    height: 52px;
+    padding: 2px 4px;
+    line-height: 1.05;
+    text-align: center;
+}
+
+.nexser-spreadsheet-app .ss-btn-large .ss-btn-ico-lg {
+    font-size: 15px;
+    line-height: 1;
+    pointer-events: none;
+}
+
+.nexser-spreadsheet-app .ss-btn-large .ss-btn-lbl {
+    font-size: 10px;
+    line-height: 1.05;
+    white-space: nowrap;
+    pointer-events: none;
+}
+
+/* 配置・フォント装飾用正方形アイコンボタン */
+.nexser-spreadsheet-app .ss-ribbon-panels .button.ss-icon-btn:not(th) {
+    width: 21px;
+    height: 22px;
+    min-height: 22px;
+    padding: 0;
+}
+
+.nexser-spreadsheet-app .ss-ico {
+    width: 14px;
+    height: 14px;
+    display: block;
+    pointer-events: none;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.6;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
 .nexser-spreadsheet-app .ss-ribbon-panels select.ss-font-size,
 .nexser-spreadsheet-app .ss-ribbon-panels select.ss-font-family {
-    height: 20px;
-    font-size: small;
+    height: 22px;
+    font-size: 11px;
+}
+
+/* 均等割り付け（文字の間隔をセル幅に合わせて均等に揃える） */
+.nexser-spreadsheet-app .ss-table td .ss-justify-line {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+.nexser-spreadsheet-app .ss-table td .ss-justify-line.ss-justify-single {
+    justify-content: center;
+}
+
+.nexser-spreadsheet-app .ss-table td .ss-justify-char {
+    display: inline-block;
+    line-height: inherit;
 }
 
 /* スウォッチコンテナ：横8個のグリッド */
@@ -467,8 +587,31 @@ const SCOPED_CSS = `
     z-index: 2;
 }
 
-.nexser-spreadsheet-app .ss-table td.ss-has-content {
+.nexser-spreadsheet-app .ss-table td.ss-has-content:not(.ss-text-overflow) {
     z-index: 3;
+}
+
+/* 左・中央・右揃えのはみ出し描画（Excel準拠の方向展開＆隣接セル境界クリップ） */
+.nexser-spreadsheet-app .ss-table td .ss-overflow-wrap {
+    display: flex;
+    width: 100%;
+    pointer-events: none;
+    clip-path: inset(-4px calc(-1 * var(--ov-right, 0px)) -4px calc(-1 * var(--ov-left, 0px)));
+}
+.nexser-spreadsheet-app .ss-table td .ss-overflow-wrap.ss-ov-left {
+    justify-content: flex-start;
+}
+.nexser-spreadsheet-app .ss-table td .ss-overflow-wrap.ss-ov-center {
+    justify-content: center;
+}
+.nexser-spreadsheet-app .ss-table td .ss-overflow-wrap.ss-ov-right {
+    justify-content: flex-end;
+}
+.nexser-spreadsheet-app .ss-table td .ss-overflow-text {
+    flex: 0 0 auto;
+    white-space: pre;
+    text-align: inherit;
+    line-height: inherit;
 }
 
 .nexser-spreadsheet-app .ss-table td.ss-auto-align-right {
@@ -477,6 +620,12 @@ const SCOPED_CSS = `
 
 .nexser-spreadsheet-app .ss-table td.ss-auto-align-center {
     text-align: center;
+}
+
+.nexser-spreadsheet-app .ss-table td.ss-hyperlink {
+    color: #0563c1;
+    text-decoration: underline;
+    cursor: pointer;
 }
 
 .nexser-spreadsheet-app .ss-table thead th {
@@ -509,6 +658,23 @@ const SCOPED_CSS = `
 
 .nexser-spreadsheet-app .ss-table thead th.col_number {
     cursor: s-resize;
+}
+
+/* Excel準拠：選択中セルに対応する列見出し・行番号ヘッダの強調表示 */
+.nexser-spreadsheet-app .ss-table thead th.col_number.header-selected {
+    background-color: #d2e7db;
+    color: #107c41;
+    box-shadow: inset 0 -2px 0 0 #107c41;
+}
+.nexser-spreadsheet-app .ss-table tbody th.row_number.header-selected {
+    background-color: #d2e7db;
+    color: #107c41;
+    box-shadow: inset -2px 0 0 0 #107c41;
+}
+.nexser-spreadsheet-app .ss-table thead th.col_number.header-full-selected,
+.nexser-spreadsheet-app .ss-table tbody th.row_number.header-full-selected {
+    background-color: #107c41;
+    color: #ffffff;
 }
 
 /* 選択状態のオーバーレイ（罫線と干渉しないインセット描画） */
@@ -644,6 +810,55 @@ const SCOPED_CSS = `
 }
 .ss-xl-tabpanel.active {
     display: flex;
+}
+
+/* オートフォーマット（表の自動書式設定）プレビューギャラリー */
+.ss-af-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    max-height: 290px;
+    overflow-y: auto;
+    padding: 6px;
+    background: #ffffff;
+    border: 1px solid #808080;
+}
+.ss-af-card {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 6px;
+    background: #f8f9fa;
+    border: 2px solid #c0c4c8;
+    cursor: pointer;
+    user-select: none;
+}
+.ss-af-card:hover {
+    border-color: #5b9bd5;
+    background: #eef5fc;
+}
+.ss-af-card.selected {
+    border-color: #107c41;
+    background: #e6f4ec;
+    box-shadow: 0 0 0 1px #107c41 inset;
+}
+.ss-af-card-title {
+    font-size: 11px;
+    font-weight: bold;
+    color: #222;
+}
+.ss-af-mini-tbl {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+    font-size: 10px;
+    line-height: 1.25;
+    background: #fff;
+}
+.ss-af-mini-tbl td {
+    padding: 2px 3px;
+    overflow: hidden;
+    white-space: nowrap;
 }
 /* 条件付き書式アイコンを擬似要素で描画し、cell.textContent への混入を完全に防止 */
 .nexser-spreadsheet-app .ss-table td[data-cf-icon]::before {
@@ -1517,8 +1732,10 @@ const FORMULA_FUNCTIONS = {
         return flat.filter(x => String(x ?? "").trim() !== "").length;
     },
     PRODUCT(...args) {
-        const flat = flattenArray(args).filter(v => String(v ?? "").trim() !== "" && !isNaN(Number(v))).map(Number);
-        return flat.reduce((acc, v) => acc * v, 1);
+        const { error, nums } = collectNumericValues(args);
+        if (error) return error;
+        if (!nums.length) return 0;
+        return nums.reduce((acc, v) => acc * v, 1);
     },
     ADD(a, b) { return Number(a) + Number(b); },
     SUBTRACT(a, b) { return Number(a) - Number(b); },
@@ -1578,7 +1795,14 @@ const FORMULA_FUNCTIONS = {
         return arr.filter(v => matchFn(v)).length;
     },
 
-    CONCAT(...args) { return args.join(""); },
+    CONCAT(...args) {
+        const flat = flattenArray(args);
+        for (let i = 0; i < flat.length; i++) {
+            const v = unwrapBlank(flat[i]);
+            if (typeof v === "string" && EXCEL_ERROR_RE.test(v.trim())) return v.trim();
+        }
+        return flat.map(v => String(unwrapBlank(v) ?? "")).join("");
+    },
     UPPER(text) { return String(text).toUpperCase(); },
     LOWER(text) { return String(text).toLowerCase(); },
     LEFT(text, count) { return String(text).substring(0, Number(count)); },
@@ -1630,14 +1854,28 @@ const FORMULA_FUNCTIONS = {
     OR(...args) { return args.some(v => Boolean(unwrapBlank(v))); },
     NOT(value) { return !Boolean(unwrapBlank(value)); },
 
-    INDEX(array, row, col = 0) {
+    INDEX(array, row = 0, col = 0) {
         if (!Array.isArray(array)) return array;
-        const r = row - 1;
+        const rNum = Math.trunc(Number(unwrapBlank(row) || 0));
+        const cNum = Math.trunc(Number(unwrapBlank(col) || 0));
+        if (isNaN(rNum) || isNaN(cNum) || rNum < 0 || cNum < 0) return "#VALUE!";
         if (Array.isArray(array[0])) {
-            const c = col - 1;
-            return (array[r] && array[r][c] != null) ? array[r][c] : 0;
+            if (rNum === 0 && cNum === 0) return array;
+            if (rNum === 0) {
+                if (cNum > array[0].length) return "#REF!";
+                return array.map(r => [r[cNum - 1] ?? ""]);
+            }
+            if (cNum === 0) {
+                if (rNum > array.length) return "#REF!";
+                return [array[rNum - 1]];
+            }
+            if (rNum > array.length || cNum > array[0].length) return "#REF!";
+            const val = array[rNum - 1][cNum - 1];
+            return isBlankVal(val) ? 0 : val;
         }
-        return array[r] != null ? array[r] : 0;
+        if (rNum === 0) return array;
+        if (rNum > array.length) return "#REF!";
+        return isBlankVal(array[rNum - 1]) ? 0 : array[rNum - 1];
     },
     MATCH(lookupValue, array, matchType = 0) {
         const flat = flattenArray(array);
@@ -1755,7 +1993,10 @@ const FORMULA_FUNCTIONS = {
         return src;
     },
     ISBLANK(val) { return isBlankVal(val); },
-    ISNUMBER(val) { return val !== "" && val != null && !isNaN(Number(val)); },
+    ISNUMBER(val) {
+        const v = unwrapBlank(val);
+        return v !== "" && v != null && typeof v !== "boolean" && !isNaN(Number(v));
+    },
 
     DATE(year, month, day) { return new Date(Number(year), Number(month) - 1, Number(day)); },
     TODAY() { const now = new Date(); return new Date(now.getFullYear(), now.getMonth(), now.getDate()); },
@@ -1935,13 +2176,16 @@ const FORMULA_FUNCTIONS = {
         return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : "#DIV/0!";
     },
     MEDIAN(...args) {
-        const nums = flattenArray(args).filter(v => v !== "" && v != null && !isNaN(Number(v))).map(Number).sort((a, b) => a - b);
+        const { error, nums } = collectNumericValues(args);
+        if (error) return error;
         if (!nums.length) return "#NUM!";
+        nums.sort((a, b) => a - b);
         const mid = Math.floor(nums.length / 2);
         return nums.length % 2 === 0 ? (nums[mid - 1] + nums[mid]) / 2 : nums[mid];
     },
     STDEV(...args) {
-        const nums = flattenArray(args).filter(v => v !== "" && v != null && !isNaN(Number(v))).map(Number);
+        const { error, nums } = collectNumericValues(args);
+        if (error) return error;
         if (nums.length < 2) return "#DIV/0!";
         const mean = nums.reduce((a, b) => a + b, 0) / nums.length;
         const variance = nums.reduce((acc, v) => acc + Math.pow(v - mean, 2), 0) / (nums.length - 1);
@@ -1999,8 +2243,11 @@ const FORMULA_FUNCTIONS = {
         }
         return out;
     },
-    ISTEXT(val) { return typeof val === "string" && val !== "" && !val.startsWith("#") && isNaN(Number(val)); },
-    ISERROR(val) { return typeof val === "string" && /^#(ERROR!|DIV\/0!|N\/A|VALUE!|CIRCULAR!|REF!|NAME\?|NUM!|CALC!)$/.test(val.trim()); },
+    ISTEXT(val) {
+        const v = unwrapBlank(val);
+        return typeof v === "string" && v !== "" && !EXCEL_ERROR_RE.test(v.trim());
+    },
+    ISERROR(val) { return typeof val === "string" && EXCEL_ERROR_RE.test(val.trim()); },
     ISNA(val) { return String(val ?? "").trim() === "#N/A"; },
     TYPE(val) {
         if (FORMULA_FUNCTIONS.ISERROR(val)) return 16;
@@ -2283,7 +2530,15 @@ const FORMULA_FUNCTIONS = {
     },
     ISERR(val) { return FORMULA_FUNCTIONS.ISERROR(val) && String(val ?? "").trim() !== "#N/A"; },
     ISEVEN(val) { return Math.trunc(Number(val)) % 2 === 0; },
-    ISODD(val) { return Math.abs(Math.trunc(Number(val)) % 2) === 1; }
+    ISODD(val) { return Math.abs(Math.trunc(Number(val)) % 2) === 1; },
+    HYPERLINK(linkLocation, friendlyName = null) {
+        const url = String(unwrapBlank(linkLocation) ?? "").trim();
+        if (!url) return "#VALUE!";
+        const label = friendlyName != null && !isBlankVal(friendlyName)
+            ? String(unwrapBlank(friendlyName))
+            : url;
+        return label;
+    }
 };
 
 const FORMULA_FN_NAMES = Object.keys(FORMULA_FUNCTIONS);
@@ -2367,13 +2622,16 @@ export default async function initSpreadsheetApp(content, options = {}) {
             </div>
 
             <div class="ss-ribbon-panels">
-                <!-- ==================== [ホーム] タブ（7グループ構成） ==================== -->
+                <!-- ==================== [ホーム] タブ（7グループ構成・Excel準拠スリム） ==================== -->
                 <div class="ss-ribbon-panel active" data-ribbon-panel="home">
                     <!-- 1. クリップボード -->
                     <div class="ss-ribbon-group">
                         <div class="ss-ribbon-group-body">
-                           <div class="pulldown_menu_parent">
-                                <span class="button pulldown_btn" title="貼り付けオプション">📋 貼り付け ▼</span>
+                            <div class="pulldown_menu_parent">
+                                <span class="button pulldown_btn ss-btn-large" title="貼り付けオプション">
+                                    <span class="ss-btn-ico-lg">📋</span>
+                                    <span class="ss-btn-lbl">貼付▼</span>
+                                </span>
                                 <ul class="pulldown_menu" style="min-width:195px;">
                                     <li class="button" data-action="paste">貼り付け (Ctrl+V)</li>
                                     <li class="button" data-action="paste-values">値のみ貼り付け (Ctrl+Shift+V)</li>
@@ -2381,9 +2639,11 @@ export default async function initSpreadsheetApp(content, options = {}) {
                                     <li class="button" data-action="paste-transpose">行列を入れ替えて貼り付け</li>
                                 </ul>
                             </div>
-                            <span class="button" data-action="cut" title="切り取り (Ctrl+X)">✂ 切り取り</span>
-                            <span class="button" data-action="copy" title="コピー (Ctrl+C)">📄 コピー</span>
-                            <span class="button ss-format-painter-btn" data-action="format-painter" title="書式のコピー/貼り付け">🖌 書式コピー</span>
+                            <div class="ss-ribbon-col ss-ribbon-col-stack">
+                                <span class="button" data-action="cut" title="切り取り (Ctrl+X)">✂ 切取</span>
+                                <span class="button" data-action="copy" title="コピー (Ctrl+C)">📄 コピー</span>
+                                <span class="button ss-format-painter-btn" data-action="format-painter" title="書式のコピー/貼り付け">🖌 書式</span>
+                            </div>
                         </div>
                         <div class="ss-ribbon-group-title">クリップボード</div>
                     </div>
@@ -2391,129 +2651,132 @@ export default async function initSpreadsheetApp(content, options = {}) {
                     <!-- 2. フォント -->
                     <div class="ss-ribbon-group">
                         <div class="ss-ribbon-group-body">
-                            <label>
-                                <select class="ss-font-family" style="outline:none; max-width:112px;" title="フォント">
-                                    <option value="'MS PGothic', 'MS Gothic', sans-serif" selected>MS Pゴシック</option>
-                                    <option value="'Meiryo', 'メイリオ', sans-serif">メイリオ</option>
-                                    <option value="'Yu Gothic', '游ゴシック', sans-serif">游ゴシック</option>
-                                    <option value="'MS PMincho', 'MS Mincho', serif">MS P明朝</option>
-                                    <option value="'Yu Mincho', '游明朝', serif">游明朝</option>
-                                    <option value="Arial, Helvetica, sans-serif">Arial</option>
-                                    <option value="Consolas, 'Courier New', monospace">Consolas</option>
-                                </select>
-                            </label>
-                            <label>
-                                <select class="ss-font-size" style="outline:none;" title="フォントサイズ">
-                                    <option value="8px">8</option>
-                                    <option value="9px">9</option>
-                                    <option value="10px">10</option>
-                                    <option value="11px">11</option>
-                                    <option value="12px">12</option>
-                                    <option value="14px" selected>14</option>
-                                    <option value="16px">16</option>
-                                    <option value="18px">18</option>
-                                    <option value="20px">20</option>
-                                    <option value="24px">24</option>
-                                    <option value="26px">26</option>
-                                    <option value="28px">28</option>
-                                    <option value="36px">36</option>
-                                    <option value="48px">48</option>
-                                    <option value="72px">72</option>
-                                    <option value="96px">96</option>
-                                    <option value="120px">120</option>
-                                    <option value="144px">144</option>
-                                </select>
-                            </label>
-                            <span class="button ss-toggle-bold" title="太字">&nbsp;B&nbsp;</span>
-                            <span class="button ss-toggle-italic" style="font-style:italic; font-weight:bold;" title="斜体">&nbsp;i&nbsp;</span>
-                            <span class="button ss-toggle-underline" title="下線">&nbsp;<span style="text-decoration:underline;">U</span>&nbsp;</span>
-                            <span class="button ss-toggle-strike" title="取り消し線">&nbsp;<span style="text-decoration:line-through;">S</span>&nbsp;</span>
-                            <span class="button ss-toggle-textshadow" title="影付き">&nbsp;<span style="text-shadow:2px 2px #555;">A</span>&nbsp;</span>
-
-                            <div class="pulldown_menu_parent">
-                                <span class="button pulldown_btn" title="罫線">&nbsp;罫線 ▼&nbsp;</span>
-                                <ul class="pulldown_menu" style="min-width:178px;">
-                                    <li style="padding:3px 4px; display:flex; flex-direction:column; gap:4px; border-bottom:1px solid #808080; margin-bottom:3px;">
-                                        <div style="display:flex; align-items:center; justify-content:space-between; gap:4px; font-size:11px;">
-                                            <span>線種:</span>
-                                            <select class="ss-border-style-select" style="height:20px; font-size:11px; flex:1;">
-                                                <option value="1px solid">細実線</option>
-                                                <option value="2px solid" selected>実線 (標準)</option>
-                                                <option value="4px solid">太実線</option>
-                                                <option value="3px double">二重線</option>
-                                                <option value="2px dashed">破線</option>
-                                                <option value="2px dotted">点線</option>
-                                            </select>
-                                        </div>
-                                        <div style="display:flex; align-items:center; justify-content:space-between; gap:4px; font-size:11px;">
-                                            <span>線の色:</span>
-                                            <input type="color" class="ss-border-color-input" value="#000000" style="width:48px; height:20px; padding:0; border:1px solid #666;">
-                                        </div>
-                                    </li>
-                                    <li class="button" data-border="top">上罫線</li>
-                                    <li class="button" data-border="bottom">下罫線</li>
-                                    <li class="button" data-border="bottom-double">下二重罫線</li>
-                                    <li class="button" data-border="left">左罫線</li>
-                                    <li class="button" data-border="right">右罫線</li>
-                                    <li class="button" data-border="outer">外枠</li>
-                                    <li class="button" data-border="outer-bold">太い外枠</li>
-                                    <li class="button" data-border="cell">格子（セル枠）</li>
-                                    <li class="button" data-border="none">枠線なし</li>
-                                </ul>
-                            </div>
-
-                            <div class="ss-cell-color-palette pulldown_menu_parent">
-                                <span class="button pulldown_btn" style="background-color:#222; color:#fff;" title="塗りつぶしの色">&nbsp;塗潰 ▼&nbsp;</span>
-                                <div class="pulldown_menu">
-                                    <div class="swatch-container">
-                                        <div class="color-swatch" data-color="#000000" style="background-color:#000000;"></div>
-                                        <div class="color-swatch" data-color="#FF0000" style="background-color:#FF0000;"></div>
-                                        <div class="color-swatch" data-color="#00FF00" style="background-color:#00FF00;"></div>
-                                        <div class="color-swatch" data-color="#0000FF" style="background-color:#0000FF;"></div>
-                                        <div class="color-swatch" data-color="#FFFF00" style="background-color:#FFFF00;"></div>
-                                        <div class="color-swatch" data-color="#FF00FF" style="background-color:#FF00FF;"></div>
-                                        <div class="color-swatch" data-color="#00FFFF" style="background-color:#00FFFF;"></div>
-                                        <div class="color-swatch" data-color="#808080" style="background-color:#808080;"></div>
-                                        <div class="color-swatch" data-color="#800000" style="background-color:#800000;"></div>
-                                        <div class="color-swatch" data-color="#008000" style="background-color:#008000;"></div>
-                                        <div class="color-swatch" data-color="#000080" style="background-color:#000080;"></div>
-                                        <div class="color-swatch" data-color="#808000" style="background-color:#808000;"></div>
-                                        <div class="color-swatch" data-color="#800080" style="background-color:#800080;"></div>
-                                        <div class="color-swatch" data-color="#008080" style="background-color:#008080;"></div>
-                                        <div class="color-swatch" data-color="#C0C0C0" style="background-color:#C0C0C0;"></div>
-                                        <div class="color-swatch" data-color="#FFFFFF" style="background-color:#FFFFFF;"></div>
-                                    </div>
-                                    <div class="color-swatch button" data-color="none">塗りつぶしなし</div>
-                                    <div class="ss-color-picker">
-                                        <label>詳細: <input type="color" class="ss-cell-color-custom"></label>
-                                    </div>
+                            <div class="ss-ribbon-col">
+                                <div class="ss-ribbon-row">
+                                    <label>
+                                        <select class="ss-font-family" style="outline:none; width:108px;" title="フォント">
+                                            <option value="'MS PGothic', 'MS Gothic', sans-serif" selected>MS Pゴシック</option>
+                                            <option value="'Meiryo', 'メイリオ', sans-serif">メイリオ</option>
+                                            <option value="'Yu Gothic', '游ゴシック', sans-serif">游ゴシック</option>
+                                            <option value="'MS PMincho', 'MS Mincho', serif">MS P明朝</option>
+                                            <option value="'Yu Mincho', '游明朝', serif">游明朝</option>
+                                            <option value="Arial, Helvetica, sans-serif">Arial</option>
+                                            <option value="Consolas, 'Courier New', monospace">Consolas</option>
+                                        </select>
+                                    </label>
+                                    <label>
+                                        <select class="ss-font-size" style="outline:none; width:44px;" title="フォントサイズ">
+                                            <option value="8px">8</option>
+                                            <option value="9px">9</option>
+                                            <option value="10px">10</option>
+                                            <option value="11px">11</option>
+                                            <option value="12px">12</option>
+                                            <option value="14px" selected>14</option>
+                                            <option value="16px">16</option>
+                                            <option value="18px">18</option>
+                                            <option value="20px">20</option>
+                                            <option value="24px">24</option>
+                                            <option value="26px">26</option>
+                                            <option value="28px">28</option>
+                                            <option value="36px">36</option>
+                                            <option value="48px">48</option>
+                                            <option value="72px">72</option>
+                                            <option value="96px">96</option>
+                                            <option value="120px">120</option>
+                                            <option value="144px">144</option>
+                                        </select>
+                                    </label>
                                 </div>
-                            </div>
-
-                            <div class="ss-text-color-palette pulldown_menu_parent">
-                                <span class="button pulldown_btn" style="color:#d00;" title="フォントの色">&nbsp;A ▼&nbsp;</span>
-                                <div class="pulldown_menu">
-                                    <div class="swatch-container">
-                                        <div class="color-swatch" data-color="#000000" style="background-color:#000000;"></div>
-                                        <div class="color-swatch" data-color="#FF0000" style="background-color:#FF0000;"></div>
-                                        <div class="color-swatch" data-color="#00FF00" style="background-color:#00FF00;"></div>
-                                        <div class="color-swatch" data-color="#0000FF" style="background-color:#0000FF;"></div>
-                                        <div class="color-swatch" data-color="#FFFF00" style="background-color:#FFFF00;"></div>
-                                        <div class="color-swatch" data-color="#FF00FF" style="background-color:#FF00FF;"></div>
-                                        <div class="color-swatch" data-color="#00FFFF" style="background-color:#00FFFF;"></div>
-                                        <div class="color-swatch" data-color="#808080" style="background-color:#808080;"></div>
-                                        <div class="color-swatch" data-color="#800000" style="background-color:#800000;"></div>
-                                        <div class="color-swatch" data-color="#008000" style="background-color:#008000;"></div>
-                                        <div class="color-swatch" data-color="#000080" style="background-color:#000080;"></div>
-                                        <div class="color-swatch" data-color="#808000" style="background-color:#808000;"></div>
-                                        <div class="color-swatch" data-color="#800080" style="background-color:#800080;"></div>
-                                        <div class="color-swatch" data-color="#008080" style="background-color:#008080;"></div>
-                                        <div class="color-swatch" data-color="#C0C0C0" style="background-color:#C0C0C0;"></div>
-                                        <div class="color-swatch" data-color="#FFFFFF" style="background-color:#FFFFFF;"></div>
+                                <div class="ss-ribbon-row">
+                                    <span class="button ss-icon-btn ss-toggle-bold" title="太字">B</span>
+                                    <span class="button ss-icon-btn ss-toggle-italic" style="font-style:italic; font-weight:bold;" title="斜体">i</span>
+                                    <span class="button ss-icon-btn ss-toggle-underline" title="下線"><span style="text-decoration:underline;">U</span></span>
+                                    <span class="button ss-icon-btn ss-toggle-strike" title="取り消し線"><span style="text-decoration:line-through;">S</span></span>
+                                    <span class="button ss-icon-btn ss-toggle-textshadow" title="影付き"><span style="text-shadow:2px 2px #555;">A</span></span>
+                                    <div class="pulldown_menu_parent">
+                                        <span class="button pulldown_btn" title="罫線">罫▼</span>
+                                        <ul class="pulldown_menu" style="min-width:178px;">
+                                            <li style="padding:3px 4px; display:flex; flex-direction:column; gap:4px; border-bottom:1px solid #808080; margin-bottom:3px;">
+                                                <div style="display:flex; align-items:center; justify-content:space-between; gap:4px; font-size:11px;">
+                                                    <span>線種:</span>
+                                                    <select class="ss-border-style-select" style="height:20px; font-size:11px; flex:1;">
+                                                        <option value="1px solid">細実線</option>
+                                                        <option value="2px solid" selected>実線 (標準)</option>
+                                                        <option value="4px solid">太実線</option>
+                                                        <option value="3px double">二重線</option>
+                                                        <option value="2px dashed">破線</option>
+                                                        <option value="2px dotted">点線</option>
+                                                    </select>
+                                                </div>
+                                                <div style="display:flex; align-items:center; justify-content:space-between; gap:4px; font-size:11px;">
+                                                    <span>線の色:</span>
+                                                    <input type="color" class="ss-border-color-input" value="#000000" style="width:48px; height:20px; padding:0; border:1px solid #666;">
+                                                </div>
+                                            </li>
+                                            <li class="button" data-border="top">上罫線</li>
+                                            <li class="button" data-border="bottom">下罫線</li>
+                                            <li class="button" data-border="bottom-double">下二重罫線</li>
+                                            <li class="button" data-border="left">左罫線</li>
+                                            <li class="button" data-border="right">右罫線</li>
+                                            <li class="button" data-border="outer">外枠</li>
+                                            <li class="button" data-border="outer-bold">太い外枠</li>
+                                            <li class="button" data-border="cell">格子（セル枠）</li>
+                                            <li class="button" data-border="none">枠線なし</li>
+                                        </ul>
                                     </div>
-                                    <div class="color-swatch button" data-color="none">自動</div>
-                                    <div class="ss-color-picker">
-                                        <label>詳細: <input type="color" class="ss-text-color-custom"></label>
+                                    <div class="ss-cell-color-palette pulldown_menu_parent">
+                                        <span class="button pulldown_btn" style="background-color:#222; color:#fff;" title="塗りつぶしの色">塗▼</span>
+                                        <div class="pulldown_menu">
+                                            <div class="swatch-container">
+                                                <div class="color-swatch" data-color="#000000" style="background-color:#000000;"></div>
+                                                <div class="color-swatch" data-color="#FF0000" style="background-color:#FF0000;"></div>
+                                                <div class="color-swatch" data-color="#00FF00" style="background-color:#00FF00;"></div>
+                                                <div class="color-swatch" data-color="#0000FF" style="background-color:#0000FF;"></div>
+                                                <div class="color-swatch" data-color="#FFFF00" style="background-color:#FFFF00;"></div>
+                                                <div class="color-swatch" data-color="#FF00FF" style="background-color:#FF00FF;"></div>
+                                                <div class="color-swatch" data-color="#00FFFF" style="background-color:#00FFFF;"></div>
+                                                <div class="color-swatch" data-color="#808080" style="background-color:#808080;"></div>
+                                                <div class="color-swatch" data-color="#800000" style="background-color:#800000;"></div>
+                                                <div class="color-swatch" data-color="#008000" style="background-color:#008000;"></div>
+                                                <div class="color-swatch" data-color="#000080" style="background-color:#000080;"></div>
+                                                <div class="color-swatch" data-color="#808000" style="background-color:#808000;"></div>
+                                                <div class="color-swatch" data-color="#800080" style="background-color:#800080;"></div>
+                                                <div class="color-swatch" data-color="#008080" style="background-color:#008080;"></div>
+                                                <div class="color-swatch" data-color="#C0C0C0" style="background-color:#C0C0C0;"></div>
+                                                <div class="color-swatch" data-color="#FFFFFF" style="background-color:#FFFFFF;"></div>
+                                            </div>
+                                            <div class="color-swatch button" data-color="none">塗りつぶしなし</div>
+                                            <div class="ss-color-picker">
+                                                <label>詳細: <input type="color" class="ss-cell-color-custom"></label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="ss-text-color-palette pulldown_menu_parent">
+                                        <span class="button pulldown_btn" style="color:#d00;" title="フォントの色">A▼</span>
+                                        <div class="pulldown_menu">
+                                            <div class="swatch-container">
+                                                <div class="color-swatch" data-color="#000000" style="background-color:#000000;"></div>
+                                                <div class="color-swatch" data-color="#FF0000" style="background-color:#FF0000;"></div>
+                                                <div class="color-swatch" data-color="#00FF00" style="background-color:#00FF00;"></div>
+                                                <div class="color-swatch" data-color="#0000FF" style="background-color:#0000FF;"></div>
+                                                <div class="color-swatch" data-color="#FFFF00" style="background-color:#FFFF00;"></div>
+                                                <div class="color-swatch" data-color="#FF00FF" style="background-color:#FF00FF;"></div>
+                                                <div class="color-swatch" data-color="#00FFFF" style="background-color:#00FFFF;"></div>
+                                                <div class="color-swatch" data-color="#808080" style="background-color:#808080;"></div>
+                                                <div class="color-swatch" data-color="#800000" style="background-color:#800000;"></div>
+                                                <div class="color-swatch" data-color="#008000" style="background-color:#008000;"></div>
+                                                <div class="color-swatch" data-color="#000080" style="background-color:#000080;"></div>
+                                                <div class="color-swatch" data-color="#808000" style="background-color:#808000;"></div>
+                                                <div class="color-swatch" data-color="#800080" style="background-color:#800080;"></div>
+                                                <div class="color-swatch" data-color="#008080" style="background-color:#008080;"></div>
+                                                <div class="color-swatch" data-color="#C0C0C0" style="background-color:#C0C0C0;"></div>
+                                                <div class="color-swatch" data-color="#FFFFFF" style="background-color:#FFFFFF;"></div>
+                                            </div>
+                                            <div class="color-swatch button" data-color="none">自動</div>
+                                            <div class="ss-color-picker">
+                                                <label>詳細: <input type="color" class="ss-text-color-custom"></label>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -2524,18 +2787,60 @@ export default async function initSpreadsheetApp(content, options = {}) {
                     <!-- 3. 配置 -->
                     <div class="ss-ribbon-group">
                         <div class="ss-ribbon-group-body">
-                            <span class="button ss-valign-top" title="上揃え">上</span>
-                            <span class="button ss-valign-middle" title="上下中央揃え">中</span>
-                            <span class="button ss-valign-bottom" title="下揃え">下</span>
-                            <div class="ss-text-alignment-buttons" style="display:inline-flex; gap:2px;">
-                                <span class="button" data-align="left" title="左揃え">=&nbsp;&nbsp;</span>
-                                <span class="button" data-align="center" title="中央揃え">&nbsp;=&nbsp;</span>
-                                <span class="button" data-align="right" title="右揃え">&nbsp;&nbsp;=</span>
+                            <div class="ss-ribbon-col">
+                                <!-- 上段：上下揃えアイコン + 縦書き -->
+                                <div class="ss-ribbon-row">
+                                    <span class="button ss-icon-btn ss-valign-top" title="上揃え">
+                                        <svg class="ss-ico" viewBox="0 0 16 16" aria-hidden="true">
+                                            <path d="M2 2.5h12M2 5.5h8M2 8.5h10"/>
+                                        </svg>
+                                    </span>
+                                    <span class="button ss-icon-btn ss-valign-middle" title="上下中央揃え">
+                                        <svg class="ss-ico" viewBox="0 0 16 16" aria-hidden="true">
+                                            <path d="M2 5h12M2 8h8M2 11h10"/>
+                                        </svg>
+                                    </span>
+                                    <span class="button ss-icon-btn ss-valign-bottom" title="下揃え">
+                                        <svg class="ss-ico" viewBox="0 0 16 16" aria-hidden="true">
+                                            <path d="M2 7.5h12M2 10.5h8M2 13.5h10"/>
+                                        </svg>
+                                    </span>
+                                    <span class="button ss-icon-btn ss-toggle-vertical" title="縦書き / 横書き切替">縦</span>
+                                </div>
+                                <!-- 下段：左右揃え + 均等割り付けアイコン -->
+                                <div class="ss-ribbon-row ss-text-alignment-buttons">
+                                    <span class="button ss-icon-btn" data-align="left" title="左揃え">
+                                        <svg class="ss-ico" viewBox="0 0 16 16" aria-hidden="true">
+                                            <path d="M2 3h12M2 6.3h8M2 9.7h12M2 13h9"/>
+                                        </svg>
+                                    </span>
+                                    <span class="button ss-icon-btn" data-align="center" title="中央揃え">
+                                        <svg class="ss-ico" viewBox="0 0 16 16" aria-hidden="true">
+                                            <path d="M2 3h12M4 6.3h8M2 9.7h12M3.5 13h9"/>
+                                        </svg>
+                                    </span>
+                                    <span class="button ss-icon-btn" data-align="right" title="右揃え">
+                                        <svg class="ss-ico" viewBox="0 0 16 16" aria-hidden="true">
+                                            <path d="M2 3h12M6 6.3h8M2 9.7h12M5 13h9"/>
+                                        </svg>
+                                    </span>
+                                    <span class="button ss-icon-btn" data-align="justify" title="均等割り付け（文字の間隔を均等に揃える）">
+                                        <svg class="ss-ico" viewBox="0 0 16 16" aria-hidden="true">
+                                            <path d="M2 3h12M2 6.5h12M2.5 11.5h11M5 9.5L2.5 11.5L5 13.5M11 9.5L13.5 11.5L11 13.5"/>
+                                        </svg>
+                                    </span>
+                                </div>
                             </div>
-                            <span class="button ss-toggle-vertical" title="縦書き / 横書き切替">縦書</span>
-                            <span class="button ss-toggle-wrap" title="折り返して全体を表示する">折り返し</span>
-                            <span class="button ss-merge-cells" title="セルを結合して中央揃え">セル結合</span>
-                            <span class="button ss-unmerge-cells" title="セル結合の解除">解除</span>
+                            <div class="ss-ribbon-vsep"></div>
+                            <div class="ss-ribbon-col">
+                                <div class="ss-ribbon-row">
+                                    <span class="button ss-toggle-wrap" style="width:100%;" title="折り返して全体を表示する">↩折返</span>
+                                </div>
+                                <div class="ss-ribbon-row">
+                                    <span class="button ss-merge-cells" title="セルを結合して中央揃え">結合</span>
+                                    <span class="button ss-unmerge-cells" title="セル結合の解除">解除</span>
+                                </div>
+                            </div>
                         </div>
                         <div class="ss-ribbon-group-title">配置</div>
                     </div>
@@ -2543,15 +2848,21 @@ export default async function initSpreadsheetApp(content, options = {}) {
                     <!-- 4. 数値 -->
                     <div class="ss-ribbon-group">
                         <div class="ss-ribbon-group-body">
-                            <span class="button" data-numfmt="general" title="標準表示">標準</span>
-                            <span class="button" data-numfmt="currency" title="通貨表示形式 (¥1,000)">&nbsp;¥&nbsp;</span>
-                            <span class="button" data-numfmt="percent" title="パーセントスタイル (10%)">&nbsp;%&nbsp;</span>
-                            <span class="button" data-numfmt="comma" title="桁区切りスタイル (1,000)">&nbsp;,&nbsp;</span>
-                            <span class="button" data-numfmt="date-jp" title="日付表示 (2025年7月8日)">年月日</span>
-                            <span class="button" data-numfmt="date-md" title="短い日付 (7/8)">M/D</span>
-                            <span class="button" data-action="custom-numfmt" title="ユーザー定義の表示形式を設定 (例: #,##0&quot;円&quot;)">詳細書式...</span>
-                            <span class="button" data-decimal-step="1" title="小数点以下の表示桁数を増やす">.00→.0</span>
-                            <span class="button" data-decimal-step="-1" title="小数点以下の表示桁数を減らす">.0→.00</span>
+                            <div class="ss-ribbon-col">
+                                <div class="ss-ribbon-row">
+                                    <span class="button" data-numfmt="general" title="標準表示">標準</span>
+                                    <span class="button" data-numfmt="date-jp" title="日付表示 (2025年7月8日)">日付</span>
+                                    <span class="button" data-numfmt="date-md" title="短い日付 (7/8)">M/D</span>
+                                    <span class="button" data-action="custom-numfmt" title="ユーザー定義の表示形式を設定 (例: #,##0&quot;円&quot;)">詳細</span>
+                                </div>
+                                <div class="ss-ribbon-row">
+                                    <span class="button ss-icon-btn" data-numfmt="currency" title="通貨表示形式 (¥1,000)">¥</span>
+                                    <span class="button ss-icon-btn" data-numfmt="percent" title="パーセントスタイル (10%)">%</span>
+                                    <span class="button ss-icon-btn" data-numfmt="comma" title="桁区切りスタイル (1,000)">,</span>
+                                    <span class="button" data-decimal-step="1" title="小数点以下の表示桁数を増やす">.0+</span>
+                                    <span class="button" data-decimal-step="-1" title="小数点以下の表示桁数を減らす">.0-</span>
+                                </div>
+                            </div>
                         </div>
                         <div class="ss-ribbon-group-title">数値</div>
                     </div>
@@ -2559,8 +2870,11 @@ export default async function initSpreadsheetApp(content, options = {}) {
                     <!-- 5. スタイル -->
                     <div class="ss-ribbon-group">
                         <div class="ss-ribbon-group-body">
-                           <div class="pulldown_menu_parent">
-                                <span class="button pulldown_btn">条件付き書式 ▼</span>
+                            <div class="pulldown_menu_parent">
+                                <span class="button pulldown_btn ss-btn-large" title="条件付き書式">
+                                    <span class="ss-btn-ico-lg">📊</span>
+                                    <span class="ss-btn-lbl">条件付<br>書式▼</span>
+                                </span>
                                 <ul class="pulldown_menu" style="min-width:225px; overflow:visible;">
                                     <li class="button ss-submenu-parent">
                                         <span>セルの強調表示ルール(H)</span><span>▶</span>
@@ -2635,8 +2949,11 @@ export default async function initSpreadsheetApp(content, options = {}) {
                                     <li class="button" data-cf-preset="manage">ルールの管理(R)...</li>
                                 </ul>
                             </div>
-                          <div class="pulldown_menu_parent">
-                                <span class="button pulldown_btn">テーブル書式 ▼</span>
+                            <div class="pulldown_menu_parent">
+                                <span class="button pulldown_btn ss-btn-large" title="テーブルとして書式設定">
+                                    <span class="ss-btn-ico-lg">▦</span>
+                                    <span class="ss-btn-lbl">表の<br>書式▼</span>
+                                </span>
                                 <div class="pulldown_menu ss-table-style-menu" style="min-width:265px; padding:6px;">
                                     <div style="display:flex; gap:10px; margin-bottom:5px; padding-bottom:4px; border-bottom:1px solid #808080; font-size:11px;">
                                         <label style="cursor:pointer;"><input type="checkbox" class="ss-tbl-opt-header" checked> 先頭行を見出しにする</label>
@@ -2646,6 +2963,10 @@ export default async function initSpreadsheetApp(content, options = {}) {
                                     <div class="ss-table-presets-grid" style="display:grid; grid-template-columns:repeat(4, 1fr); gap:4px;"></div>
                                 </div>
                             </div>
+                            <span class="button ss-btn-large" data-action="auto-format" title="サンプルイメージから選んで表にデザインを一括適用">
+                                <span class="ss-btn-ico-lg">🎨</span>
+                                <span class="ss-btn-lbl">自動<br>書式</span>
+                            </span>
                         </div>
                         <div class="ss-ribbon-group-title">スタイル</div>
                     </div>
@@ -2654,7 +2975,10 @@ export default async function initSpreadsheetApp(content, options = {}) {
                     <div class="ss-ribbon-group">
                         <div class="ss-ribbon-group-body">
                             <div class="pulldown_menu_parent">
-                                <span class="button pulldown_btn">挿入 ▼</span>
+                                <span class="button pulldown_btn ss-btn-large" title="行・列・シートの挿入">
+                                    <span class="ss-btn-ico-lg">➕</span>
+                                    <span class="ss-btn-lbl">挿入▼</span>
+                                </span>
                                 <ul class="pulldown_menu" style="min-width:155px;">
                                     <li class="button" data-rowcol-op="insert-row">シートの行を挿入</li>
                                     <li class="button" data-rowcol-op="insert-col">シートの列を挿入</li>
@@ -2662,7 +2986,10 @@ export default async function initSpreadsheetApp(content, options = {}) {
                                 </ul>
                             </div>
                             <div class="pulldown_menu_parent">
-                                <span class="button pulldown_btn">削除 ▼</span>
+                                <span class="button pulldown_btn ss-btn-large" title="行・列・シートの削除">
+                                    <span class="ss-btn-ico-lg">➖</span>
+                                    <span class="ss-btn-lbl">削除▼</span>
+                                </span>
                                 <ul class="pulldown_menu" style="min-width:155px;">
                                     <li class="button" data-rowcol-op="delete-row">シートの行を削除</li>
                                     <li class="button" data-rowcol-op="delete-col">シートの列を削除</li>
@@ -2670,7 +2997,10 @@ export default async function initSpreadsheetApp(content, options = {}) {
                                 </ul>
                             </div>
                             <div class="pulldown_menu_parent">
-                                <span class="button pulldown_btn">書式 ▼</span>
+                                <span class="button pulldown_btn ss-btn-large" title="行高・列幅・シート名">
+                                    <span class="ss-btn-ico-lg">📐</span>
+                                    <span class="ss-btn-lbl">書式▼</span>
+                                </span>
                                 <ul class="pulldown_menu" style="min-width:170px;">
                                     <li class="button" data-action="autofit-row">行の高さの自動調整</li>
                                     <li class="button" data-action="autofit-col">列幅の自動調整</li>
@@ -2681,26 +3011,34 @@ export default async function initSpreadsheetApp(content, options = {}) {
                         <div class="ss-ribbon-group-title">セル</div>
                     </div>
 
-                   <!-- 7. 編集 -->
+                    <!-- 7. 編集 -->
                     <div class="ss-ribbon-group">
                         <div class="ss-ribbon-group-body">
-                            <span class="button" data-action="auto-sum" title="オートSUM">&nbsp;Σ オートSUM&nbsp;</span>
-                            <div class="pulldown_menu_parent">
-                                <span class="button pulldown_btn" title="選択範囲をクリア">クリア ▼</span>
-                                <ul class="pulldown_menu" style="min-width:175px;">
-                                    <li class="button" data-action="clear-all">すべてクリア</li>
-                                    <li class="button" data-action="clear-formats">書式のクリア</li>
-                                    <li class="button" data-action="clear-cells">数式と値のクリア</li>
-                                </ul>
+                            <div class="ss-ribbon-col">
+                                <span class="button" data-action="auto-sum" title="オートSUM">Σ合計</span>
+                                <div class="pulldown_menu_parent" style="width:100%;">
+                                    <span class="button pulldown_btn" style="width:100%;" title="選択範囲をクリア">ｸﾘｱ▼</span>
+                                    <ul class="pulldown_menu" style="min-width:175px;">
+                                        <li class="button" data-action="clear-all">すべてクリア</li>
+                                        <li class="button" data-action="clear-formats">書式のクリア</li>
+                                        <li class="button" data-action="clear-cells">数式と値のクリア</li>
+                                    </ul>
+                                </div>
                             </div>
                             <div class="pulldown_menu_parent">
-                                <span class="button pulldown_btn">並べ替え ▼</span>
+                                <span class="button pulldown_btn ss-btn-large" title="並べ替え">
+                                    <span class="ss-btn-ico-lg">⇅</span>
+                                    <span class="ss-btn-lbl">並替▼</span>
+                                </span>
                                 <ul class="pulldown_menu" style="min-width:165px;">
                                     <li class="button" data-sort="asc">昇順 (A→Z / 小→大)</li>
                                     <li class="button" data-sort="desc">降順 (Z→A / 大→小)</li>
                                 </ul>
                             </div>
-                            <span class="button" data-action="find-replace" title="検索と置換 (Ctrl+F)">🔍 検索と選択</span>
+                            <span class="button ss-btn-large" data-action="find-replace" title="検索と置換 (Ctrl+F)">
+                                <span class="ss-btn-ico-lg">🔍</span>
+                                <span class="ss-btn-lbl">検索<br>選択</span>
+                            </span>
                         </div>
                         <div class="ss-ribbon-group-title">編集</div>
                     </div>
@@ -2710,25 +3048,43 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 <div class="ss-ribbon-panel" data-ribbon-panel="insert">
                     <div class="ss-ribbon-group">
                         <div class="ss-ribbon-group-body">
-                            <span class="button" data-action="pivot-table" title="選択範囲からピボットテーブルを作成">📑 ピボットテーブル</span>
-                            <span class="button" data-action="create-table" title="選択範囲を構造化テーブルに変換 (Ctrl+T)">▦ テーブル</span>
-                            <span class="button" data-action="toggle-table-total" title="テーブル末尾の集計行を表示/非表示">Σ 集計行</span>
+                            <span class="button ss-btn-large" data-action="pivot-table" title="選択範囲からピボットテーブルを作成">
+                                <span class="ss-btn-ico-lg">📑</span>
+                                <span class="ss-btn-lbl">ピボット</span>
+                            </span>
+                            <span class="button ss-btn-large" data-action="create-table" title="選択範囲を構造化テーブルに変換 (Ctrl+T)">
+                                <span class="ss-btn-ico-lg">▦</span>
+                                <span class="ss-btn-lbl">テーブル</span>
+                            </span>
+                            <span class="button ss-btn-large" data-action="toggle-table-total" title="テーブル末尾の集計行を表示/非表示">
+                                <span class="ss-btn-ico-lg">Σ</span>
+                                <span class="ss-btn-lbl">集計行</span>
+                            </span>
                         </div>
                         <div class="ss-ribbon-group-title">テーブル</div>
                     </div>
                     <div class="ss-ribbon-group">
                         <div class="ss-ribbon-group-body">
-                            <span class="button" data-action="insert-chart-bar">📊 縦棒</span>
-                            <span class="button" data-action="insert-chart-stacked">🧱 積み上げ</span>
-                            <span class="button" data-action="insert-chart-line">📈 折れ線</span>
-                            <span class="button" data-action="insert-chart-pie">🥧 円グラフ</span>
-                            <span class="button" data-action="insert-chart-scatter">⚬ 散布図</span>
+                            <div class="ss-ribbon-col">
+                                <div class="ss-ribbon-row">
+                                    <span class="button" data-action="insert-chart-bar">📊 縦棒</span>
+                                    <span class="button" data-action="insert-chart-stacked">🧱 積み上げ</span>
+                                    <span class="button" data-action="insert-chart-line">📈 折れ線</span>
+                                </div>
+                                <div class="ss-ribbon-row">
+                                    <span class="button" data-action="insert-chart-pie">🥧 円グラフ</span>
+                                    <span class="button" data-action="insert-chart-scatter">⚬ 散布図</span>
+                                </div>
+                            </div>
                         </div>
                         <div class="ss-ribbon-group-title">グラフ</div>
                     </div>
                     <div class="ss-ribbon-group">
                         <div class="ss-ribbon-group-body">
-                            <span class="button" data-action="insert-textbox">📝 テキストボックス</span>
+                            <span class="button ss-btn-large" data-action="insert-textbox">
+                                <span class="ss-btn-ico-lg">📝</span>
+                                <span class="ss-btn-lbl">テキストボックス</span>
+                            </span>
                         </div>
                         <div class="ss-ribbon-group-title">テキスト</div>
                     </div>
@@ -2739,7 +3095,10 @@ export default async function initSpreadsheetApp(content, options = {}) {
                     <div class="ss-ribbon-group">
                         <div class="ss-ribbon-group-body">
                             <div class="pulldown_menu_parent">
-                                <span class="button pulldown_btn">用紙サイズ ▼</span>
+                                <span class="button pulldown_btn ss-btn-large">
+                                    <span class="ss-btn-ico-lg">📄</span>
+                                    <span class="ss-btn-lbl">サイズ ▼</span>
+                                </span>
                                 <ul class="pulldown_menu" style="min-width:130px;">
                                     <li class="button" data-pagesize="A4">A4 (標準)</li>
                                     <li class="button" data-pagesize="A3">A3</li>
@@ -2747,169 +3106,186 @@ export default async function initSpreadsheetApp(content, options = {}) {
                                     <li class="button" data-pagesize="B4">B4</li>
                                 </ul>
                             </div>
-                            <span class="button ss-print-orient-btn" data-action="toggle-print-orientation" title="印刷の向き（縦 / 横）">向き: 縦</span>
-                            <span class="button ss-print-fit-btn selected" data-action="toggle-print-fit" title="すべての列を用紙幅に収めて印刷">幅を1ページに収める</span>
-                            <span class="button ss-print-grid-btn" data-action="toggle-print-grid" title="セルの薄い枠線も印刷に含める">枠線を印刷</span>
-                            <span class="button" data-action="print">🖨 印刷実行</span>
+                            <span class="button ss-print-orient-btn ss-btn-large" data-action="toggle-print-orientation" title="印刷の向き（縦 / 横）">
+                                <span class="ss-btn-ico-lg">🧭</span>
+                                <span class="ss-btn-lbl">向き: 縦</span>
+                            </span>
+                            <div class="ss-ribbon-col">
+                                <span class="button ss-print-fit-btn selected" data-action="toggle-print-fit" title="すべての列を用紙幅に収めて印刷">幅を1ページに収める</span>
+                                <span class="button ss-print-grid-btn" data-action="toggle-print-grid" title="セルの薄い枠線も印刷に含める">枠線を印刷</span>
+                            </div>
+                            <span class="button ss-btn-large" data-action="print">
+                                <span class="ss-btn-ico-lg">🖨</span>
+                                <span class="ss-btn-lbl">印刷実行</span>
+                            </span>
                         </div>
                         <div class="ss-ribbon-group-title">ページ設定</div>
                     </div>
                 </div>
 
-                <!-- ==================== [数式] タブ（旧関数メニューを統合） ==================== -->
+                <!-- ==================== [数式] タブ（Excel準拠2段配置） ==================== -->
                 <div class="ss-ribbon-panel" data-ribbon-panel="formulas">
                     <div class="ss-ribbon-group">
                         <div class="ss-ribbon-group-body">
-                            <span class="button" data-action="auto-sum">Σ オートSUM</span>
+                            <span class="button ss-btn-large" data-action="auto-sum" title="オートSUM">
+                                <span class="ss-btn-ico-lg">Σ</span>
+                                <span class="ss-btn-lbl">オート<br>SUM</span>
+                            </span>
 
-                            <div class="pulldown_menu_parent">
-                                <span class="button pulldown_btn">最近使用した関数 ▼</span>
-                                <ul class="pulldown_menu ss-recent-fn-menu" style="min-width:210px;"></ul>
-                            </div>
+                            <div class="ss-ribbon-col">
+                                <div class="ss-ribbon-row">
+                                    <div class="pulldown_menu_parent">
+                                        <span class="button pulldown_btn">最近使用 ▼</span>
+                                        <ul class="pulldown_menu ss-recent-fn-menu" style="min-width:210px;"></ul>
+                                    </div>
 
-                            <div class="pulldown_menu_parent">
-                                <span class="button pulldown_btn">財務 ▼</span>
-                                <ul class="pulldown_menu" style="min-width:220px;">
-                                    <li class="button" data-fn-tpl="=PMT(, , )">PMT - 定期支払額</li>
-                                    <li class="button" data-fn-tpl="=FV(, , )">FV - 将来価値</li>
-                                    <li class="button" data-fn-tpl="=PV(, , )">PV - 現在価値</li>
-                                    <li class="button" data-fn-tpl="=NPV(, )">NPV - 正味現在価値</li>
-                                    <li class="button" data-fn-tpl="=IRR()">IRR - 内部利益率</li>
-                                </ul>
-                            </div>
+                                    <div class="pulldown_menu_parent">
+                                        <span class="button pulldown_btn">財務 ▼</span>
+                                        <ul class="pulldown_menu" style="min-width:220px;">
+                                            <li class="button" data-fn-tpl="=PMT(, , )">PMT - 定期支払額</li>
+                                            <li class="button" data-fn-tpl="=FV(, , )">FV - 将来価値</li>
+                                            <li class="button" data-fn-tpl="=PV(, , )">PV - 現在価値</li>
+                                            <li class="button" data-fn-tpl="=NPV(, )">NPV - 正味現在価値</li>
+                                            <li class="button" data-fn-tpl="=IRR()">IRR - 内部利益率</li>
+                                        </ul>
+                                    </div>
 
-                            <div class="pulldown_menu_parent">
-                                <span class="button pulldown_btn">論理 ▼</span>
-                                <ul class="pulldown_menu" style="min-width:220px;">
-                                    <li class="button" data-fn-tpl="=IF(, , )">IF - 条件分岐</li>
-                                    <li class="button" data-fn-tpl="=IFS(, , , )">IFS - 複数条件分岐</li>
-                                    <li class="button" data-fn-tpl="=SWITCH(, , , )">SWITCH - 値一致分岐</li>
-                                    <li class="button" data-fn-tpl="=IFERROR(, 0)">IFERROR - エラー時置換</li>
-                                    <li class="button" data-fn-tpl="=AND(, )">AND - 論理積</li>
-                                    <li class="button" data-fn-tpl="=OR(, )">OR - 論理和</li>
-                                    <li class="button" data-fn-tpl="=XOR(, )">XOR - 排他的論理和</li>
-                                    <li class="button" data-fn-tpl="=NOT()">NOT - 論理否定</li>
-                                </ul>
-                            </div>
+                                    <div class="pulldown_menu_parent">
+                                        <span class="button pulldown_btn">論理 ▼</span>
+                                        <ul class="pulldown_menu" style="min-width:220px;">
+                                            <li class="button" data-fn-tpl="=IF(, , )">IF - 条件分岐</li>
+                                            <li class="button" data-fn-tpl="=IFS(, , , )">IFS - 複数条件分岐</li>
+                                            <li class="button" data-fn-tpl="=SWITCH(, , , )">SWITCH - 値一致分岐</li>
+                                            <li class="button" data-fn-tpl="=IFERROR(, 0)">IFERROR - エラー時置換</li>
+                                            <li class="button" data-fn-tpl="=AND(, )">AND - 論理積</li>
+                                            <li class="button" data-fn-tpl="=OR(, )">OR - 論理和</li>
+                                            <li class="button" data-fn-tpl="=XOR(, )">XOR - 排他的論理和</li>
+                                            <li class="button" data-fn-tpl="=NOT()">NOT - 論理否定</li>
+                                        </ul>
+                                    </div>
 
-                            <div class="pulldown_menu_parent">
-                                <span class="button pulldown_btn">文字列操作 ▼</span>
-                                <ul class="pulldown_menu" style="min-width:230px;">
-                                    <li class="button" data-fn-tpl="=TEXTJOIN(&quot;,&quot;, TRUE, )">TEXTJOIN - 区切り文字結合</li>
-                                    <li class="button" data-fn-tpl="=TEXTSPLIT(, &quot;,&quot;)">TEXTSPLIT - 文字列分割</li>
-                                    <li class="button" data-fn-tpl="=CONCAT(, )">CONCAT - 文字列結合</li>
-                                    <li class="button" data-fn-tpl="=SUBSTITUTE(, , )">SUBSTITUTE - 文字列置換</li>
-                                    <li class="button" data-fn-tpl="=TRIM()">TRIM - 余分な空白削除</li>
-                                    <li class="button" data-fn-tpl="=CLEAN()">CLEAN - 制御文字削除</li>
-                                    <li class="button" data-fn-tpl="=LEFT(, 1)">LEFT - 左端から抽出</li>
-                                    <li class="button" data-fn-tpl="=RIGHT(, 1)">RIGHT - 右端から抽出</li>
-                                    <li class="button" data-fn-tpl="=MID(, 1, 1)">MID - 指定位置から抽出</li>
-                                    <li class="button" data-fn-tpl="=LEN()">LEN - 文字数</li>
-                                    <li class="button" data-fn-tpl="=UPPER()">UPPER - 大文字変換</li>
-                                    <li class="button" data-fn-tpl="=LOWER()">LOWER - 小文字変換</li>
-                                </ul>
-                            </div>
+                                    <div class="pulldown_menu_parent">
+                                        <span class="button pulldown_btn">文字列操作 ▼</span>
+                                        <ul class="pulldown_menu" style="min-width:230px;">
+                                            <li class="button" data-fn-tpl="=TEXTJOIN(&quot;,&quot;, TRUE, )">TEXTJOIN - 区切り文字結合</li>
+                                            <li class="button" data-fn-tpl="=TEXTSPLIT(, &quot;,&quot;)">TEXTSPLIT - 文字列分割</li>
+                                            <li class="button" data-fn-tpl="=CONCAT(, )">CONCAT - 文字列結合</li>
+                                            <li class="button" data-fn-tpl="=SUBSTITUTE(, , )">SUBSTITUTE - 文字列置換</li>
+                                            <li class="button" data-fn-tpl="=TRIM()">TRIM - 余分な空白削除</li>
+                                            <li class="button" data-fn-tpl="=CLEAN()">CLEAN - 制御文字削除</li>
+                                            <li class="button" data-fn-tpl="=LEFT(, 1)">LEFT - 左端から抽出</li>
+                                            <li class="button" data-fn-tpl="=RIGHT(, 1)">RIGHT - 右端から抽出</li>
+                                            <li class="button" data-fn-tpl="=MID(, 1, 1)">MID - 指定位置から抽出</li>
+                                            <li class="button" data-fn-tpl="=LEN()">LEN - 文字数</li>
+                                            <li class="button" data-fn-tpl="=UPPER()">UPPER - 大文字変換</li>
+                                            <li class="button" data-fn-tpl="=LOWER()">LOWER - 小文字変換</li>
+                                        </ul>
+                                    </div>
 
-                            <div class="pulldown_menu_parent">
-                                <span class="button pulldown_btn">日付と時刻 ▼</span>
-                                <ul class="pulldown_menu" style="min-width:230px;">
-                                    <li class="button" data-fn-tpl="=TODAY()">TODAY - 今日の日付</li>
-                                    <li class="button" data-fn-tpl="=NOW()">NOW - 現在日時</li>
-                                    <li class="button" data-fn-tpl="=DATE(2026, 11, 17)">DATE - 日付作成</li>
-                                    <li class="button" data-fn-tpl="=EDATE(, 1)">EDATE - 指定月数前後</li>
-                                    <li class="button" data-fn-tpl="=EOMONTH(, 0)">EOMONTH - 月末日</li>
-                                    <li class="button" data-fn-tpl="=NETWORKDAYS(, )">NETWORKDAYS - 稼働日数</li>
-                                    <li class="button" data-fn-tpl="=WORKDAY(, 1)">WORKDAY - 稼働日後日付</li>
-                                    <li class="button" data-fn-tpl="=DATEDIF(, , &quot;D&quot;)">DATEDIF - 期間計算</li>
-                                    <li class="button" data-fn-tpl="=YEAR()">YEAR - 年</li>
-                                    <li class="button" data-fn-tpl="=MONTH()">MONTH - 月</li>
-                                    <li class="button" data-fn-tpl="=DAY()">DAY - 日</li>
-                                </ul>
-                            </div>
+                                    <div class="pulldown_menu_parent">
+                                        <span class="button pulldown_btn">日付と時刻 ▼</span>
+                                        <ul class="pulldown_menu" style="min-width:230px;">
+                                            <li class="button" data-fn-tpl="=TODAY()">TODAY - 今日の日付</li>
+                                            <li class="button" data-fn-tpl="=NOW()">NOW - 現在日時</li>
+                                            <li class="button" data-fn-tpl="=DATE(2026, 11, 17)">DATE - 日付作成</li>
+                                            <li class="button" data-fn-tpl="=EDATE(, 1)">EDATE - 指定月数前後</li>
+                                            <li class="button" data-fn-tpl="=EOMONTH(, 0)">EOMONTH - 月末日</li>
+                                            <li class="button" data-fn-tpl="=NETWORKDAYS(, )">NETWORKDAYS - 稼働日数</li>
+                                            <li class="button" data-fn-tpl="=WORKDAY(, 1)">WORKDAY - 稼働日後日付</li>
+                                            <li class="button" data-fn-tpl="=DATEDIF(, , &quot;D&quot;)">DATEDIF - 期間計算</li>
+                                            <li class="button" data-fn-tpl="=YEAR()">YEAR - 年</li>
+                                            <li class="button" data-fn-tpl="=MONTH()">MONTH - 月</li>
+                                            <li class="button" data-fn-tpl="=DAY()">DAY - 日</li>
+                                        </ul>
+                                    </div>
+                                </div>
 
-                            <div class="pulldown_menu_parent">
-                                <span class="button pulldown_btn">検索と参照 ▼</span>
-                                <ul class="pulldown_menu" style="min-width:240px;">
-                                    <li class="button" data-fn-tpl="=XLOOKUP(, , )">XLOOKUP - モダン範囲検索</li>
-                                    <li class="button" data-fn-tpl="=XMATCH(, )">XMATCH - モダン位置検索</li>
-                                    <li class="button" data-fn-tpl="=VLOOKUP(, , 2, FALSE)">VLOOKUP - 垂直検索</li>
-                                    <li class="button" data-fn-tpl="=HLOOKUP(, , 2, FALSE)">HLOOKUP - 水平検索</li>
-                                    <li class="button" data-fn-tpl="=INDEX(, 1, 1)">INDEX - 行列位置指定取得</li>
-                                    <li class="button" data-fn-tpl="=MATCH(, , 0)">MATCH - 相対位置検索</li>
-                                    <li class="button" data-fn-tpl="=FILTER(, )">FILTER - 条件抽出（動的配列）</li>
-                                    <li class="button" data-fn-tpl="=UNIQUE()">UNIQUE - 重複除外（動的配列）</li>
-                                    <li class="button" data-fn-tpl="=CHOOSECOLS(, 1)">CHOOSECOLS - 指定列抽出</li>
-                                    <li class="button" data-fn-tpl="=CHOOSEROWS(, 1)">CHOOSEROWS - 指定行抽出</li>
-                                </ul>
-                            </div>
+                                <div class="ss-ribbon-row">
+                                    <div class="pulldown_menu_parent">
+                                        <span class="button pulldown_btn">検索と参照 ▼</span>
+                                        <ul class="pulldown_menu" style="min-width:240px;">
+                                            <li class="button" data-fn-tpl="=XLOOKUP(, , )">XLOOKUP - モダン範囲検索</li>
+                                            <li class="button" data-fn-tpl="=XMATCH(, )">XMATCH - モダン位置検索</li>
+                                            <li class="button" data-fn-tpl="=VLOOKUP(, , 2, FALSE)">VLOOKUP - 垂直検索</li>
+                                            <li class="button" data-fn-tpl="=HLOOKUP(, , 2, FALSE)">HLOOKUP - 水平検索</li>
+                                            <li class="button" data-fn-tpl="=INDEX(, 1, 1)">INDEX - 行列位置指定取得</li>
+                                            <li class="button" data-fn-tpl="=MATCH(, , 0)">MATCH - 相対位置検索</li>
+                                            <li class="button" data-fn-tpl="=FILTER(, )">FILTER - 条件抽出（動的配列）</li>
+                                            <li class="button" data-fn-tpl="=UNIQUE()">UNIQUE - 重複除外（動的配列）</li>
+                                            <li class="button" data-fn-tpl="=CHOOSECOLS(, 1)">CHOOSECOLS - 指定列抽出</li>
+                                            <li class="button" data-fn-tpl="=CHOOSEROWS(, 1)">CHOOSEROWS - 指定行抽出</li>
+                                        </ul>
+                                    </div>
 
-                            <div class="pulldown_menu_parent">
-                                <span class="button pulldown_btn">統計 ▼</span>
-                                <ul class="pulldown_menu" style="min-width:230px;">
-                                    <li class="button" data-fn-tpl="=AVERAGE()">AVERAGE - 平均</li>
-                                    <li class="button" data-fn-tpl="=AVERAGEIF(, )">AVERAGEIF - 条件付き平均</li>
-                                    <li class="button" data-fn-tpl="=AVERAGEIFS(, , )">AVERAGEIFS - 複数条件平均</li>
-                                    <li class="button" data-fn-tpl="=COUNT()">COUNT - 数値の個数</li>
-                                    <li class="button" data-fn-tpl="=COUNTA()">COUNTA - 空白以外の個数</li>
-                                    <li class="button" data-fn-tpl="=COUNTIF(, )">COUNTIF - 条件付き件数</li>
-                                    <li class="button" data-fn-tpl="=COUNTIFS(, )">COUNTIFS - 複数条件件数</li>
-                                    <li class="button" data-fn-tpl="=MAX()">MAX - 最大値</li>
-                                    <li class="button" data-fn-tpl="=MIN()">MIN - 最小値</li>
-                                    <li class="button" data-fn-tpl="=MEDIAN()">MEDIAN - 中央値</li>
-                                    <li class="button" data-fn-tpl="=STDEV()">STDEV - 標準偏差</li>
-                                </ul>
-                            </div>
+                                    <div class="pulldown_menu_parent">
+                                        <span class="button pulldown_btn">統計 ▼</span>
+                                        <ul class="pulldown_menu" style="min-width:230px;">
+                                            <li class="button" data-fn-tpl="=AVERAGE()">AVERAGE - 平均</li>
+                                            <li class="button" data-fn-tpl="=AVERAGEIF(, )">AVERAGEIF - 条件付き平均</li>
+                                            <li class="button" data-fn-tpl="=AVERAGEIFS(, , )">AVERAGEIFS - 複数条件平均</li>
+                                            <li class="button" data-fn-tpl="=COUNT()">COUNT - 数値の個数</li>
+                                            <li class="button" data-fn-tpl="=COUNTA()">COUNTA - 空白以外の個数</li>
+                                            <li class="button" data-fn-tpl="=COUNTIF(, )">COUNTIF - 条件付き件数</li>
+                                            <li class="button" data-fn-tpl="=COUNTIFS(, )">COUNTIFS - 複数条件件数</li>
+                                            <li class="button" data-fn-tpl="=MAX()">MAX - 最大値</li>
+                                            <li class="button" data-fn-tpl="=MIN()">MIN - 最小値</li>
+                                            <li class="button" data-fn-tpl="=MEDIAN()">MEDIAN - 中央値</li>
+                                            <li class="button" data-fn-tpl="=STDEV()">STDEV - 標準偏差</li>
+                                        </ul>
+                                    </div>
 
-                            <div class="pulldown_menu_parent">
-                                <span class="button pulldown_btn">数学・三角 ▼</span>
-                                <ul class="pulldown_menu" style="min-width:240px;">
-                                    <li class="button" data-fn-tpl="=SUM()">SUM - 合計</li>
-                                    <li class="button" data-fn-tpl="=SUMIF(, )">SUMIF - 条件付き合計</li>
-                                    <li class="button" data-fn-tpl="=SUMIFS(, , )">SUMIFS - 複数条件合計</li>
-                                    <li class="button" data-fn-tpl="=SUBTOTAL(9, )">SUBTOTAL - 集計（9=SUM）</li>
-                                    <li class="button" data-fn-tpl="=AGGREGATE(9, 6, )">AGGREGATE - エラー無視集計</li>
-                                    <li class="button" data-fn-tpl="=ROUND(, 0)">ROUND - 四捨五入</li>
-                                    <li class="button" data-fn-tpl="=ROUNDUP(, 0)">ROUNDUP - 切り上げ</li>
-                                    <li class="button" data-fn-tpl="=ROUNDDOWN(, 0)">ROUNDDOWN - 切り捨て</li>
-                                    <li class="button" data-fn-tpl="=ABS()">ABS - 絶対値</li>
-                                    <li class="button" data-fn-tpl="=POWER(, 2)">POWER - べき乗</li>
-                                    <li class="button" data-fn-tpl="=SQRT()">SQRT - 平方根</li>
-                                    <li class="button" data-fn-tpl="=MOD(, )">MOD - 剰余</li>
-                                    <li class="button" data-fn-tpl="=SEQUENCE(5, 1, 1, 1)">SEQUENCE - 連続数値配列</li>
-                                    <li class="button" data-fn-tpl="=RANDARRAY(3, 3, 1, 100, TRUE)">RANDARRAY - 乱数配列</li>
-                                </ul>
-                            </div>
+                                    <div class="pulldown_menu_parent">
+                                        <span class="button pulldown_btn">数学・三角 ▼</span>
+                                        <ul class="pulldown_menu" style="min-width:240px;">
+                                            <li class="button" data-fn-tpl="=SUM()">SUM - 合計</li>
+                                            <li class="button" data-fn-tpl="=SUMIF(, )">SUMIF - 条件付き合計</li>
+                                            <li class="button" data-fn-tpl="=SUMIFS(, , )">SUMIFS - 複数条件合計</li>
+                                            <li class="button" data-fn-tpl="=SUBTOTAL(9, )">SUBTOTAL - 集計（9=SUM）</li>
+                                            <li class="button" data-fn-tpl="=AGGREGATE(9, 6, )">AGGREGATE - エラー無視集計</li>
+                                            <li class="button" data-fn-tpl="=ROUND(, 0)">ROUND - 四捨五入</li>
+                                            <li class="button" data-fn-tpl="=ROUNDUP(, 0)">ROUNDUP - 切り上げ</li>
+                                            <li class="button" data-fn-tpl="=ROUNDDOWN(, 0)">ROUNDDOWN - 切り捨て</li>
+                                            <li class="button" data-fn-tpl="=ABS()">ABS - 絶対値</li>
+                                            <li class="button" data-fn-tpl="=POWER(, 2)">POWER - べき乗</li>
+                                            <li class="button" data-fn-tpl="=SQRT()">SQRT - 平方根</li>
+                                            <li class="button" data-fn-tpl="=MOD(, )">MOD - 剰余</li>
+                                            <li class="button" data-fn-tpl="=SEQUENCE(5, 1, 1, 1)">SEQUENCE - 連続数値配列</li>
+                                            <li class="button" data-fn-tpl="=RANDARRAY(3, 3, 1, 100, TRUE)">RANDARRAY - 乱数配列</li>
+                                        </ul>
+                                    </div>
 
-                            <div class="pulldown_menu_parent">
-                                <span class="button pulldown_btn">情報関数 ▼</span>
-                                <ul class="pulldown_menu" style="min-width:210px;">
-                                    <li class="button" data-fn-tpl="=ISBLANK()">ISBLANK - 空白判定</li>
-                                    <li class="button" data-fn-tpl="=ISNUMBER()">ISNUMBER - 数値判定</li>
-                                    <li class="button" data-fn-tpl="=ISTEXT()">ISTEXT - 文字列判定</li>
-                                    <li class="button" data-fn-tpl="=ISERROR()">ISERROR - エラー判定</li>
-                                    <li class="button" data-fn-tpl="=ISNA()">ISNA - #N/A判定</li>
-                                    <li class="button" data-fn-tpl="=TYPE()">TYPE - データ型番号</li>
-                                    <li class="button" data-fn-tpl="=N()">N - 数値変換</li>
-                                    <li class="button" data-fn-tpl="=NA()">NA - #N/A生成</li>
-                                </ul>
-                            </div>
+                                    <div class="pulldown_menu_parent">
+                                        <span class="button pulldown_btn">情報関数 ▼</span>
+                                        <ul class="pulldown_menu" style="min-width:210px;">
+                                            <li class="button" data-fn-tpl="=ISBLANK()">ISBLANK - 空白判定</li>
+                                            <li class="button" data-fn-tpl="=ISNUMBER()">ISNUMBER - 数値判定</li>
+                                            <li class="button" data-fn-tpl="=ISTEXT()">ISTEXT - 文字列判定</li>
+                                            <li class="button" data-fn-tpl="=ISERROR()">ISERROR - エラー判定</li>
+                                            <li class="button" data-fn-tpl="=ISNA()">ISNA - #N/A判定</li>
+                                            <li class="button" data-fn-tpl="=TYPE()">TYPE - データ型番号</li>
+                                            <li class="button" data-fn-tpl="=N()">N - 数値変換</li>
+                                            <li class="button" data-fn-tpl="=NA()">NA - #N/A生成</li>
+                                        </ul>
+                                    </div>
 
-                            <div class="pulldown_menu_parent">
-                                <span class="button pulldown_btn">配列・LAMBDA ▼</span>
-                                <ul class="pulldown_menu" style="min-width:240px;">
-                                    <li class="button" data-fn-tpl="=SORT(, 1, 1)">SORT - 範囲並べ替え</li>
-                                    <li class="button" data-fn-tpl="=SORTBY(, , 1)">SORTBY - 別列基準並べ替え</li>
-                                    <li class="button" data-fn-tpl="=TAKE(, 3)">TAKE - 先頭/末尾の行列取得</li>
-                                    <li class="button" data-fn-tpl="=DROP(, 1)">DROP - 先頭/末尾の行列除外</li>
-                                    <li class="button" data-fn-tpl="=EXPAND(, 5, 5, &quot;&quot;)">EXPAND - 配列サイズ拡張</li>
-                                    <li class="button" data-fn-tpl="=LET(x, 10, x * 2)">LET - 変数定義計算</li>
-                                    <li class="button" data-fn-tpl="=LAMBDA(x, x + 1)(5)">LAMBDA - カスタム関数</li>
-                                    <li class="button" data-fn-tpl="=MAP(, LAMBDA(x, x * 2))">MAP - 各要素変換</li>
-                                    <li class="button" data-fn-tpl="=REDUCE(0, , LAMBDA(a, b, a + b))">REDUCE - 累積畳み込み</li>
-                                    <li class="button" data-fn-tpl="=SCAN(0, , LAMBDA(a, b, a + b))">SCAN - 累積中間結果配列</li>
-                                    <li class="button" data-fn-tpl="=BYROW(, LAMBDA(r, SUM(r)))">BYROW - 行単位計算</li>
-                                    <li class="button" data-fn-tpl="=BYCOL(, LAMBDA(c, SUM(c)))">BYCOL - 列単位計算</li>
-                                </ul>
+                                    <div class="pulldown_menu_parent">
+                                        <span class="button pulldown_btn">配列・LAMBDA ▼</span>
+                                        <ul class="pulldown_menu" style="min-width:240px;">
+                                            <li class="button" data-fn-tpl="=SORT(, 1, 1)">SORT - 範囲並べ替え</li>
+                                            <li class="button" data-fn-tpl="=SORTBY(, , 1)">SORTBY - 別列基準並べ替え</li>
+                                            <li class="button" data-fn-tpl="=TAKE(, 3)">TAKE - 先頭/末尾の行列取得</li>
+                                            <li class="button" data-fn-tpl="=DROP(, 1)">DROP - 先頭/末尾の行列除外</li>
+                                            <li class="button" data-fn-tpl="=EXPAND(, 5, 5, &quot;&quot;)">EXPAND - 配列サイズ拡張</li>
+                                            <li class="button" data-fn-tpl="=LET(x, 10, x * 2)">LET - 変数定義計算</li>
+                                            <li class="button" data-fn-tpl="=LAMBDA(x, x + 1)(5)">LAMBDA - カスタム関数</li>
+                                            <li class="button" data-fn-tpl="=MAP(, LAMBDA(x, x * 2))">MAP - 各要素変換</li>
+                                            <li class="button" data-fn-tpl="=REDUCE(0, , LAMBDA(a, b, a + b))">REDUCE - 累積畳み込み</li>
+                                            <li class="button" data-fn-tpl="=SCAN(0, , LAMBDA(a, b, a + b))">SCAN - 累積中間結果配列</li>
+                                            <li class="button" data-fn-tpl="=BYROW(, LAMBDA(r, SUM(r)))">BYROW - 行単位計算</li>
+                                            <li class="button" data-fn-tpl="=BYCOL(, LAMBDA(c, SUM(c)))">BYCOL - 列単位計算</li>
+                                        </ul>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         <div class="ss-ribbon-group-title">関数ライブラリ</div>
@@ -2917,36 +3293,56 @@ export default async function initSpreadsheetApp(content, options = {}) {
 
                     <div class="ss-ribbon-group">
                         <div class="ss-ribbon-group-body">
-                            <span class="button" data-action="recalc-all" title="ブック全体の数式を再計算">🔄 再計算</span>
+                            <span class="button ss-btn-large" data-action="recalc-all" title="ブック全体の数式を再計算">
+                                <span class="ss-btn-ico-lg">🔄</span>
+                                <span class="ss-btn-lbl">再計算</span>
+                            </span>
                         </div>
                         <div class="ss-ribbon-group-title">計算方法</div>
                     </div>
                 </div>
 
-                <!-- ==================== [データ] タブ ==================== -->
+               <!-- ==================== [データ] タブ ==================== -->
                 <div class="ss-ribbon-panel" data-ribbon-panel="data">
                     <div class="ss-ribbon-group">
                         <div class="ss-ribbon-group-body">
-                            <span class="button" data-sort="asc">A↓Z 昇順</span>
-                            <span class="button" data-sort="desc">Z↓A 降順</span>
-                            <span class="button ss-toggle-filter-btn" data-action="toggle-autofilter" title="オートフィルターの切り替え (Ctrl+Shift+L)">🔽 フィルター</span>
-                            <span class="button" data-action="clear-autofilter" title="フィルター条件をすべてクリア">クリア</span>
+                            <div class="ss-ribbon-col">
+                                <span class="button" data-sort="asc">A↓Z 昇順</span>
+                                <span class="button" data-sort="desc">Z↓A 降順</span>
+                            </div>
+                            <span class="button ss-toggle-filter-btn ss-btn-large" data-action="toggle-autofilter" title="オートフィルターの切り替え (Ctrl+Shift+L)">
+                                <span class="ss-btn-ico-lg">🔽</span>
+                                <span class="ss-btn-lbl">フィルター</span>
+                            </span>
+                            <div class="ss-ribbon-col">
+                                <span class="button" data-action="clear-autofilter" title="フィルター条件をすべてクリア">クリア</span>
+                            </div>
                         </div>
                         <div class="ss-ribbon-group-title">並べ替えとフィルター</div>
                     </div>
                     <div class="ss-ribbon-group">
                         <div class="ss-ribbon-group-body">
-                            <span class="button" data-action="text-to-columns" title="1列のテキストを区切り文字で複数列に分割">✂ 区切り位置</span>
-                            <span class="button" data-action="remove-duplicates" title="選択範囲から重複する行を削除">🧹 重複の削除</span>
-                            <span class="button" data-action="data-validation" title="セルにドロップダウンリストや入力制限を設定">📋 データの入力規則</span>
+                            <span class="button ss-btn-large" data-action="text-to-columns" title="1列のテキストを区切り文字で複数列に分割">
+                                <span class="ss-btn-ico-lg">✂</span>
+                                <span class="ss-btn-lbl">区切り位置</span>
+                            </span>
+                            <div class="ss-ribbon-col">
+                                <span class="button" data-action="remove-duplicates" title="選択範囲から重複する行を削除">🧹 重複の削除</span>
+                                <span class="button" data-action="data-validation" title="セルにドロップダウンリストや入力制限を設定">📋 データの入力規則</span>
+                            </div>
                         </div>
                         <div class="ss-ribbon-group-title">データツール</div>
                     </div>
                     <div class="ss-ribbon-group">
                         <div class="ss-ribbon-group-body">
-                            <span class="button" data-action="import-local">CSV/NXS 読込</span>
-                            <span class="button" data-action="export-nxs">NXS 出力</span>
-                            <span class="button" data-action="export-csv-local">CSV 出力</span>
+                            <span class="button ss-btn-large" data-action="import-local">
+                                <span class="ss-btn-ico-lg">📥</span>
+                                <span class="ss-btn-lbl">CSV/NXS 読込</span>
+                            </span>
+                            <div class="ss-ribbon-col">
+                                <span class="button" data-action="export-nxs">📤 NXS 出力</span>
+                                <span class="button" data-action="export-csv-local">📤 CSV 出力</span>
+                            </div>
                         </div>
                         <div class="ss-ribbon-group-title">データの取得と変換</div>
                     </div>
@@ -2957,7 +3353,10 @@ export default async function initSpreadsheetApp(content, options = {}) {
                     <div class="ss-ribbon-group">
                         <div class="ss-ribbon-group-body">
                             <div class="pulldown_menu_parent">
-                                <span class="button pulldown_btn">ウィンドウ枠の固定 ▼</span>
+                                <span class="button pulldown_btn ss-btn-large">
+                                    <span class="ss-btn-ico-lg">❄</span>
+                                    <span class="ss-btn-lbl">枠の固定 ▼</span>
+                                </span>
                                 <ul class="pulldown_menu" style="min-width:210px;">
                                     <li class="button" data-freeze="active">ウィンドウ枠の固定（選択セル基準）</li>
                                     <li class="button" data-freeze="top-row">先頭行の固定</li>
@@ -2971,7 +3370,10 @@ export default async function initSpreadsheetApp(content, options = {}) {
                     </div>
                     <div class="ss-ribbon-group">
                         <div class="ss-ribbon-group-body">
-                            <span class="button" data-action="zoom-100">100% に戻す</span>
+                            <span class="button ss-btn-large" data-action="zoom-100">
+                                <span class="ss-btn-ico-lg">🔎</span>
+                                <span class="ss-btn-lbl">100%</span>
+                            </span>
                         </div>
                         <div class="ss-ribbon-group-title">ズーム</div>
                     </div>
@@ -3062,6 +3464,29 @@ export default async function initSpreadsheetApp(content, options = {}) {
     }
     const zoomSlider = appRoot.querySelector(".ss-zoom-slider");
     const zoomDisplay = appRoot.querySelector(".ss-zoom-display");
+
+    // ウィンドウ幅が狭いときのみアクティブなリボンを自動フィット（高さ固定＆プルダウン切れ防止）
+    const ribbonPanelsEl = appRoot.querySelector(".ss-ribbon-panels");
+    function fitActiveRibbonPanel() {
+        if (!ribbonPanelsEl) return;
+        const activePanel = ribbonPanelsEl.querySelector(".ss-ribbon-panel.active");
+        if (!activePanel) return;
+        activePanel.style.zoom = "";
+        const availW = ribbonPanelsEl.clientWidth - 8;
+        const naturalW = activePanel.scrollWidth;
+        if (availW > 0 && naturalW > availW) {
+            activePanel.style.zoom = String(Math.max(0.7, availW / naturalW));
+        }
+    }
+    if (ribbonPanelsEl && typeof ResizeObserver !== "undefined") {
+        const ribbonResizeObserver = new ResizeObserver(() => fitActiveRibbonPanel());
+        ribbonResizeObserver.observe(ribbonPanelsEl);
+        signal.addEventListener("abort", () => ribbonResizeObserver.disconnect(), { once: true });
+    }
+    appRoot.querySelectorAll(".ss-ribbon-tab[data-ribbon-tab]").forEach(tab => {
+        tab.addEventListener("click", () => requestAnimationFrame(fitActiveRibbonPanel), { signal });
+    });
+    requestAnimationFrame(fitActiveRibbonPanel);
 
     const INITIAL_ROWS = 80;
     const ROW_BATCH = 40;
@@ -3259,8 +3684,21 @@ export default async function initSpreadsheetApp(content, options = {}) {
                             s.cells.forEach(entry => {
                                 if (entry.f) entry.f = entry.f.replace(sheetRefPattern, formattedNewPrefix);
                                 if (entry.dl) entry.dl = entry.dl.replace(sheetRefPattern, formattedNewPrefix);
-                                if (entry.dv?.listSpec) entry.dv.listSpec = entry.dv.listSpec.replace(sheetRefPattern, formattedNewPrefix);
-                                if (entry.dv?.formula) entry.dv.formula = entry.dv.formula.replace(sheetRefPattern, formattedNewPrefix);
+                                if (entry.dvr) {
+                                    try {
+                                        const rule = JSON.parse(entry.dvr);
+                                        let changed = false;
+                                        if (rule.listSpec) {
+                                            rule.listSpec = rule.listSpec.replace(sheetRefPattern, formattedNewPrefix);
+                                            changed = true;
+                                        }
+                                        if (rule.formula) {
+                                            rule.formula = rule.formula.replace(sheetRefPattern, formattedNewPrefix);
+                                            changed = true;
+                                        }
+                                        if (changed) entry.dvr = JSON.stringify(rule);
+                                    } catch { /* ignore */ }
+                                }
                             });
                             backgroundSheetIndexCache.delete(s);
                         });
@@ -3701,6 +4139,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
             } else {
                 refreshVisibleRows();
             }
+            scheduleTextOverflowUpdate();
             syncCellDropdownButtonPosition();
         }
     }
@@ -3832,13 +4271,23 @@ export default async function initSpreadsheetApp(content, options = {}) {
             const fStyle = cell.style.fontStyle || "normal";
             const fWeight = cell.style.fontWeight || "normal";
             const fSize = cell.style.fontSize || "14px";
-            if (measureCtx) {
-                measureCtx.font = `${fStyle} ${fWeight} ${fSize} 'MS PGothic', 'MS Gothic', sans-serif`;
+            const fSizeNum = parseInt(fSize, 10) || 14;
+            const fFamily = cell.style.fontFamily || "'MS PGothic', 'MS Gothic', sans-serif";
+            const isVertical = cell.style.writingMode === "vertical-rl" || cell.style.writingMode === "vertical-lr";
+            const lines = text.split("\n");
+
+            if (isVertical) {
+                const colW = lines.length * Math.ceil(fSizeNum * 1.35) + 18;
+                maxWidth = Math.max(maxWidth, colW);
+                continue;
             }
-            for (const line of text.split("\n")) {
+            if (measureCtx) {
+                measureCtx.font = `${fStyle} ${fWeight} ${fSize} ${fFamily}`;
+            }
+            for (const line of lines) {
                 const textW = measureCtx
                     ? measureCtx.measureText(line).width
-                    : line.length * (parseInt(fSize, 10) || 14);
+                    : line.length * fSizeNum;
                 maxWidth = Math.max(maxWidth, Math.ceil(textW) + 18);
             }
         }
@@ -3857,14 +4306,23 @@ export default async function initSpreadsheetApp(content, options = {}) {
             const fStyle = cell.style.fontStyle || "normal";
             const fWeight = cell.style.fontWeight || "normal";
             const fSize = parseInt(cell.style.fontSize, 10) || 14;
+            const fFamily = cell.style.fontFamily || "'MS PGothic', 'MS Gothic', sans-serif";
             const lineHeight = Math.ceil(fSize * 1.35);
             const text = cell.textContent || "";
             const lines = text.split("\n");
-            let totalLines = lines.length;
+            const isVertical = cell.style.writingMode === "vertical-rl" || cell.style.writingMode === "vertical-lr";
 
+            if (isVertical && text !== "") {
+                const maxChars = Math.max(1, ...lines.map(l => Array.from(l).length));
+                const vertH = maxChars * Math.ceil(fSize * 1.15) + 16;
+                maxHeight = Math.max(maxHeight, Math.min(600, vertH));
+                continue;
+            }
+
+            let totalLines = lines.length;
             if (cell.style.whiteSpace === "pre-wrap" && text !== "") {
                 if (measureCtx) {
-                    measureCtx.font = `${fStyle} ${fWeight} ${fSize}px 'MS PGothic', 'MS Gothic', sans-serif`;
+                    measureCtx.font = `${fStyle} ${fWeight} ${fSize}px ${fFamily}`;
                 }
                 const colW = Math.max(24, getColumnWidth(i - 1) - 10);
                 totalLines = 0;
@@ -4395,7 +4853,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
         if (
             upper === "TRUE" ||
             upper === "FALSE" ||
-            /^#(ERROR!|DIV\/0!|N\/A|VALUE!|CIRCULAR!|REF!|NAME\?|NUM!|CALC!)$/.test(upper)
+            EXCEL_ERROR_RE.test(upper)
         ) {
             cell.classList.add("ss-auto-align-center");
             return;
@@ -4411,6 +4869,18 @@ export default async function initSpreadsheetApp(content, options = {}) {
     function setCellTextPreservingControls(cell, text) {
         const filterBtn = cell.querySelector(".ss-filter-arrow");
         const strText = String(text ?? "");
+        const isJustify = cell.style.textAlign === "justify" && strText !== "";
+
+        const applyRunStyleToEl = (el, st) => {
+            if (!st) return;
+            if (st.color) el.style.color = st.color;
+            if (st.bold) el.style.fontWeight = "bold";
+            if (st.italic) el.style.fontStyle = "italic";
+            const decos = [];
+            if (st.underline) decos.push("underline");
+            if (st.strike) decos.push("line-through");
+            if (decos.length) el.style.textDecoration = decos.join(" ");
+        };
 
         if (cell.dataset.richRuns && !cell.dataset.formula) {
             try {
@@ -4418,22 +4888,46 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 if (Array.isArray(runs) && runs.map(r => r.text).join("") === strText) {
                     cell.textContent = "";
                     const frag = document.createDocumentFragment();
-                    for (const run of runs) {
-                        const st = run.style || {};
-                        const hasStyle = st.color || st.bold || st.italic || st.underline || st.strike;
-                        if (!hasStyle) {
-                            frag.appendChild(document.createTextNode(run.text));
-                        } else {
-                            const span = document.createElement("span");
-                            span.textContent = run.text;
-                            if (st.color) span.style.color = st.color;
-                            if (st.bold) span.style.fontWeight = "bold";
-                            if (st.italic) span.style.fontStyle = "italic";
-                            const decos = [];
-                            if (st.underline) decos.push("underline");
-                            if (st.strike) decos.push("line-through");
-                            if (decos.length) span.style.textDecoration = decos.join(" ");
-                            frag.appendChild(span);
+                    if (isJustify) {
+                        const styledLines = [[]];
+                        for (const run of runs) {
+                            const st = run.style || {};
+                            for (const ch of Array.from(run.text)) {
+                                if (ch === "\n") {
+                                    styledLines.push([]);
+                                } else {
+                                    styledLines[styledLines.length - 1].push({ ch, st });
+                                }
+                            }
+                        }
+                        for (const chars of styledLines) {
+                            const lineEl = document.createElement("span");
+                            lineEl.className = "ss-justify-line" + (chars.length <= 1 ? " ss-justify-single" : "");
+                            if (chars.length === 0) {
+                                lineEl.textContent = "\u00A0";
+                            } else {
+                                for (const item of chars) {
+                                    const chEl = document.createElement("span");
+                                    chEl.className = "ss-justify-char";
+                                    chEl.textContent = item.ch;
+                                    applyRunStyleToEl(chEl, item.st);
+                                    lineEl.appendChild(chEl);
+                                }
+                            }
+                            frag.appendChild(lineEl);
+                        }
+                    } else {
+                        for (const run of runs) {
+                            const st = run.style || {};
+                            const hasStyle = st.color || st.bold || st.italic || st.underline || st.strike;
+                            if (!hasStyle) {
+                                frag.appendChild(document.createTextNode(run.text));
+                            } else {
+                                const span = document.createElement("span");
+                                span.textContent = run.text;
+                                applyRunStyleToEl(span, st);
+                                frag.appendChild(span);
+                            }
                         }
                     }
                     cell.appendChild(frag);
@@ -4444,8 +4938,45 @@ export default async function initSpreadsheetApp(content, options = {}) {
             delete cell.dataset.richRuns;
         }
 
+        if (isJustify) {
+            cell.textContent = "";
+            const frag = document.createDocumentFragment();
+            const lines = strText.split("\n");
+            for (const line of lines) {
+                const chars = Array.from(line);
+                const lineEl = document.createElement("span");
+                lineEl.className = "ss-justify-line" + (chars.length <= 1 ? " ss-justify-single" : "");
+                if (chars.length === 0) {
+                    lineEl.textContent = "\u00A0";
+                } else {
+                    for (const ch of chars) {
+                        const chEl = document.createElement("span");
+                        chEl.className = "ss-justify-char";
+                        chEl.textContent = ch;
+                        lineEl.appendChild(chEl);
+                    }
+                }
+                frag.appendChild(lineEl);
+            }
+            cell.appendChild(frag);
+            if (filterBtn) cell.appendChild(filterBtn);
+            return;
+        }
+
         cell.textContent = strText;
         if (filterBtn) cell.appendChild(filterBtn);
+    }
+
+    function syncCellHyperlinkVisual(cell) {
+        if (!cell) return;
+        const target = extractHyperlinkTarget(cell);
+        if (target) {
+            cell.classList.add("ss-hyperlink");
+            cell.title = `${target}（Ctrl+クリックで開く）`;
+        } else if (cell.classList.contains("ss-hyperlink")) {
+            cell.classList.remove("ss-hyperlink");
+            cell.removeAttribute("title");
+        }
     }
 
     function setCellFormattedValue(cell, rawVal) {
@@ -4456,12 +4987,14 @@ export default async function initSpreadsheetApp(content, options = {}) {
             delete cell.dataset.dateValue;
             setCellTextPreservingControls(cell, "");
             cell.classList.remove("ss-auto-align-right", "ss-auto-align-center");
+            syncCellHyperlinkVisual(cell);
             return;
         }
         if (cell.dataset.quotePrefix === "1") {
             cell.dataset.rawValue = rawStr;
             setCellTextPreservingControls(cell, rawStr);
             cell.classList.remove("ss-auto-align-right", "ss-auto-align-center");
+            syncCellHyperlinkVisual(cell);
             return;
         }
         const fmt = cell.dataset.numFormat;
@@ -4473,6 +5006,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
         }
         setCellTextPreservingControls(cell, formatDisplayByNumFmt(cell.dataset.rawValue, fmt, cell));
         updateCellAutoAlignment(cell, cell.dataset.rawValue);
+        syncCellHyperlinkVisual(cell);
     }
 
     function toJSValueLiteral(val, blankAsZero = false) {
@@ -4757,7 +5291,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
             expr = expr.replace(CROSS_SHEET_RANGE_REGEX, (_, qName, plainName, sRef, eRef) => {
                 const sName = qName ?? plainName;
                 const sIdx = sheets.findIndex(s => s.name === sName);
-                if (sIdx === -1) return "[]";
+                if (sIdx === -1) return '[["#REF!"]]';
                 return buildRange2DLiteral(sIdx, sRef, eRef, visited);
             });
 
@@ -4765,18 +5299,33 @@ export default async function initSpreadsheetApp(content, options = {}) {
             expr = expr.replace(CROSS_SHEET_CELL_REGEX, (_, qName, plainName, cellRef) => {
                 const sName = qName ?? plainName;
                 const sIdx = sheets.findIndex(s => s.name === sName);
-                if (sIdx === -1) return "0";
+                if (sIdx === -1) return '"#REF!"';
                 const m = cellRef.match(/^\$?([A-Za-z]+)\$?(\d+)$/);
-                if (!m) return "0";
+                if (!m) return '"#REF!"';
                 const val = getSheetCellValue(sIdx, parseInt(m[2], 10), columnLettersToIndex(m[1]), visited);
                 return toJSValueLiteral(val, true);
             });
 
-            // 自シート範囲参照（SUBTOTAL / AGGREGATE 内はフィルター非表示行を除外）
-            const isSubtotalExpr = /\b(SUBTOTAL|AGGREGATE)\s*\(/i.test(expr);
-            expr = expr.replace(RANGE_REF_REGEX, (match) => {
+            // 自シート範囲参照：SUBTOTAL/AGGREGATEの引数内にある範囲のみ非表示行を除外
+            const isInsideSubtotalCall = (src, offset) => {
+                let depth = 0;
+                for (let i = offset - 1; i >= 0; i--) {
+                    const ch = src[i];
+                    if (ch === ")") depth++;
+                    else if (ch === "(") {
+                        if (depth === 0) {
+                            const before = src.slice(Math.max(0, i - 16), i);
+                            return /\b(SUBTOTAL|AGGREGATE)\s*$/i.test(before);
+                        }
+                        depth--;
+                    }
+                }
+                return false;
+            };
+            expr = expr.replace(RANGE_REF_REGEX, (match, _g1, offset, fullStr) => {
                 const [startRef, endRef] = match.split(":");
-                return buildRange2DLiteral(contextSheetIdx, startRef, endRef, visited, isSubtotalExpr);
+                const excludeHidden = isInsideSubtotalCall(fullStr, offset);
+                return buildRange2DLiteral(contextSheetIdx, startRef, endRef, visited, excludeHidden);
             });
 
             // 自シート単一セル参照
@@ -4825,7 +5374,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
                     return refCell?.dataset.valueType === "date" || isDateFormat((refCell?.dataset.rawValue ?? refCell?.textContent ?? "").trim());
                 }
                 if (sheets[sIdx]) {
-                    const entry = sheets[sIdx].cells.find(item => Number(item.r) === rNum && Number(item.c) === cIdx);
+                    const entry = getBackgroundSheetCellMap(sheets[sIdx]).get(`${rNum},${cIdx}`);
                     return entry?.vt === "date" || isDateFormat(String(entry?.v ?? "").trim());
                 }
                 return false;
@@ -4867,6 +5416,52 @@ export default async function initSpreadsheetApp(content, options = {}) {
         }
     }
 
+    function unwrapOverflowSpan(td) {
+        const wrap = td.querySelector(":scope > .ss-overflow-wrap");
+        if (!wrap) return;
+        const inner = wrap.querySelector(":scope > .ss-overflow-text");
+        if (inner) {
+            while (inner.firstChild) {
+                td.insertBefore(inner.firstChild, wrap);
+            }
+        }
+        wrap.remove();
+    }
+
+    function wrapOverflowSpan(td, align, leftSpace, rightSpace) {
+        let wrap = td.querySelector(":scope > .ss-overflow-wrap");
+        if (!wrap) {
+            wrap = document.createElement("span");
+            const inner = document.createElement("span");
+            inner.className = "ss-overflow-text";
+            const contentNodes = [];
+            for (const node of Array.from(td.childNodes)) {
+                if (
+                    node.nodeType === Node.ELEMENT_NODE &&
+                    (node.classList.contains("ss-filter-arrow") || node.classList.contains("fill-handle"))
+                ) {
+                    continue;
+                }
+                contentNodes.push(node);
+            }
+            contentNodes.forEach(node => inner.appendChild(node));
+            wrap.appendChild(inner);
+            td.insertBefore(wrap, td.firstChild);
+        }
+        wrap.className = `ss-overflow-wrap ss-ov-${align}`;
+        wrap.style.setProperty("--ov-left", `${Math.max(0, Math.round(leftSpace))}px`);
+        wrap.style.setProperty("--ov-right", `${Math.max(0, Math.round(rightSpace))}px`);
+    }
+
+    let overflowUpdateRaf = 0;
+    function scheduleTextOverflowUpdate() {
+        if (overflowUpdateRaf) return;
+        overflowUpdateRaf = requestAnimationFrame(() => {
+            overflowUpdateRaf = 0;
+            updateTextOverflowDisplay();
+        });
+    }
+
     function updateTextOverflowDisplay(targetRows = null) {
         let rowsToScan = targetRows;
         if (!rowsToScan) {
@@ -4888,27 +5483,94 @@ export default async function initSpreadsheetApp(content, options = {}) {
         for (const tr of rowsToScan) {
             if (!tr) continue;
             const cells = tr.cells;
-            for (let c = 0; c < cells.length - 1; c++) {
+            const colCount = cells.length - 1;
+            for (let c = 0; c < colCount; c++) {
                 const td = cells[c + 1];
                 if (!td || td.style.display === "none") continue;
                 td.classList.remove("ss-text-overflow", "ss-has-content");
 
                 const text = td.textContent;
-                if (!text || text.trim() === "") continue;
+                if (!text || text.trim() === "") {
+                    unwrapOverflowSpan(td);
+                    continue;
+                }
                 td.classList.add("ss-has-content");
 
-                if (td.style.whiteSpace === "pre-wrap" || isCellEditing(td)) continue;
+                const isVertical = td.style.writingMode === "vertical-rl" || td.style.writingMode === "vertical-lr";
+                if (td.style.whiteSpace === "pre-wrap" || isVertical || isCellEditing(td) || td.dataset.cfIcon) {
+                    unwrapOverflowSpan(td);
+                    continue;
+                }
+
                 const align = td.style.textAlign || (
                     td.classList.contains("ss-auto-align-right") ? "right" :
                         td.classList.contains("ss-auto-align-center") ? "center" : "left"
                 );
-                if (align !== "left") continue;
+                if (align !== "left" && align !== "center" && align !== "right") {
+                    unwrapOverflowSpan(td);
+                    continue;
+                }
 
                 const colSpan = parseInt(td.getAttribute("colspan") || "1", 10);
-                const nextTd = cells[c + colSpan + 1];
-                const isNextEmpty = nextTd && nextTd.style.display !== "none" && nextTd.textContent === "";
-                if (isNextEmpty) {
+                let cellTotalW = 0;
+                for (let k = 0; k < colSpan; k++) {
+                    cellTotalW += getColumnWidth(c + k);
+                }
+                const cellInnerW = Math.max(8, cellTotalW - 8);
+
+                // テキスト実幅を計測し、セル内に収まっている場合はラッパー不要
+                const fStyle = td.style.fontStyle || "normal";
+                const fWeight = td.style.fontWeight || "normal";
+                const fSize = td.style.fontSize || "14px";
+                const fSizeNum = parseFloat(fSize) || 14;
+                const fFamily = td.style.fontFamily || "'MS PGothic', 'MS Gothic', sans-serif";
+                if (measureCtx) {
+                    measureCtx.font = `${fStyle} ${fWeight} ${fSize} ${fFamily}`;
+                }
+                let maxLineW = 0;
+                const lines = text.split("\n");
+                for (let i = 0; i < lines.length; i++) {
+                    const w = measureCtx ? measureCtx.measureText(lines[i]).width : lines[i].length * fSizeNum;
+                    if (w > maxLineW) maxLineW = w;
+                }
+
+                if (maxLineW <= cellInnerW) {
+                    unwrapOverflowSpan(td);
+                    continue;
+                }
+
+                const overflowNeeded = Math.ceil(maxLineW - cellInnerW) + 8;
+                const isColFrozen = td.classList.contains("ss-frozen-col");
+
+                let leftSpace = 0;
+                if (align === "right" || align === "center") {
+                    const needL = align === "center" ? Math.ceil(overflowNeeded / 2) : overflowNeeded;
+                    for (let lc = c - 1; lc >= 0 && leftSpace < needL; lc--) {
+                        const prevTd = cells[lc + 1];
+                        if (!prevTd || prevTd.style.display === "none" || prevTd.textContent !== "") break;
+                        if (!isColFrozen && prevTd.classList.contains("ss-frozen-col")) break;
+                        leftSpace += getColumnWidth(lc);
+                    }
+                }
+
+                let rightSpace = 0;
+                if (align === "left" || align === "center") {
+                    const needR = align === "center" ? Math.ceil(overflowNeeded / 2) : overflowNeeded;
+                    for (let rc = c + colSpan; rc < colCount && rightSpace < needR; rc++) {
+                        const nextTd = cells[rc + 1];
+                        if (!nextTd || nextTd.style.display === "none" || nextTd.textContent !== "") break;
+                        rightSpace += getColumnWidth(rc);
+                    }
+                }
+
+                if (leftSpace > 0 || rightSpace > 0) {
                     td.classList.add("ss-text-overflow");
+                    wrapOverflowSpan(td, align, leftSpace, rightSpace);
+                } else if (align === "right" || align === "center") {
+                    // 隣接セルに阻まれてはみ出せない場合も、右揃え・中央揃えの基準位置を崩さず自セル内でクリップ
+                    wrapOverflowSpan(td, align, 0, 0);
+                } else {
+                    unwrapOverflowSpan(td);
                 }
             }
         }
@@ -5636,11 +6298,11 @@ export default async function initSpreadsheetApp(content, options = {}) {
                                 <option value="notError" ${existing?.op === "notError" ? "selected" : ""}>エラー以外</option>
                             </select>
                        <div style="flex:1; display:${["blank", "notBlank", "error", "notError"].includes(existing?.op) ? "none" : "flex"}; gap:3px; align-items:center;" class="ss-cf-v1-wrap">
-                                <input type="text" class="ss-cf-v1 border" value="${existing?.val1 ?? ""}" placeholder="値 1" style="flex:1; min-width:0; height:24px; padding:2px 5px; background:#fff; color:#000;">
+                                <input type="text" class="ss-cf-v1 border" value="${escapeHtml(existing?.val1 ?? "")}" placeholder="値 1" style="flex:1; min-width:0; height:24px; padding:2px 5px; background:#fff; color:#000;">
                                 <button type="button" class="button ss-cf-pick" data-pick-target=".ss-cf-v1" data-pick-label="値 1 のセルを選択:" style="height:24px; padding:0 5px;">📍</button>
                             </div>
                             <div style="display:${["between", "notBetween"].includes(existing?.op) ? "flex" : "none"}; flex:1; gap:3px; align-items:center;" class="ss-cf-v2-wrap">
-                                <input type="text" class="ss-cf-v2 border" value="${existing?.val2 ?? ""}" placeholder="値 2" style="flex:1; min-width:0; height:24px; padding:2px 5px; background:#fff; color:#000;">
+                                <input type="text" class="ss-cf-v2 border" value="${escapeHtml(existing?.val2 ?? "")}" placeholder="値 2" style="flex:1; min-width:0; height:24px; padding:2px 5px; background:#fff; color:#000;">
                                 <button type="button" class="button ss-cf-pick" data-pick-target=".ss-cf-v2" data-pick-label="値 2 のセルを選択:" style="height:24px; padding:0 5px;">📍</button>
                             </div>
                         </div>
@@ -5944,7 +6606,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
                         : `background:${r.bgColor || "#fff"}; color:${r.textColor || "#000"}; font-weight:${r.bold ? "bold" : "normal"}; font-style:${r.italic ? "italic" : "normal"};`;
 
                 tr.innerHTML = `
-                    <td style="padding:4px 6px;">${describeConditionalRule(r)}</td>
+                    <td style="padding:4px 6px;">${escapeHtml(describeConditionalRule(r))}</td>
                     <td style="padding:4px; text-align:center;"><span style="display:inline-block; width:56px; border:1px solid #999; ${previewStyle}">AaBbCc</span></td>
                     <td style="padding:3px;">
                         <div style="display:flex; gap:2px; align-items:center;">
@@ -6250,9 +6912,13 @@ export default async function initSpreadsheetApp(content, options = {}) {
     function highlightCalculationRange(formula) {
         clearCalculationRangeHighlights();
         const palette = ["blue", "red", "yellowgreen", "purple", "yellow", "blueviolet", "mediumvioletred"];
-        const groups = formula.includes(",")
-            ? formula.split(",").map(s => s.trim()).filter(Boolean)
-            : [...new Set((formula.match(/\$?[A-Za-z]+\$?\d+(?::\$?[A-Za-z]+\$?\d+)?/g) || []))];
+        // 文字列リテラルと他シート参照（Sheet2!A1等）を除外して自シートの参照のみハイライト
+        const localFormula = String(formula ?? "")
+            .replace(/"(?:\\.|[^"\\])*"/g, "")
+            .replace(/(?:'[^']+'|[A-Za-z0-9_\u3040-\u30FF\u4E00-\u9FAF]+)!\$?[A-Za-z]+\$?\d+(?::\$?[A-Za-z]+\$?\d+)?/g, "");
+        const groups = localFormula.includes(",")
+            ? localFormula.split(",").map(s => s.trim()).filter(Boolean)
+            : [...new Set((localFormula.match(/\$?[A-Za-z]+\$?\d+(?::\$?[A-Za-z]+\$?\d+)?/g) || []))];
 
         for (let i = 0; i < groups.length; i++) {
             const color = palette[i % palette.length];
@@ -6323,7 +6989,10 @@ export default async function initSpreadsheetApp(content, options = {}) {
         appRoot.querySelector(".ss-toggle-strike")?.classList.toggle("selected", deco.includes("line-through"));
         appRoot.querySelector(".ss-toggle-textshadow")?.classList.toggle("selected", Boolean(target.style.textShadow && target.style.textShadow !== "none"));
 
-        const align = target.style.textAlign || "left";
+        const align = target.style.textAlign || (
+            target.classList.contains("ss-auto-align-right") ? "right" :
+                target.classList.contains("ss-auto-align-center") ? "center" : "left"
+        );
         appRoot.querySelectorAll("[data-align]").forEach(btn => {
             btn.classList.toggle("selected", btn.dataset.align === align);
         });
@@ -6618,7 +7287,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
                             }
                         }
                     } else {
-                        const entry = sheets[targetSheetIdx]?.cells?.find(it => Number(it.r) === r && Number(it.c) === c);
+                        const entry = getBackgroundSheetCellMap(sheets[targetSheetIdx]).get(`${r},${c}`);
                         if (entry) {
                             if (entry.f) {
                                 const evalVal = evaluateFormula(entry.f, new Set(), targetSheetIdx);
@@ -6786,7 +7455,9 @@ export default async function initSpreadsheetApp(content, options = {}) {
             const rect = cell.getBoundingClientRect();
             dvTooltipEl = document.createElement("div");
             dvTooltipEl.className = "ss-dv-tooltip";
-            dvTooltipEl.innerHTML = `${rule.promptTitle ? `<b>${rule.promptTitle}</b><br>` : ""}${rule.promptMsg || ""}`;
+            const safeTitle = escapeHtml(rule.promptTitle || "");
+            const safeMsg = escapeHtml(rule.promptMsg || "").replace(/\r?\n/g, "<br>");
+            dvTooltipEl.innerHTML = `${safeTitle ? `<b>${safeTitle}</b><br>` : ""}${safeMsg}`;
             dvTooltipEl.style.left = `${Math.min(window.innerWidth - 270, Math.max(4, rect.left))}px`;
             dvTooltipEl.style.top = `${Math.min(window.innerHeight - 80, rect.bottom + 4)}px`;
             document.body.appendChild(dvTooltipEl);
@@ -6923,6 +7594,109 @@ export default async function initSpreadsheetApp(content, options = {}) {
         return true;
     }
 
+    function extractHyperlinkTarget(cell) {
+        if (!cell) return "";
+        if (cell.dataset.hyperlink) return cell.dataset.hyperlink;
+        const f = cell.dataset.formula || "";
+        const m = f.match(/^=\s*HYPERLINK\s*\(\s*"([^"]+)"/i);
+        if (m) return m[1].trim();
+        const txt = (cell.dataset.rawValue ?? cell.textContent).trim();
+        if (/^https?:\/\/\S+$/i.test(txt)) return txt;
+        return "";
+    }
+
+    async function activateCellHyperlink(cell) {
+        const target = extractHyperlinkTarget(cell);
+        if (!target) return false;
+
+        // シート内・他シートセルへのジャンプ（例: #A1 / #Sheet2!B5 / #'売上'!C3）
+        if (target.startsWith("#")) {
+            const ref = target.slice(1).trim();
+            const m = ref.match(/^(?:(?:'([^']+)'|([A-Za-z0-9_\u3040-\u30FF\u4E00-\u9FAF]+))!)?\$?([A-Za-z]+)\$?(\d+)$/);
+            if (!m) {
+                showAlert(`無効なセル参照リンクです: ${target}`, "ハイパーリンク");
+                return true;
+            }
+            const sheetName = m[1] ?? m[2];
+            if (sheetName) {
+                const sIdx = sheets.findIndex(s => s.name === sheetName);
+                if (sIdx === -1) {
+                    showAlert(`シート「${sheetName}」が見つかりません。`, "ハイパーリンク");
+                    return true;
+                }
+                if (sIdx !== activeSheetIndex) await switchToSheet(sIdx);
+            }
+            navigateToCell(parseInt(m[4], 10), columnLettersToIndex(m[3]));
+            return true;
+        }
+
+        // 外部URL・メールリンク（安全なスキームのみ許可）
+        if (/^(https?:\/\/|mailto:)/i.test(target)) {
+            window.open(target, "_blank", "noopener,noreferrer");
+            return true;
+        }
+        showAlert(`サポートされていないリンク形式です:\n${target}\n（https://... または #Sheet1!A1 形式で指定してください）`, "ハイパーリンク");
+        return true;
+    }
+
+    function openHyperlinkDialog() {
+        if (!activeCell) return;
+        flushPendingEdits();
+        const curLink = activeCell.dataset.hyperlink || "";
+        const curLabel = activeCell.dataset.rawValue ?? activeCell.textContent ?? "";
+
+        const bodyHtml = `
+            <div style="width:100%; display:flex; flex-direction:column; gap:8px; font-size:12px;">
+                <label>表示文字列:
+                    <input type="text" class="ss-hl-label border" value="${escapeHtml(curLabel)}" placeholder="セルに表示するテキスト" style="width:100%; height:24px; margin-top:2px; padding:2px 6px; background:#fff; color:#000;">
+                </label>
+                <label>リンク先（URL または #シート名!セル番地）:
+                    <input type="text" class="ss-hl-url border" value="${escapeHtml(curLink)}" placeholder="例: https://example.com または #Sheet2!A1" style="width:100%; height:24px; margin-top:2px; padding:2px 6px; background:#fff; color:#000;">
+                </label>
+                <div style="font-size:11px; color:#555;">※ 設定したセルは <b>Ctrl + クリック</b> または右クリックメニューから開けます。</div>
+            </div>
+        `;
+        const modalContent = openAppModal("ハイパーリンクの挿入・編集", bodyHtml, {
+            width: 420,
+            isHtml: true,
+            buttons: [
+                {
+                    label: "OK",
+                    onClick: () => {
+                        const url = modalContent.querySelector(".ss-hl-url")?.value.trim() || "";
+                        const label = modalContent.querySelector(".ss-hl-label")?.value ?? "";
+                        if (!url) {
+                            delete activeCell.dataset.hyperlink;
+                            activeCell.classList.remove("ss-hyperlink");
+                            activeCell.removeAttribute("title");
+                        } else {
+                            activeCell.dataset.hyperlink = url;
+                            activeCell.classList.add("ss-hyperlink");
+                            activeCell.title = `${url}（Ctrl+クリックで開く）`;
+                            if (!activeCell.dataset.formula) {
+                                setCellFormattedValue(activeCell, label || url);
+                            }
+                        }
+                        setDirtyState(true);
+                        debouncedSaveState();
+                    }
+                },
+                {
+                    label: "リンクの解除",
+                    onClick: () => {
+                        delete activeCell.dataset.hyperlink;
+                        activeCell.classList.remove("ss-hyperlink");
+                        activeCell.removeAttribute("title");
+                        setDirtyState(true);
+                        debouncedSaveState();
+                    }
+                },
+                { label: "キャンセル" }
+            ]
+        });
+        modalContent?.querySelector(".ss-hl-url")?.focus();
+    }
+
     function openDataValidationDialog() {
         const selected = Array.from(tbody.querySelectorAll("td.selected")).filter(td => td.style.display !== "none");
         const targets = selected.length ? selected : (activeCell ? [activeCell] : []);
@@ -7001,10 +7775,10 @@ export default async function initSpreadsheetApp(content, options = {}) {
 
                                 <div class="ss-dv-minmax-box" style="display:${isRangeType ? "flex" : "none"}; flex-direction:column; gap:5px;">
                                     <label><span class="ss-dv-v1-label">${isTwoValOp ? "最小値(M):" : "値(V):"}</span>
-                                        <input type="text" class="ss-dv-min border" value="${cur.min}" style="width:100%; height:24px; margin-top:2px; padding:2px 5px; background:#fff; color:#000;">
+                                        <input type="text" class="ss-dv-min border" value="${escapeHtml(cur.min)}" style="width:100%; height:24px; margin-top:2px; padding:2px 5px; background:#fff; color:#000;">
                                     </label>
                                     <label class="ss-dv-v2-wrap" style="display:${isTwoValOp ? "block" : "none"};">最大値(X):
-                                        <input type="text" class="ss-dv-max border" value="${cur.max}" style="width:100%; height:24px; margin-top:2px; padding:2px 5px; background:#fff; color:#000;">
+                                        <input type="text" class="ss-dv-max border" value="${escapeHtml(cur.max)}" style="width:100%; height:24px; margin-top:2px; padding:2px 5px; background:#fff; color:#000;">
                                     </label>
                                 </div>
 
@@ -7040,7 +7814,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
                             <input type="text" class="ss-dv-ptitle border" value="${(cur.promptTitle || "").replace(/"/g, "&quot;")}" style="width:100%; height:24px; margin-top:2px; padding:2px 5px; background:#fff; color:#000;">
                         </label>
                         <label>入力時メッセージ(I):
-                            <textarea class="ss-dv-pmsg border" rows="4" style="width:100%; margin-top:2px; padding:4px; background:#fff; color:#000; resize:none;">${cur.promptMsg || ""}</textarea>
+                            <textarea class="ss-dv-pmsg border" rows="4" style="width:100%; margin-top:2px; padding:4px; background:#fff; color:#000; resize:none;">${escapeHtml(cur.promptMsg || "")}</textarea>
                         </label>
                     </fieldset>
                 </div>
@@ -7066,7 +7840,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
                                 <input type="text" class="ss-dv-etitle border" value="${(cur.errorTitle || "").replace(/"/g, "&quot;")}" style="width:100%; height:24px; margin-top:2px; padding:2px 5px; background:#fff; color:#000;">
                             </label>
                             <label>エラー メッセージ(E):
-                                <textarea class="ss-dv-emsg border" rows="4" style="width:100%; margin-top:2px; padding:4px; background:#fff; color:#000; resize:none;">${cur.errorMsg || ""}</textarea>
+                                <textarea class="ss-dv-emsg border" rows="4" style="width:100%; margin-top:2px; padding:4px; background:#fff; color:#000; resize:none;">${escapeHtml(cur.errorMsg || "")}</textarea>
                             </label>
                         </div>
                     </div>
@@ -7243,9 +8017,59 @@ export default async function initSpreadsheetApp(content, options = {}) {
         }
         delete formulaBarInput.dataset.manualHeight;
         autoResizeFormulaBar();
+        updateHeaderSelectionHighlights(Array.from(tbody.querySelectorAll("td.selected")));
     }
 
     const SEL_EDGE_CLASSES = ["sel-edge-top", "sel-edge-bottom", "sel-edge-left", "sel-edge-right"];
+    let highlightedHeaderEls = [];
+
+    function clearHeaderSelectionHighlights() {
+        for (let i = 0; i < highlightedHeaderEls.length; i++) {
+            highlightedHeaderEls[i].classList.remove("header-selected", "header-full-selected");
+        }
+        highlightedHeaderEls = [];
+    }
+
+    function updateHeaderSelectionHighlights(selectedCells = null) {
+        clearHeaderSelectionHighlights();
+        const targets = selectedCells && selectedCells.length
+            ? selectedCells
+            : (activeCell ? [activeCell] : []);
+        if (!targets.length) return;
+
+        const rowSet = new Set();
+        const colSet = new Set();
+        for (let i = 0; i < targets.length; i++) {
+            const cell = targets[i];
+            const r0 = +cell.dataset.row;
+            const c0 = +cell.dataset.col;
+            const r1 = r0 + (+cell.getAttribute("rowspan") || 1) - 1;
+            const c1 = c0 + (+cell.getAttribute("colspan") || 1) - 1;
+            for (let r = r0; r <= r1; r++) rowSet.add(r);
+            for (let c = c0; c <= c1; c++) colSet.add(c);
+        }
+
+        const totalRows = tbody.rows.length;
+        const isFullCol = totalRows > 0 && rowSet.size >= totalRows;
+        const isFullRow = currentColumns > 0 && colSet.size >= currentColumns;
+
+        colSet.forEach(c => {
+            const th = theadRow.children[c + 1];
+            if (!th) return;
+            th.classList.add("header-selected");
+            if (isFullCol) th.classList.add("header-full-selected");
+            highlightedHeaderEls.push(th);
+        });
+
+        rowSet.forEach(r => {
+            const tr = tbody.rows[r - 1];
+            const th = tr?.cells?.[0];
+            if (!th) return;
+            th.classList.add("header-selected");
+            if (isFullRow) th.classList.add("header-full-selected");
+            highlightedHeaderEls.push(th);
+        });
+    }
 
     function clearSelectionEdges() {
         tbody.querySelectorAll("td.sel-edge-top, td.sel-edge-bottom, td.sel-edge-left, td.sel-edge-right").forEach(c => {
@@ -7256,6 +8080,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
     function updateSelectionEdges() {
         clearSelectionEdges();
         const selected = Array.from(tbody.querySelectorAll("td.selected"));
+        updateHeaderSelectionHighlights(selected);
         if (!selected.length) return;
 
         let minR = Infinity, maxR = -Infinity, minC = Infinity, maxC = -Infinity;
@@ -7283,6 +8108,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
     }
 
     function clearSelection() {
+        clearHeaderSelectionHighlights();
         tbody.querySelectorAll("td.selected, td.active-cell, td.transparent").forEach(c => {
             c.classList.remove("selected", "active-cell", "transparent", ...SEL_EDGE_CLASSES);
         });
@@ -7493,15 +8319,44 @@ export default async function initSpreadsheetApp(content, options = {}) {
         const computedLH = parseFloat(computed.lineHeight);
         const lineHeightPx = !Number.isNaN(computedLH) ? computedLH : Math.round(fSizeNum * 1.3);
         const valign = cell.style.verticalAlign || computed.verticalAlign || "middle";
+        const writingMode = cell.style.writingMode || computed.writingMode || "horizontal-tb";
+        const textOrientation = cell.style.textOrientation || computed.textOrientation || "mixed";
+        const isVertical = writingMode === "vertical-rl" || writingMode === "vertical-lr";
 
         return {
             cell, left, top, cellW, cellH, minH: Math.max(cellH, 28),
-            computed, fStyle, fWeight, fSize, fSizeNum, fFamily, lineHeightPx, valign
+            computed, fStyle, fWeight, fSize, fSizeNum, fFamily, lineHeightPx, valign,
+            writingMode, textOrientation, isVertical
         };
+    }
+
+    function resolveEditorAutoAlign(cell, rawInput) {
+        if (cell.style.textAlign) {
+            return cell.style.textAlign === "justify" ? "left" : cell.style.textAlign;
+        }
+        const str = String(rawInput ?? "");
+        const trimmed = str.trim();
+        if (trimmed === "") {
+            if (cell.classList.contains("ss-auto-align-right")) return "right";
+            if (cell.classList.contains("ss-auto-align-center")) return "center";
+            return "left";
+        }
+        // 数式(=始まり)や文字列指定('始まり)は編集中も左揃え
+        if (trimmed.startsWith("=") || str.startsWith("'")) return "left";
+        const upper = trimmed.toUpperCase();
+        if (upper === "TRUE" || upper === "FALSE" || EXCEL_ERROR_RE.test(upper)) {
+            return "center";
+        }
+        if (!isNaN(parseFormattedNumber(trimmed)) || isDateFormat(trimmed)) {
+            return "right";
+        }
+        return "left";
     }
 
     function syncCellEditorLayout(cell, forceMeasure = false) {
         if (!cell) return;
+        const editorAlign = resolveEditorAutoAlign(cell, cellEditor.value);
+
         if (forceMeasure || !editorMetricsCache || editorMetricsCache.cell !== cell) {
             editorMetricsCache = computeCellEditorMetrics(cell);
             const m = editorMetricsCache;
@@ -7515,6 +8370,8 @@ export default async function initSpreadsheetApp(content, options = {}) {
             cellEditor.style.fontSize = m.fSize;
             cellEditor.style.fontWeight = m.fWeight;
             cellEditor.style.fontStyle = m.fStyle;
+            cellEditor.style.writingMode = m.isVertical ? m.writingMode : "horizontal-tb";
+            cellEditor.style.textOrientation = m.isVertical ? m.textOrientation : "";
             cellEditor.style.textDecoration = cell.style.textDecoration || c.textDecoration || "none";
             cellEditor.style.textShadow = cell.style.textShadow || c.textShadow || "none";
             cellEditor.style.letterSpacing = cell.style.letterSpacing || c.letterSpacing || "normal";
@@ -7524,44 +8381,67 @@ export default async function initSpreadsheetApp(content, options = {}) {
             cellEditor.style.fontVariantLigatures = c.fontVariantLigatures || "normal";
             cellEditor.style.textRendering = c.textRendering || "auto";
             cellEditor.style.webkitFontSmoothing = c.webkitFontSmoothing || "antialiased";
-            cellEditor.style.textAlign = cell.style.textAlign || (
-                cell.classList.contains("ss-auto-align-right") ? "right" :
-                    cell.classList.contains("ss-auto-align-center") ? "center" : "left"
-            );
             cellEditor.style.backgroundColor = cell.style.backgroundColor || c.backgroundColor || "#fff";
             cellEditor.style.color = cell.style.color || c.color || "#000";
             cellEditor.style.lineHeight = `${m.lineHeightPx}px`;
         }
+        cellEditor.style.textAlign = editorAlign;
 
         const m = editorMetricsCache;
         const text = cellEditor.value ?? "";
+        const lines = text.split("\n");
+        const isWrapped = cell.style.whiteSpace === "pre-wrap";
+
+        // 縦書きセル（writing-mode: vertical-rl）専用レイアウト計算
+        if (m.isVertical) {
+            const maxCharsInLine = Math.max(1, ...lines.map(l => Array.from(l).length));
+            const charAdvance = Math.ceil(m.fSizeNum * 1.15);
+            const neededH = Math.max(m.minH, maxCharsInLine * charAdvance + 14);
+            const neededW = Math.max(m.cellW, lines.length * m.lineHeightPx + 14);
+
+            cellEditor.style.left = `${m.left}px`;
+            cellEditor.style.whiteSpace = isWrapped ? "pre-wrap" : "pre";
+            cellEditor.style.padding = "4px 4px";
+            cellEditor.style.width = `${neededW}px`;
+            cellEditor.style.height = `${isWrapped ? Math.max(m.minH, cellEditor.scrollHeight + 4) : neededH}px`;
+            return;
+        }
+
         if (measureCtx) {
             measureCtx.font = `${m.fStyle} ${m.fWeight} ${m.fSize} ${m.fFamily}`;
         }
         let maxTextWidth = 0;
-        const lines = text.split("\n");
         for (let i = 0; i < lines.length; i++) {
             const w = measureCtx ? measureCtx.measureText(lines[i]).width : lines[i].length * m.fSizeNum;
             if (w > maxTextWidth) maxTextWidth = w;
         }
 
-        const isWrapped = cell.style.whiteSpace === "pre-wrap";
+        const rowHeaderWidth = parseInt(colgroup.children[0]?.style.width, 10) || 54;
+        const tableRight = Math.max(table.offsetWidth, cachedTableWidth, m.left + m.cellW);
         let targetW = m.cellW;
+        let targetLeft = m.left;
+
         if (!isWrapped) {
-            const r = parseInt(cell.dataset.row, 10);
-            const c = parseInt(cell.dataset.col, 10);
-            const colSpan = parseInt(cell.getAttribute("colspan") || "1", 10);
-            let availableWidth = m.cellW;
-            let curC = c + colSpan;
-            while (curC < currentColumns) {
-                const nextCell = peekCell(r, curC);
-                if (!nextCell || nextCell.style.display === "none" || (nextCell.textContent || "").trim() !== "") break;
-                availableWidth += getColumnWidth(curC);
-                curC++;
+            const neededW = Math.max(m.cellW, Math.ceil(maxTextWidth) + 20);
+            if (editorAlign === "right") {
+                const maxW = Math.max(m.cellW, (m.left + m.cellW) - rowHeaderWidth);
+                targetW = Math.min(neededW, maxW);
+                targetLeft = (m.left + m.cellW) - targetW;
+            } else if (editorAlign === "center") {
+                const maxW = Math.max(m.cellW, tableRight - rowHeaderWidth);
+                targetW = Math.min(neededW, maxW);
+                const centerX = m.left + m.cellW / 2;
+                targetLeft = Math.round(centerX - targetW / 2);
+                if (targetLeft < rowHeaderWidth) targetLeft = rowHeaderWidth;
+                if (targetLeft + targetW > tableRight) targetLeft = Math.max(rowHeaderWidth, tableRight - targetW);
+            } else {
+                const maxW = Math.max(m.cellW, tableRight - m.left);
+                targetW = Math.min(neededW, maxW);
+                targetLeft = m.left;
             }
-            targetW = Math.max(m.cellW, Math.min(Math.max(m.cellW, maxTextWidth + 16), availableWidth));
         }
 
+        cellEditor.style.left = `${targetLeft}px`;
         cellEditor.style.width = `${targetW}px`;
         cellEditor.style.whiteSpace = (isWrapped || lines.length > 1 || text.includes("\n")) ? "pre-wrap" : "pre";
 
@@ -7695,6 +8575,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
         { name: "DATEDIF", sig: "DATEDIF(開始日, 終了日, 単位)", desc: "期間（Y/M/D）計算" },
         { name: "EOMONTH", sig: "EOMONTH(開始日, 月数)", desc: "月末日を取得" },
         { name: "NETWORKDAYS", sig: "NETWORKDAYS(開始日, 終了日)", desc: "稼働日数を計算" },
+        { name: "HYPERLINK", sig: "HYPERLINK(リンク先, [別名])", desc: "ハイパーリンクを作成" },
         { name: "LET", sig: "LET(名前1, 値1, 計算式)", desc: "変数定義計算" },
         { name: "LAMBDA", sig: "LAMBDA(引数, 計算式)", desc: "カスタム関数" }
     ];
@@ -7847,9 +8728,8 @@ export default async function initSpreadsheetApp(content, options = {}) {
         }
     }
 
-    // 数式バーイベント（前半・後半を完全統合）
     formulaBarInput.addEventListener("focus", () => {
-        lastPointRefRange = null;
+        if (!isFormulaBarDirty) lastPointRefRange = null;
         if (!activeCell) return;
         const quotePrefix = activeCell.dataset.quotePrefix === "1" ? "'" : "";
         const initialVal = activeCell.dataset.formula
@@ -8043,6 +8923,8 @@ export default async function initSpreadsheetApp(content, options = {}) {
         editorMetricsCache = null;
         hideInlineMiniToolbar();
         cellEditor.style.display = "none";
+        cellEditor.style.writingMode = "";
+        cellEditor.style.textOrientation = "";
         cellEditor.value = "";
         isComposing = false;
         if (activeCell) attachCellDropdownButton(activeCell);
@@ -8089,11 +8971,10 @@ export default async function initSpreadsheetApp(content, options = {}) {
             }
         }
         activeCell = cell;
-        if (formulaBarInput.value !== cellEditor.value) {
+        if (editBy !== "formulabar" && formulaBarInput.value !== cellEditor.value) {
             formulaBarInput.value = cellEditor.value;
         }
     }
-
     cellEditor.addEventListener("compositionstart", () => {
         isComposing = true;
     }, { signal });
@@ -8328,6 +9209,15 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 setCellFormattedValue(cell, parseFormattedNumber(trimmedInput));
             } else {
                 setCellFormattedValue(cell, newText);
+                if (/^https?:\/\/\S+$/i.test(trimmedInput)) {
+                    cell.dataset.hyperlink = trimmedInput;
+                    cell.classList.add("ss-hyperlink");
+                    cell.title = `${trimmedInput}（Ctrl+クリックで開く）`;
+                } else if (trimmedInput === "" && cell.dataset.hyperlink) {
+                    delete cell.dataset.hyperlink;
+                    cell.classList.remove("ss-hyperlink");
+                    cell.removeAttribute("title");
+                }
             }
         }
 
@@ -8691,26 +9581,27 @@ export default async function initSpreadsheetApp(content, options = {}) {
     const JP_DAYS_LONG = ["日曜日", "月曜日", "火曜日", "水曜日", "木曜日", "金曜日", "土曜日"];
     const EN_DAYS_SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-    function generateSeriesStep(seedValues, stepIndex) {
+    function generateSeriesStep(seedValues, stepIndex, { forceSeries = false } = {}) {
         const n = seedValues.length;
-        const base = seedValues[stepIndex % n];
-        const cycle = Math.floor(stepIndex / n);
-        if (cycle === 0) return base;
+        if (n === 0) return "";
+        const modIdx = ((stepIndex % n) + n) % n;
+        const base = seedValues[modIdx];
+        if (stepIndex >= 0 && stepIndex < n) return base;
 
         const first = String(seedValues[0] ?? "").trim();
         const last = String(seedValues[n - 1] ?? "").trim();
 
-        // 1. 数値の連続（1セル選択なら+1、2セル以上なら等差数列）
-        const nums = seedValues.map(v => Number(String(v).trim()));
-        if (nums.every(v => v !== "" && !isNaN(v)) && seedValues.every(v => String(v).trim() !== "")) {
+        // 1. 数値：Excel準拠で1セルはコピー（Ctrlドラッグ時のみ+1）、2セル以上は等差数列
+        const nums = seedValues.map(v => parseFormattedNumber(v));
+        if (nums.every(v => !isNaN(v)) && seedValues.every(v => String(v).trim() !== "")) {
             if (n === 1) {
-                return String(nums[0] + stepIndex);
+                return forceSeries ? String(nums[0] + stepIndex) : String(nums[0]);
             }
             const stepDiff = (nums[n - 1] - nums[0]) / (n - 1);
             return String(nums[0] + stepDiff * stepIndex);
         }
 
-        // 2. 日付の連続（YYYY/MM/DD）
+        // 2. 日付の連続（YYYY/MM/DD・逆方向対応）
         if (/^\d{4}\/\d{1,2}\/\d{1,2}$/.test(first)) {
             const [y, m, d] = first.split("/").map(Number);
             const dt = new Date(y, m - 1, d);
@@ -8724,20 +9615,21 @@ export default async function initSpreadsheetApp(content, options = {}) {
             return formatDate(dt);
         }
 
-        // 3. 曜日リスト（月→火→水...）
+        // 3. 曜日リスト（月→火→水 / 逆方向：月→日→土 にも対応）
         for (const list of [JP_DAYS_SHORT, JP_DAYS_LONG, EN_DAYS_SHORT]) {
             const idx = list.indexOf(first);
             if (idx !== -1) {
-                return list[(idx + stepIndex) % list.length];
+                const nextIdx = ((idx + stepIndex) % list.length + list.length) % list.length;
+                return list[nextIdx];
             }
         }
 
-        // 4. 文字列＋末尾数字（項目1→項目2、No.001→No.002）
+        // 4. 文字列＋末尾数字（項目1→項目2、逆方向で0未満にはしない）
         const suffixMatch = first.match(/^(.*?)(\d+)$/);
         if (suffixMatch) {
             const prefix = suffixMatch[1];
             const numPart = suffixMatch[2];
-            const nextNum = parseInt(numPart, 10) + stepIndex;
+            const nextNum = Math.max(0, parseInt(numPart, 10) + stepIndex);
             return prefix + String(nextNum).padStart(numPart.length, "0");
         }
 
@@ -8761,6 +9653,25 @@ export default async function initSpreadsheetApp(content, options = {}) {
 
         if (sourceCell.dataset.dvRule) targetCell.dataset.dvRule = sourceCell.dataset.dvRule;
         else delete targetCell.dataset.dvRule;
+
+        if (sourceCell.dataset.quotePrefix === "1") targetCell.dataset.quotePrefix = "1";
+        else delete targetCell.dataset.quotePrefix;
+
+        if (sourceCell.dataset.richRuns && overrideValue === null) {
+            targetCell.dataset.richRuns = sourceCell.dataset.richRuns;
+        } else {
+            delete targetCell.dataset.richRuns;
+        }
+
+        if (sourceCell.dataset.hyperlink) {
+            targetCell.dataset.hyperlink = sourceCell.dataset.hyperlink;
+            targetCell.classList.add("ss-hyperlink");
+            targetCell.title = sourceCell.title;
+        } else {
+            delete targetCell.dataset.hyperlink;
+            targetCell.classList.remove("ss-hyperlink");
+            targetCell.removeAttribute("title");
+        }
 
         if (sourceCell.dataset.formula?.startsWith("=")) {
             const rowOffset = (+targetCell.dataset.row) - (+sourceCell.dataset.row);
@@ -8974,7 +9885,8 @@ export default async function initSpreadsheetApp(content, options = {}) {
                     }
                 };
 
-                const onUp = () => {
+                const onUp = (upEv) => {
+                    const forceSeries = Boolean(upEv?.ctrlKey || upEv?.metaKey);
                     document.removeEventListener("mousemove", onMove);
                     document.removeEventListener("mouseup", onUp);
                     clearFillPreview();
@@ -9060,11 +9972,10 @@ export default async function initSpreadsheetApp(content, options = {}) {
                                 }
                                 const cycle = Math.floor(rOffset / initRCount);
                                 if (validSeeds.length > 0) {
-                                    seriesVal = generateSeriesStep(validSeeds, cycle * validSeeds.length + seedPos);
+                                    seriesVal = generateSeriesStep(validSeeds, cycle * validSeeds.length + seedPos, { forceSeries });
                                 }
                             } else if (r < initialFillRange.minRow && cOffset >= 0 && cOffset < initCCount) {
-                                // 上方向への逆順連番・コピー
-                                const upStep = initialFillRange.minRow - r;
+                                // 上方向への逆方向連番・コピー
                                 const validSeeds = [];
                                 for (let rr = 0; rr < initRCount; rr++) {
                                     const entry = templateGrid[rr][tplC];
@@ -9073,8 +9984,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
                                     }
                                 }
                                 if (validSeeds.length > 0) {
-                                    const revSeeds = [...validSeeds].reverse();
-                                    seriesVal = generateSeriesStep(revSeeds, validSeeds.length - 1 + upStep);
+                                    seriesVal = generateSeriesStep(validSeeds, r - initialFillRange.minRow, { forceSeries });
                                 }
                             } else if (c > initialFillRange.maxCol && rOffset >= 0 && rOffset < initRCount) {
                                 // 右方向への連番・コピー
@@ -9089,11 +9999,10 @@ export default async function initSpreadsheetApp(content, options = {}) {
                                 }
                                 const cycle = Math.floor(cOffset / initCCount);
                                 if (validSeeds.length > 0) {
-                                    seriesVal = generateSeriesStep(validSeeds, cycle * validSeeds.length + seedPos);
+                                    seriesVal = generateSeriesStep(validSeeds, cycle * validSeeds.length + seedPos, { forceSeries });
                                 }
                             } else if (c < initialFillRange.minCol && rOffset >= 0 && rOffset < initRCount) {
-                                // 左方向への逆順連番・コピー
-                                const leftStep = initialFillRange.minCol - c;
+                                // 左方向への逆方向連番・コピー
                                 const validSeeds = [];
                                 for (let cc = 0; cc < initCCount; cc++) {
                                     const entry = templateGrid[tplR][cc];
@@ -9102,8 +10011,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
                                     }
                                 }
                                 if (validSeeds.length > 0) {
-                                    const revSeeds = [...validSeeds].reverse();
-                                    seriesVal = generateSeriesStep(revSeeds, validSeeds.length - 1 + leftStep);
+                                    seriesVal = generateSeriesStep(validSeeds, c - initialFillRange.minCol, { forceSeries });
                                 }
                             }
 
@@ -9232,6 +10140,8 @@ export default async function initSpreadsheetApp(content, options = {}) {
         let anchorFormula = "";
         let anchorNumFmt = "";
         let anchorDecPlaces = "";
+        let anchorRichRuns = "";
+        let anchorHyperlink = "";
         for (let r = minRow; r <= maxRow; r++) {
             let found = false;
             for (let c = minCol; c <= maxCol; c++) {
@@ -9240,6 +10150,8 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 if (cell && (cell.dataset.formula || raw.trim() !== "")) {
                     anchorNumFmt = cell.dataset.numFormat || "";
                     anchorDecPlaces = cell.dataset.decimalPlaces || "";
+                    anchorRichRuns = cell.dataset.richRuns || "";
+                    anchorHyperlink = cell.dataset.hyperlink || "";
                     if (cell.dataset.formula) {
                         anchorFormula = cell.dataset.formula;
                         anchorValue = evaluateFormula(anchorFormula);
@@ -9256,6 +10168,17 @@ export default async function initSpreadsheetApp(content, options = {}) {
         const anchor = getCell(minRow, minCol);
         if (anchorNumFmt) anchor.dataset.numFormat = anchorNumFmt;
         if (anchorDecPlaces) anchor.dataset.decimalPlaces = anchorDecPlaces;
+        if (anchorRichRuns && !anchorFormula) anchor.dataset.richRuns = anchorRichRuns;
+        else delete anchor.dataset.richRuns;
+        if (anchorHyperlink) {
+            anchor.dataset.hyperlink = anchorHyperlink;
+            anchor.classList.add("ss-hyperlink");
+            anchor.title = `${anchorHyperlink}（Ctrl+クリックで開く）`;
+        } else {
+            delete anchor.dataset.hyperlink;
+            anchor.classList.remove("ss-hyperlink");
+            anchor.removeAttribute("title");
+        }
         if (anchorFormula) {
             anchor.dataset.formula = anchorFormula;
             setCellFormattedValue(anchor, anchorValue);
@@ -9455,6 +10378,8 @@ export default async function initSpreadsheetApp(content, options = {}) {
             decimalPlaces: cell.dataset.decimalPlaces ?? "",
             dropdownList: cell.dataset.dropdownList || "",
             dvRule: cell.dataset.dvRule || "",
+            richRuns: cell.dataset.richRuns || "",
+            hyperlink: cell.dataset.hyperlink || "",
             styleObj: extractCellStyleObject(cell),
             rowspan: parseInt(cell.getAttribute("rowspan") || "1", 10),
             colspan: parseInt(cell.getAttribute("colspan") || "1", 10),
@@ -9675,6 +10600,17 @@ export default async function initSpreadsheetApp(content, options = {}) {
             else delete dest.dataset.dropdownList;
             if (item.dvRule) dest.dataset.dvRule = item.dvRule;
             else delete dest.dataset.dvRule;
+            if (item.richRuns && !newFormula) dest.dataset.richRuns = item.richRuns;
+            else delete dest.dataset.richRuns;
+            if (item.hyperlink) {
+                dest.dataset.hyperlink = item.hyperlink;
+                dest.classList.add("ss-hyperlink");
+                dest.title = `${item.hyperlink}（Ctrl+クリックで開く）`;
+            } else {
+                delete dest.dataset.hyperlink;
+                dest.classList.remove("ss-hyperlink");
+                dest.removeAttribute("title");
+            }
 
             if (newFormula) {
                 dest.dataset.formula = newFormula;
@@ -9800,7 +10736,10 @@ export default async function initSpreadsheetApp(content, options = {}) {
                     delete src.dataset.valueType;
                     delete src.dataset.dateValue;
                     delete src.dataset.spillOrigin;
-                    src.classList.remove("ss-auto-align-right", "ss-auto-align-center");
+                    delete src.dataset.richRuns;
+                    delete src.dataset.hyperlink;
+                    src.classList.remove("ss-auto-align-right", "ss-auto-align-center", "ss-hyperlink");
+                    src.removeAttribute("title");
                     if (!valuesOnly) src.removeAttribute("style");
                 }
 
@@ -9925,7 +10864,6 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 else if (prop === "fontWeight") val = cell.dataset.cfOrigWeight || "";
                 else if (prop === "fontStyle") val = cell.dataset.cfOrigItalic || "";
                 else if (prop === "textDecoration") val = cell.dataset.cfOrigDeco || "";
-                else if (prop.startsWith("border")) val = cell.dataset.cfOrigBorder || "";
             }
             if (val && val !== "") {
                 styleObj[prop] = val;
@@ -9936,19 +10874,29 @@ export default async function initSpreadsheetApp(content, options = {}) {
     }
 
     function applyCellStyleData(cell, styleData) {
+        const hadJustifyDom = Boolean(cell.querySelector(".ss-justify-line"));
+        clearAppliedConditionalStyle(cell);
         cell.removeAttribute("style");
-        if (!styleData) return;
-        if (typeof styleData === "string") {
-            const cleanStyle = sanitizeCellStyleText(styleData);
-            if (cleanStyle) cell.style.cssText = cleanStyle;
-            return;
-        }
-        if (typeof styleData === "object") {
-            for (const prop of PERSISTED_STYLE_PROPS) {
-                if (styleData[prop]) {
-                    cell.style[prop] = styleData[prop];
+        if (styleData) {
+            if (typeof styleData === "string") {
+                const cleanStyle = sanitizeCellStyleText(styleData);
+                if (cleanStyle) cell.style.cssText = cleanStyle;
+            } else if (typeof styleData === "object") {
+                for (const prop of PERSISTED_STYLE_PROPS) {
+                    if (styleData[prop]) {
+                        cell.style[prop] = styleData[prop];
+                    }
                 }
             }
+        }
+        const isNowJustify = cell.style.textAlign === "justify";
+        if (cell.tagName === "TD" && (isNowJustify || hadJustifyDom)) {
+            const displayText = formatDisplayByNumFmt(
+                cell.dataset.rawValue ?? cell.textContent,
+                cell.dataset.numFormat,
+                cell
+            );
+            setCellTextPreservingControls(cell, displayText);
         }
     }
 
@@ -9978,7 +10926,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
 
     function saveState() {
         try {
-            const serialized = JSON.stringify(buildSheetSnapshot({ flush: false }));
+            const serialized = serializeSheetSnapshot({ flush: false, recalcBackground: false });
             if (undoHistory.length > 0 && undoHistory[undoHistory.length - 1] === serialized) return;
             redoHistory = [];
             undoHistory.push(serialized);
@@ -11069,8 +12017,10 @@ export default async function initSpreadsheetApp(content, options = {}) {
 
                 const dl = cell.dataset.dropdownList || "";
                 const dvr = cell.dataset.dvRule || "";
+                const rr = cell.dataset.richRuns || "";
+                const hl = cell.dataset.hyperlink || "";
                 if (cell.dataset.spillOrigin) continue;
-                if (v === "" && !f && !nf && !dl && !dvr && !st && cs === 1 && rs === 1 && !hasMergeMeta) {
+                if (v === "" && !f && !nf && !dl && !dvr && !rr && !hl && !st && cs === 1 && rs === 1 && !hasMergeMeta) {
                     continue;
                 }
 
@@ -11081,6 +12031,8 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 if (dp !== "") entry.dp = dp;
                 if (dl !== "") entry.dl = dl;
                 if (dvr !== "") entry.dvr = dvr;
+                if (rr !== "") entry.rr = rr;
+                if (hl !== "") entry.hl = hl;
                 if (st) entry.st = st;
                 if (cs > 1) entry.cs = cs;
                 if (rs > 1) entry.rs = rs;
@@ -11184,22 +12136,31 @@ export default async function initSpreadsheetApp(content, options = {}) {
         });
     }
 
-    function buildSheetSnapshot({ flush = true } = {}) {
+    function serializeSheetSnapshot({ flush = true, recalcBackground = true } = {}) {
         captureCurrentSheetDOM({ flush });
-        recalculateBackgroundSheets();
-        return {
+        if (recalcBackground) {
+            recalculateBackgroundSheets();
+        }
+        return JSON.stringify({
             format: "nexser-spreadsheet",
             version: 4,
             activeSheetIndex,
-            sheets: JSON.parse(JSON.stringify(sheets))
-        };
+            sheets
+        });
     }
 
     function serializeSpreadsheetPayload() {
-        return JSON.stringify(buildSheetSnapshot({ flush: true }));
+        return serializeSheetSnapshot({ flush: true, recalcBackground: true });
+    }
+
+    const activeSheetObservers = new Set();
+    function disconnectActiveSheetObservers() {
+        activeSheetObservers.forEach(obs => obs.disconnect());
+        activeSheetObservers.clear();
     }
 
     function clearSheetToBlank({ resetHistory = true } = {}) {
+        disconnectActiveSheetObservers();
         tbody.querySelectorAll("td").forEach(cell => {
             cell.textContent = "";
             cell.removeAttribute("style");
@@ -11291,6 +12252,12 @@ export default async function initSpreadsheetApp(content, options = {}) {
             if (item.dp !== undefined && item.dp !== "") cell.dataset.decimalPlaces = String(item.dp);
             if (item.dl) cell.dataset.dropdownList = String(item.dl);
             if (item.dvr) cell.dataset.dvRule = String(item.dvr);
+            if (item.rr) cell.dataset.richRuns = String(item.rr);
+            if (item.hl) {
+                cell.dataset.hyperlink = String(item.hl);
+                cell.classList.add("ss-hyperlink");
+                cell.title = `${item.hl}（Ctrl+クリックで開く）`;
+            }
 
             if (item.f) {
                 cell.dataset.formula = String(item.f);
@@ -12222,6 +13189,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
         appRoot.querySelectorAll(".ss-ribbon-panel[data-ribbon-panel]").forEach(p => {
             p.classList.toggle("active", p.dataset.ribbonPanel === tabName);
         });
+        requestAnimationFrame(fitActiveRibbonPanel);
     }
 
     function updateQATButtonsState() {
@@ -12360,20 +13328,24 @@ export default async function initSpreadsheetApp(content, options = {}) {
             return;
         }
 
-        // 単一セル選択時：真上 → 左隣の順で連続する数値範囲を自動検出
+        // 単一セル選択時：真上（直上1セル空白まで許容）→ 左隣の順で連続する数値範囲を自動検出
         const target = activeCell || getVisibleCell(1, 0);
         if (!target) return;
         const r = parseInt(target.dataset.row, 10);
         const c = parseInt(target.dataset.col, 10);
         let rangeRef = "";
 
-        if (r > 1 && isNumericCell(getVisibleCell(r - 1, c))) {
-            let topR = r - 1;
+        let upEnd = r - 1;
+        if (upEnd >= 2 && !isNumericCell(getVisibleCell(upEnd, c)) && isNumericCell(getVisibleCell(upEnd - 1, c))) {
+            upEnd--;
+        }
+        if (upEnd >= 1 && isNumericCell(getVisibleCell(upEnd, c))) {
+            let topR = upEnd;
             while (topR > 1 && isNumericCell(getVisibleCell(topR - 1, c))) {
                 topR--;
             }
             const colName = getColumnName(c);
-            rangeRef = `${colName}${topR}:${colName}${r - 1}`;
+            rangeRef = `${colName}${topR}:${colName}${upEnd}`;
         } else if (c > 0 && isNumericCell(getVisibleCell(r, c - 1))) {
             let leftC = c - 1;
             while (leftC > 0 && isNumericCell(getVisibleCell(r, leftC - 1))) {
@@ -12383,12 +13355,15 @@ export default async function initSpreadsheetApp(content, options = {}) {
         }
 
         const formula = `=SUM(${rangeRef})`;
+        // セル内エディタへ直接投入し、数式バーと完全同期させる
+        enterCellEditMode(target, false, "f2");
+        cellEditor.value = formula;
         formulaBarInput.value = formula;
         isFormulaBarDirty = true;
-        syncFormulaBarToCellEditor();
+        syncCellEditorLayout(target, true);
         lastPointRefRange = { start: 5, end: 5 + rangeRef.length };
-        formulaBarInput.focus();
-        formulaBarInput.setSelectionRange(5, 5 + rangeRef.length);
+        cellEditor.focus();
+        cellEditor.setSelectionRange(5, 5 + rangeRef.length);
         if (rangeRef) {
             highlightCalculationRange(formula);
         }
@@ -12484,8 +13459,22 @@ export default async function initSpreadsheetApp(content, options = {}) {
 
     async function modifySheetRowCol(mode) {
         if (!activeCell) return;
-        const targetRow = parseInt(activeCell.dataset.row, 10);
-        const targetCol = parseInt(activeCell.dataset.col, 10);
+        const bounds = getSelectedRangeBounds();
+        const isRowOp = mode === "insert-row" || mode === "delete-row";
+        const repeatCount = bounds
+            ? Math.min(50, Math.max(1, isRowOp ? (bounds.maxRow - bounds.minRow + 1) : (bounds.maxCol - bounds.minCol + 1)))
+            : 1;
+        const baseRow = bounds ? bounds.minRow : parseInt(activeCell.dataset.row, 10);
+        const baseCol = bounds ? bounds.minCol : parseInt(activeCell.dataset.col, 10);
+
+        for (let step = 0; step < repeatCount; step++) {
+            await modifySheetRowColSingle(mode, baseRow, baseCol);
+        }
+        setDirtyState(true);
+        saveState();
+    }
+
+    async function modifySheetRowColSingle(mode, targetRow, targetCol) {
         const snap = captureCurrentSheetDOM({ flush: true });
 
         // 既存の結合グループを抽出し、サブセルを一旦除外してアンカー基準で再構築する
@@ -12513,6 +13502,12 @@ export default async function initSpreadsheetApp(content, options = {}) {
             snap.rows.forEach(r => { if (r.r >= targetRow) r.r += 1; });
             if (snap.freezeRows >= targetRow) snap.freezeRows += 1;
         } else if (mode === "delete-row") {
+            // 結合セルの先頭行のみが削除対象の場合、アンカーを次行へ退避して値・書式を保護
+            mergeAnchors.forEach(m => {
+                if (m.minR === targetRow && m.maxR > targetRow) {
+                    m.item.r = targetRow + 1;
+                }
+            });
             snap.cells = snap.cells.filter(c => c.r !== targetRow);
             snap.cells.forEach(c => { if (c.r > targetRow) c.r -= 1; });
             mergeAnchors.forEach(m => {
@@ -12531,6 +13526,11 @@ export default async function initSpreadsheetApp(content, options = {}) {
             snap.columns.forEach(col => { if (col.c >= targetCol) col.c += 1; });
             if (snap.freezeCols >= targetCol) snap.freezeCols += 1;
         } else if (mode === "delete-col") {
+            mergeAnchors.forEach(m => {
+                if (m.minC === targetCol && m.maxC > targetCol) {
+                    m.item.c = targetCol + 1;
+                }
+            });
             snap.cells = snap.cells.filter(c => c.c !== targetCol);
             snap.cells.forEach(c => { if (c.c > targetCol) c.c -= 1; });
             mergeAnchors.forEach(m => {
@@ -12649,6 +13649,15 @@ export default async function initSpreadsheetApp(content, options = {}) {
                     if (r.minCol > targetCol) r.minCol -= 1;
                     if (r.maxCol >= targetCol) r.maxCol -= 1;
                 }
+                if (r.formula && String(r.formula).trim().startsWith("=")) {
+                    r.formula = shiftFormulaForRowCol(r.formula, mode, targetRow, targetCol, true, snap.name);
+                }
+                if (typeof r.val1 === "string" && r.val1.trim().startsWith("=")) {
+                    r.val1 = shiftFormulaForRowCol(r.val1, mode, targetRow, targetCol, true, snap.name);
+                }
+                if (typeof r.val2 === "string" && r.val2.trim().startsWith("=")) {
+                    r.val2 = shiftFormulaForRowCol(r.val2, mode, targetRow, targetCol, true, snap.name);
+                }
                 return r;
             }).filter(r => r.maxRow >= r.minRow && r.maxCol >= r.minCol);
         }
@@ -12715,8 +13724,6 @@ export default async function initSpreadsheetApp(content, options = {}) {
         });
 
         await applySingleSheetToDOM(snap, { isUndoRedo: true, restoreScroll: false });
-        setDirtyState(true);
-        saveState();
     }
 
     function sortSelectedRange(ascending = true) {
@@ -12812,7 +13819,8 @@ export default async function initSpreadsheetApp(content, options = {}) {
         const parseSortComparable = (cell, rawStr) => {
             if (!rawStr) return { type: "empty", val: "" };
             if (cell?.dataset.dateValue) {
-                const ts = Date.parse(cell.dataset.dateValue);
+                const numTs = Number(cell.dataset.dateValue);
+                const ts = Number.isFinite(numTs) ? numTs : Date.parse(cell.dataset.dateValue);
                 if (!isNaN(ts)) return { type: "num", val: ts };
             }
             if (/^\d{4}[\/\-]\d{1,2}[\/\-]\d{1,2}(?:\s+\d{1,2}:\d{2}(?::\d{2})?)?$/.test(rawStr)) {
@@ -12842,6 +13850,8 @@ export default async function initSpreadsheetApp(content, options = {}) {
                     dvRule: cell?.dataset.dvRule || "",
                     valueType: cell?.dataset.valueType || "",
                     dateValue: cell?.dataset.dateValue || "",
+                    richRuns: cell?.dataset.richRuns || "",
+                    hyperlink: cell?.dataset.hyperlink || "",
                     styleObj: cell ? extractCellStyleObject(cell) : null
                 });
             }
@@ -12897,6 +13907,19 @@ export default async function initSpreadsheetApp(content, options = {}) {
 
                 if (item.dateValue) dest.dataset.dateValue = item.dateValue;
                 else delete dest.dataset.dateValue;
+
+                if (item.richRuns && !item.formula) dest.dataset.richRuns = item.richRuns;
+                else delete dest.dataset.richRuns;
+
+                if (item.hyperlink) {
+                    dest.dataset.hyperlink = item.hyperlink;
+                    dest.classList.add("ss-hyperlink");
+                    dest.title = `${item.hyperlink}（Ctrl+クリックで開く）`;
+                } else {
+                    delete dest.dataset.hyperlink;
+                    dest.classList.remove("ss-hyperlink");
+                    dest.removeAttribute("title");
+                }
 
                 if (item.formula) {
                     const nextFormula = adjustFormula(item.formula, rowDelta, 0);
@@ -13083,6 +14106,8 @@ export default async function initSpreadsheetApp(content, options = {}) {
                     dvRule: cell?.dataset.dvRule || "",
                     valueType: cell?.dataset.valueType || "",
                     dateValue: cell?.dataset.dateValue || "",
+                    richRuns: cell?.dataset.richRuns || "",
+                    hyperlink: cell?.dataset.hyperlink || "",
                     styleObj: cell ? extractCellStyleObject(cell) : null
                 });
             }
@@ -13114,6 +14139,17 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 else delete dest.dataset.valueType;
                 if (item.dateValue) dest.dataset.dateValue = item.dateValue;
                 else delete dest.dataset.dateValue;
+                if (item.richRuns && !item.formula) dest.dataset.richRuns = item.richRuns;
+                else delete dest.dataset.richRuns;
+                if (item.hyperlink) {
+                    dest.dataset.hyperlink = item.hyperlink;
+                    dest.classList.add("ss-hyperlink");
+                    dest.title = `${item.hyperlink}（Ctrl+クリックで開く）`;
+                } else {
+                    delete dest.dataset.hyperlink;
+                    dest.classList.remove("ss-hyperlink");
+                    dest.removeAttribute("title");
+                }
 
                 if (item.formula) {
                     const nextFormula = adjustFormula(item.formula, rowDelta, 0);
@@ -13132,8 +14168,11 @@ export default async function initSpreadsheetApp(content, options = {}) {
             for (let c = bounds.minCol; c <= bounds.maxCol; c++) {
                 const cell = getCell(r, c);
                 if (!cell) continue;
+                clearAppliedConditionalStyle(cell);
                 cell.textContent = "";
                 cell.removeAttribute("style");
+                cell.removeAttribute("title");
+                cell.classList.remove("ss-hyperlink", "ss-auto-align-right", "ss-auto-align-center", "ss-text-overflow", "ss-has-content");
                 Object.keys(cell.dataset).forEach(k => {
                     if (k !== "row" && k !== "col") delete cell.dataset[k];
                 });
@@ -13348,6 +14387,10 @@ export default async function initSpreadsheetApp(content, options = {}) {
                     delete dest.dataset.dvRule;
                     delete dest.dataset.valueType;
                     delete dest.dataset.dateValue;
+                    delete dest.dataset.richRuns;
+                    delete dest.dataset.hyperlink;
+                    dest.classList.remove("ss-hyperlink");
+                    dest.removeAttribute("title");
                     setCellFormattedValue(dest, parts[i] ?? "");
                 }
             });
@@ -13368,6 +14411,345 @@ export default async function initSpreadsheetApp(content, options = {}) {
         } else {
             applySplit();
         }
+    }
+
+    // =========================================================
+    // 表のデザイン：オートフォーマット（サンプルイメージ付き）
+    // =========================================================
+    const AUTO_FORMAT_STYLES = [
+        {
+            id: "simple",
+            name: "シンプル",
+            header: { bg: "#ffffff", fg: "#000000", bold: true, italic: false, align: "center", bt: "2px solid #000000", bb: "1px solid #000000" },
+            rowOdd: { bg: "#ffffff", fg: "#000000" },
+            rowEven: { bg: "#ffffff", fg: "#000000" },
+            total: { bg: "#ffffff", fg: "#000000", bold: true, bt: "1px solid #000000", bb: "4px double #000000" },
+            gridBorder: "",
+            numFormat: "comma"
+        },
+        {
+            id: "classic1",
+            name: "クラシック 1（ビジネス青）",
+            header: { bg: "#1f4e78", fg: "#ffffff", bold: true, italic: false, align: "center", bt: "2px solid #1f4e78", bb: "2px solid #1f4e78" },
+            rowOdd: { bg: "#ffffff", fg: "#000000" },
+            rowEven: { bg: "#d9e1f2", fg: "#000000" },
+            total: { bg: "#b4c6e7", fg: "#1f4e78", bold: true, bt: "1px solid #1f4e78", bb: "3px double #1f4e78" },
+            gridBorder: "1px solid #8ea9db",
+            numFormat: "comma"
+        },
+        {
+            id: "classic2",
+            name: "クラシック 2（ネイビー見出し）",
+            header: { bg: "#002060", fg: "#ffffff", bold: true, italic: false, align: "center", bt: "2px solid #002060", bb: "2px solid #002060" },
+            rowOdd: { bg: "#f2f4f8", fg: "#000000" },
+            rowEven: { bg: "#ffffff", fg: "#000000" },
+            total: { bg: "#d9e1f2", fg: "#000000", bold: true, bt: "2px solid #002060", bb: "2px solid #002060" },
+            gridBorder: "1px solid #bfbfbf",
+            numFormat: "comma"
+        },
+        {
+            id: "accounting1",
+            name: "会計 1（帳簿・通貨）",
+            header: { bg: "#e7e6e6", fg: "#000000", bold: true, italic: true, align: "right", bt: "2px solid #000000", bb: "1px solid #000000" },
+            rowOdd: { bg: "#ffffff", fg: "#000000" },
+            rowEven: { bg: "#fafafa", fg: "#000000" },
+            total: { bg: "#f2f2f2", fg: "#000000", bold: true, bt: "1px solid #000000", bb: "4px double #000000" },
+            gridBorder: "",
+            numFormat: "currency"
+        },
+        {
+            id: "accounting2",
+            name: "会計 2（グリーン明細）",
+            header: { bg: "#375623", fg: "#ffffff", bold: true, italic: false, align: "center", bt: "2px solid #375623", bb: "2px solid #375623" },
+            rowOdd: { bg: "#ffffff", fg: "#000000" },
+            rowEven: { bg: "#e2efda", fg: "#000000" },
+            total: { bg: "#c6e0b4", fg: "#1f3811", bold: true, bt: "1px solid #375623", bb: "4px double #375623" },
+            gridBorder: "1px solid #a9d08e",
+            numFormat: "currency"
+        },
+        {
+            id: "colorful1",
+            name: "カラフル 1（暖色オレンジ）",
+            header: { bg: "#c65911", fg: "#ffffff", bold: true, italic: false, align: "center", bt: "2px solid #833c0c", bb: "2px solid #833c0c" },
+            rowOdd: { bg: "#ffffff", fg: "#000000" },
+            rowEven: { bg: "#fce4d6", fg: "#000000" },
+            total: { bg: "#f8cbad", fg: "#833c0c", bold: true, bt: "2px solid #c65911", bb: "2px solid #833c0c" },
+            gridBorder: "1px solid #f4b084",
+            numFormat: "comma"
+        },
+        {
+            id: "colorful2",
+            name: "カラフル 2（エレガント紫）",
+            header: { bg: "#7030a0", fg: "#ffffff", bold: true, italic: false, align: "center", bt: "2px solid #4c1d70", bb: "2px solid #4c1d70" },
+            rowOdd: { bg: "#ffffff", fg: "#000000" },
+            rowEven: { bg: "#efe5f7", fg: "#000000" },
+            total: { bg: "#dcc4ee", fg: "#3f175e", bold: true, bt: "2px solid #7030a0", bb: "3px double #4c1d70" },
+            gridBorder: "1px solid #c5a3e0",
+            numFormat: "comma"
+        },
+        {
+            id: "darkModern",
+            name: "ダークモダン（プレゼン用）",
+            header: { bg: "#1b1f24", fg: "#ffffff", bold: true, italic: false, align: "center", bt: "2px solid #107c41", bb: "2px solid #107c41" },
+            rowOdd: { bg: "#2b3138", fg: "#f5f5f5" },
+            rowEven: { bg: "#373e47", fg: "#f5f5f5" },
+            total: { bg: "#107c41", fg: "#ffffff", bold: true, bt: "2px solid #ffffff", bb: "2px solid #107c41" },
+            gridBorder: "1px solid #4e5660",
+            numFormat: "comma"
+        }
+    ];
+
+    function buildAutoFormatSampleHtml(styleDef, opts) {
+        const fmtNum = (n) => {
+            if (!opts.number) return String(n);
+            return styleDef.numFormat === "currency" ? `¥${n.toLocaleString("ja-JP")}` : n.toLocaleString("ja-JP");
+        };
+        const cellCss = (role, isNumCol) => {
+            const parts = [];
+            if (opts.border) {
+                if (styleDef.gridBorder) parts.push(`border:${styleDef.gridBorder}`);
+                else parts.push("border:1px solid #ececec");
+            } else {
+                parts.push("border:1px solid #ececec");
+            }
+            if (role === "header") {
+                if (opts.pattern) parts.push(`background:${styleDef.header.bg}`);
+                if (opts.font) {
+                    parts.push(`color:${styleDef.header.fg}`);
+                    if (styleDef.header.bold) parts.push("font-weight:bold");
+                    if (styleDef.header.italic) parts.push("font-style:italic");
+                }
+                if (opts.align) parts.push(`text-align:${styleDef.header.align}`);
+                if (opts.border) {
+                    if (styleDef.header.bt) parts.push(`border-top:${styleDef.header.bt}`);
+                    if (styleDef.header.bb) parts.push(`border-bottom:${styleDef.header.bb}`);
+                }
+            } else if (role === "total") {
+                if (opts.pattern) parts.push(`background:${styleDef.total.bg}`);
+                if (opts.font) {
+                    parts.push(`color:${styleDef.total.fg}`);
+                    if (styleDef.total.bold) parts.push("font-weight:bold");
+                }
+                if (opts.align) parts.push(`text-align:${isNumCol ? "right" : "left"}`);
+                if (opts.border) {
+                    if (styleDef.total.bt) parts.push(`border-top:${styleDef.total.bt}`);
+                    if (styleDef.total.bb) parts.push(`border-bottom:${styleDef.total.bb}`);
+                }
+            } else {
+                const rowConf = role === "even" ? styleDef.rowEven : styleDef.rowOdd;
+                if (opts.pattern) parts.push(`background:${rowConf.bg}`);
+                if (opts.font) parts.push(`color:${rowConf.fg}`);
+                if (opts.align) parts.push(`text-align:${isNumCol ? "right" : "left"}`);
+            }
+            return parts.join(";");
+        };
+
+        const headerRole = opts.hasHeader ? "header" : "odd";
+        const totalRole = opts.hasTotal ? "total" : "even";
+        return `
+            <table class="ss-af-mini-tbl">
+                <tr>
+                    <td style="${cellCss(headerRole, false)}">品目</td>
+                    <td style="${cellCss(headerRole, true)}">1月</td>
+                    <td style="${cellCss(headerRole, true)}">2月</td>
+                </tr>
+                <tr>
+                    <td style="${cellCss("odd", false)}">商品A</td>
+                    <td style="${cellCss("odd", true)}">${fmtNum(1200)}</td>
+                    <td style="${cellCss("odd", true)}">${fmtNum(1500)}</td>
+                </tr>
+                <tr>
+                    <td style="${cellCss("even", false)}">商品B</td>
+                    <td style="${cellCss("even", true)}">${fmtNum(800)}</td>
+                    <td style="${cellCss("even", true)}">${fmtNum(950)}</td>
+                </tr>
+                <tr>
+                    <td style="${cellCss(totalRole, false)}">合計</td>
+                    <td style="${cellCss(totalRole, true)}">${fmtNum(2000)}</td>
+                    <td style="${cellCss(totalRole, true)}">${fmtNum(2450)}</td>
+                </tr>
+            </table>
+        `;
+    }
+
+    function applyAutoFormatToBounds(bounds, styleDef, opts) {
+        for (let r = bounds.minRow; r <= bounds.maxRow; r++) {
+            const isHeader = opts.hasHeader && r === bounds.minRow;
+            const isTotal = opts.hasTotal && r === bounds.maxRow && bounds.maxRow > bounds.minRow;
+            const dataIdx = opts.hasHeader ? (r - bounds.minRow - 1) : (r - bounds.minRow);
+            const isEven = dataIdx % 2 === 1;
+
+            for (let c = bounds.minCol; c <= bounds.maxCol; c++) {
+                const cell = getVisibleCell(r, c);
+                if (!cell || cell.style.display === "none") continue;
+                clearAppliedConditionalStyle(cell);
+                const rawVal = cell.dataset.formula ? evaluateFormula(cell.dataset.formula) : (cell.dataset.rawValue ?? cell.textContent);
+                const isNumeric = String(rawVal ?? "").trim() !== "" && !isNaN(parseFormattedNumber(rawVal));
+
+                if (opts.border) {
+                    cell.style.borderTop = styleDef.gridBorder || "";
+                    cell.style.borderBottom = styleDef.gridBorder || "";
+                    cell.style.borderLeft = styleDef.gridBorder || "";
+                    cell.style.borderRight = styleDef.gridBorder || "";
+                }
+
+                if (isHeader) {
+                    if (opts.pattern) {
+                        cell.style.backgroundColor = styleDef.header.bg;
+                        if (cell.dataset.cfApplied) cell.dataset.cfOrigBg = styleDef.header.bg;
+                    }
+                    if (opts.font) {
+                        cell.style.color = styleDef.header.fg;
+                        if (cell.dataset.cfApplied) cell.dataset.cfOrigColor = styleDef.header.fg;
+                        cell.style.fontWeight = styleDef.header.bold ? "bold" : "";
+                        cell.style.fontStyle = styleDef.header.italic ? "italic" : "";
+                    }
+                    if (opts.align) cell.style.textAlign = styleDef.header.align;
+                    if (opts.border) {
+                        if (styleDef.header.bt) cell.style.borderTop = styleDef.header.bt;
+                        if (styleDef.header.bb) cell.style.borderBottom = styleDef.header.bb;
+                    }
+                } else if (isTotal) {
+                    if (opts.pattern) {
+                        cell.style.backgroundColor = styleDef.total.bg;
+                        if (cell.dataset.cfApplied) cell.dataset.cfOrigBg = styleDef.total.bg;
+                    }
+                    if (opts.font) {
+                        cell.style.color = styleDef.total.fg;
+                        if (cell.dataset.cfApplied) cell.dataset.cfOrigColor = styleDef.total.fg;
+                        cell.style.fontWeight = styleDef.total.bold ? "bold" : "";
+                    }
+                    if (opts.align) cell.style.textAlign = isNumeric ? "right" : "left";
+                    if (opts.border) {
+                        if (styleDef.total.bt) cell.style.borderTop = styleDef.total.bt;
+                        if (styleDef.total.bb) cell.style.borderBottom = styleDef.total.bb;
+                    }
+                    if (opts.number && isNumeric) {
+                        cell.dataset.numFormat = styleDef.numFormat;
+                        setCellFormattedValue(cell, rawVal);
+                    }
+                } else {
+                    const rowConf = isEven ? styleDef.rowEven : styleDef.rowOdd;
+                    if (opts.pattern) {
+                        cell.style.backgroundColor = rowConf.bg;
+                        if (cell.dataset.cfApplied) cell.dataset.cfOrigBg = rowConf.bg;
+                    }
+                    if (opts.font) {
+                        cell.style.color = rowConf.fg;
+                        if (cell.dataset.cfApplied) cell.dataset.cfOrigColor = rowConf.fg;
+                        cell.style.fontWeight = "";
+                        cell.style.fontStyle = "";
+                    }
+                    if (opts.align) cell.style.textAlign = isNumeric ? "right" : "left";
+                    if (opts.number && isNumeric) {
+                        cell.dataset.numFormat = styleDef.numFormat;
+                        setCellFormattedValue(cell, rawVal);
+                    }
+                }
+            }
+        }
+
+        if (opts.autoFit) {
+            for (let c = bounds.minCol; c <= bounds.maxCol; c++) autoFitColumn(c);
+            for (let r = bounds.minRow; r <= bounds.maxRow; r++) autoFitRow(getRow(r));
+        }
+
+        applyConditionalFormats();
+        updateToolbarState();
+        setDirtyState(true);
+        debouncedSaveState();
+    }
+
+    function openAutoFormatDialog() {
+        flushPendingEdits();
+        const bounds = detectDataBlockBounds(activeCell) || getSelectedRangeBounds();
+        if (!bounds) {
+            showAlert("オートフォーマットを適用する表またはセル範囲を選択してください。", "オートフォーマット");
+            return;
+        }
+
+        let selectedStyleId = AUTO_FORMAT_STYLES[1].id;
+        const rangeLabel = `${getCellReferenceByCoord(bounds.minRow, bounds.minCol)}:${getCellReferenceByCoord(bounds.maxRow, bounds.maxCol)}`;
+
+        const bodyHtml = `
+            <div style="width:100%; display:flex; flex-direction:column; gap:8px; font-size:12px;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span>適用先範囲: <b>${escapeHtml(rangeLabel)}</b></span>
+                    <div style="display:flex; gap:10px;">
+                        <label style="cursor:pointer;"><input type="checkbox" class="ss-af-opt-header" checked> 先頭行を見出しにする</label>
+                        <label style="cursor:pointer;"><input type="checkbox" class="ss-af-opt-total" checked> 最終行を合計行にする</label>
+                    </div>
+                </div>
+                <div class="ss-af-grid"></div>
+                <fieldset style="border:1px solid #808080; padding:6px 8px; margin:0;">
+                    <legend style="padding:0 4px; font-size:11px;">適用する書式（リアルタイムプレビュー連動）</legend>
+                    <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:4px 10px; font-size:11px;">
+                        <label style="cursor:pointer;"><input type="checkbox" class="ss-af-opt-number" checked> 数値書式</label>
+                        <label style="cursor:pointer;"><input type="checkbox" class="ss-af-opt-border" checked> 罫線</label>
+                        <label style="cursor:pointer;"><input type="checkbox" class="ss-af-opt-font" checked> フォント</label>
+                        <label style="cursor:pointer;"><input type="checkbox" class="ss-af-opt-pattern" checked> パターン（網掛け）</label>
+                        <label style="cursor:pointer;"><input type="checkbox" class="ss-af-opt-align" checked> 配置</label>
+                        <label style="cursor:pointer;"><input type="checkbox" class="ss-af-opt-autofit" checked> 幅/高さを自動調整</label>
+                    </div>
+                </fieldset>
+            </div>
+        `;
+
+        const modalContent = openAppModal("オートフォーマット（表の自動書式設定）", bodyHtml, {
+            width: 540,
+            isHtml: true,
+            parentWin: win,
+            buttons: [
+                {
+                    label: "OK",
+                    onClick: () => {
+                        const styleDef = AUTO_FORMAT_STYLES.find(s => s.id === selectedStyleId) || AUTO_FORMAT_STYLES[0];
+                        applyAutoFormatToBounds(bounds, styleDef, readOpts());
+                        statusBarState.stateText = `オートフォーマット「${styleDef.name}」を適用しました`;
+                        renderWindowStatusBar();
+                    }
+                },
+                { label: "キャンセル" }
+            ]
+        });
+
+        const gridEl = modalContent.querySelector(".ss-af-grid");
+        const readOpts = () => ({
+            hasHeader: Boolean(modalContent.querySelector(".ss-af-opt-header")?.checked),
+            hasTotal: Boolean(modalContent.querySelector(".ss-af-opt-total")?.checked),
+            number: Boolean(modalContent.querySelector(".ss-af-opt-number")?.checked),
+            border: Boolean(modalContent.querySelector(".ss-af-opt-border")?.checked),
+            font: Boolean(modalContent.querySelector(".ss-af-opt-font")?.checked),
+            pattern: Boolean(modalContent.querySelector(".ss-af-opt-pattern")?.checked),
+            align: Boolean(modalContent.querySelector(".ss-af-opt-align")?.checked),
+            autoFit: Boolean(modalContent.querySelector(".ss-af-opt-autofit")?.checked)
+        });
+
+        const renderCards = () => {
+            const opts = readOpts();
+            gridEl.innerHTML = AUTO_FORMAT_STYLES.map(st => `
+                <div class="ss-af-card ${st.id === selectedStyleId ? "selected" : ""}" data-af-id="${st.id}">
+                    <div class="ss-af-card-title">${escapeHtml(st.name)}</div>
+                    ${buildAutoFormatSampleHtml(st, opts)}
+                </div>
+            `).join("");
+
+            gridEl.querySelectorAll(".ss-af-card").forEach(card => {
+                card.addEventListener("click", () => {
+                    selectedStyleId = card.dataset.afId;
+                    gridEl.querySelectorAll(".ss-af-card").forEach(c => c.classList.toggle("selected", c === card));
+                });
+                card.addEventListener("dblclick", () => {
+                    selectedStyleId = card.dataset.afId;
+                    (modalContent.closest(".window") || modalContent).querySelector(".button-container button")?.click();
+                });
+            });
+        };
+
+        modalContent.querySelectorAll("input[type='checkbox']").forEach(chk => {
+            chk.addEventListener("change", renderCards);
+        });
+        renderCards();
     }
 
     // =========================================================
@@ -13657,7 +15039,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 for (let c = tbl.minCol; c <= tbl.maxCol; c++) {
                     const headerText = sIdx === activeSheetIndex
                         ? (getVisibleCell(tbl.minRow, c)?.textContent ?? "").trim()
-                        : String((sheets[sIdx].cells || []).find(item => item.r === tbl.minRow && item.c === c)?.v ?? "").trim();
+                        : String(getBackgroundSheetCellMap(sheets[sIdx]).get(`${tbl.minRow},${c}`)?.v ?? "").trim();
                     if (headerText === cleanCol) {
                         matchedCol = c;
                         break;
@@ -14088,9 +15470,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 debouncedSaveState();
             });
             filterObserver.observe(fValCell, { childList: true, characterData: true, subtree: true });
-            if (typeof signal !== "undefined" && signal) {
-                signal.addEventListener("abort", () => filterObserver.disconnect(), { once: true });
-            }
+            activeSheetObservers.add(filterObserver);
         }
 
         const focusTarget = getVisibleCell(headerR, startC);
@@ -14701,24 +16081,30 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 break;
             case "clear-formats":
                 getTargetCells().forEach(c => {
+                    clearAppliedConditionalStyle(c);
                     c.removeAttribute("style");
                     delete c.dataset.numFormat;
                     delete c.dataset.decimalPlaces;
-                    delete c.dataset.cfApplied;
+                    delete c.dataset.richRuns;
                     const raw = c.dataset.formula ? evaluateFormula(c.dataset.formula) : (c.dataset.rawValue ?? c.textContent);
                     setCellFormattedValue(c, raw);
                 });
+                applyConditionalFormats();
+                updateToolbarState();
                 setDirtyState(true);
                 debouncedSaveState();
                 break;
             case "clear-all":
                 getTargetCells().forEach(c => {
+                    clearAppliedConditionalStyle(c);
                     c.removeAttribute("style");
                     delete c.dataset.numFormat;
                     delete c.dataset.decimalPlaces;
                     delete c.dataset.dropdownList;
                     delete c.dataset.dvRule;
-                    delete c.dataset.cfApplied;
+                    delete c.dataset.hyperlink;
+                    c.classList.remove("ss-hyperlink");
+                    c.removeAttribute("title");
                 });
                 clearTargetCellsContent();
                 hideCellDropdownButton();
@@ -14805,6 +16191,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
                                     const raw = c.dataset.formula ? evaluateFormula(c.dataset.formula) : (c.dataset.rawValue ?? c.textContent);
                                     setCellFormattedValue(c, raw);
                                 });
+                                updateTextOverflowDisplay();
                                 updateToolbarState();
                                 setDirtyState(true);
                                 debouncedSaveState();
@@ -14846,13 +16233,15 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 if (shell) {
                     const collapsed = shell.classList.toggle("collapsed");
                     if (btn) btn.textContent = collapsed ? "▼" : "▲";
+                    if (!collapsed) requestAnimationFrame(fitActiveRibbonPanel);
                 }
                 break;
             }
             case "toggle-print-orientation": {
                 printOrientation = printOrientation === "portrait" ? "landscape" : "portrait";
                 const btn = appRoot.querySelector(".ss-print-orient-btn");
-                if (btn) btn.textContent = `向き: ${printOrientation === "landscape" ? "横" : "縦"}`;
+                const lbl = btn?.querySelector(".ss-btn-lbl") || btn;
+                if (lbl) lbl.textContent = `向き: ${printOrientation === "landscape" ? "横" : "縦"}`;
                 updatePageStyleRule();
                 setDirtyState(true);
                 debouncedSaveState();
@@ -14894,6 +16283,9 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 break;
             case "text-to-columns":
                 openTextToColumnsDialog();
+                break;
+            case "auto-format":
+                openAutoFormatDialog();
                 break;
             case "create-table":
                 convertRangeToStructuredTable("blue");
@@ -15075,6 +16467,8 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 const raw = c.dataset.formula ? evaluateFormula(c.dataset.formula) : (c.dataset.rawValue ?? c.textContent);
                 setCellFormattedValue(c, raw);
             });
+            updateTextOverflowDisplay();
+            updateToolbarState();
             setDirtyState(true);
             debouncedSaveState();
             return;
@@ -15095,6 +16489,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 c.dataset.decimalPlaces = String(Math.max(0, Math.min(10, curDec + step)));
                 setCellFormattedValue(c, raw);
             });
+            updateTextOverflowDisplay();
             setDirtyState(true);
             debouncedSaveState();
             return;
@@ -15108,7 +16503,16 @@ export default async function initSpreadsheetApp(content, options = {}) {
             const targets = tbody.querySelectorAll("td.selected");
             (targets.length ? targets : (activeCell ? [activeCell] : [])).forEach(c => {
                 c.style.textAlign = align;
+                if (c.tagName === "TD") {
+                    const displayText = formatDisplayByNumFmt(
+                        c.dataset.rawValue ?? c.textContent,
+                        c.dataset.numFormat,
+                        c
+                    );
+                    setCellTextPreservingControls(c, displayText);
+                }
             });
+            updateTextOverflowDisplay();
             setDirtyState(true);
             debouncedSaveState();
             return;
@@ -15233,8 +16637,14 @@ export default async function initSpreadsheetApp(content, options = {}) {
 
     appRoot.querySelector(".ss-toggle-bold").addEventListener("click", () => {
         const targets = getTargetCells();
-        const allBold = targets.length > 0 && targets.every(c => c.style.fontWeight === "bold");
-        targets.forEach(c => { c.style.fontWeight = allBold ? "" : "bold"; });
+        const getBaseWeight = (c) => (c.dataset?.cfApplied ? (c.dataset.cfOrigWeight || "") : c.style.fontWeight);
+        const allBold = targets.length > 0 && targets.every(c => getBaseWeight(c) === "bold");
+        const nextVal = allBold ? "" : "bold";
+        targets.forEach(c => {
+            c.style.fontWeight = nextVal;
+            if (c.dataset?.cfApplied) c.dataset.cfOrigWeight = nextVal;
+        });
+        applyConditionalFormats();
         updateToolbarState();
         setDirtyState(true);
         debouncedSaveState();
@@ -15242,8 +16652,14 @@ export default async function initSpreadsheetApp(content, options = {}) {
 
     appRoot.querySelector(".ss-toggle-italic").addEventListener("click", () => {
         const targets = getTargetCells();
-        const allItalic = targets.length > 0 && targets.every(c => c.style.fontStyle === "italic");
-        targets.forEach(c => { c.style.fontStyle = allItalic ? "" : "italic"; });
+        const getBaseItalic = (c) => (c.dataset?.cfApplied ? (c.dataset.cfOrigItalic || "") : c.style.fontStyle);
+        const allItalic = targets.length > 0 && targets.every(c => getBaseItalic(c) === "italic");
+        const nextVal = allItalic ? "" : "italic";
+        targets.forEach(c => {
+            c.style.fontStyle = nextVal;
+            if (c.dataset?.cfApplied) c.dataset.cfOrigItalic = nextVal;
+        });
+        applyConditionalFormats();
         updateToolbarState();
         setDirtyState(true);
         debouncedSaveState();
@@ -15251,13 +16667,17 @@ export default async function initSpreadsheetApp(content, options = {}) {
 
     const toggleTextDecorationToken = (token) => {
         const targets = getTargetCells();
-        const allHave = targets.length > 0 && targets.every(c => (c.style.textDecoration || "").includes(token));
+        const getBaseDeco = (c) => (c.dataset?.cfApplied ? (c.dataset.cfOrigDeco || "") : (c.style.textDecoration || ""));
+        const allHave = targets.length > 0 && targets.every(c => getBaseDeco(c).includes(token));
         targets.forEach(c => {
-            const parts = new Set((c.style.textDecoration || "").split(/\s+/).filter(t => t === "underline" || t === "line-through"));
+            const parts = new Set(getBaseDeco(c).split(/\s+/).filter(t => t === "underline" || t === "line-through"));
             if (allHave) parts.delete(token);
             else parts.add(token);
-            c.style.textDecoration = Array.from(parts).join(" ");
+            const nextVal = Array.from(parts).join(" ");
+            c.style.textDecoration = nextVal;
+            if (c.dataset?.cfApplied) c.dataset.cfOrigDeco = nextVal;
         });
+        applyConditionalFormats();
         updateToolbarState();
         setDirtyState(true);
         debouncedSaveState();
@@ -15335,6 +16755,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 c.style.wordBreak = "break-all";
             }
         });
+        updateTextOverflowDisplay();
         updateToolbarState();
         setDirtyState(true);
         debouncedSaveState();
@@ -15457,7 +16878,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
         if (!rawCell || !tbody.contains(rawCell)) return null;
         if (rawCell.classList.contains("ss-text-overflow")) {
             const rect = rawCell.getBoundingClientRect();
-            if (e.clientX > rect.right) {
+            if (e.clientX > rect.right || e.clientX < rect.left) {
                 const prevPointerEvents = rawCell.style.pointerEvents;
                 rawCell.style.pointerEvents = "none";
                 const underneath = document.elementFromPoint(e.clientX, e.clientY)?.closest("td");
@@ -15597,6 +17018,8 @@ export default async function initSpreadsheetApp(content, options = {}) {
                     dvRule: cell.dataset.dvRule || "",
                     valueType: cell.dataset.valueType || "",
                     dateValue: cell.dataset.dateValue || "",
+                    richRuns: cell.dataset.richRuns || "",
+                    hyperlink: cell.dataset.hyperlink || "",
                     styleObj: extractCellStyleObject(cell),
                     rowspan: parseInt(cell.getAttribute("rowspan") || "1", 10),
                     colspan: parseInt(cell.getAttribute("colspan") || "1", 10)
@@ -15670,6 +17093,19 @@ export default async function initSpreadsheetApp(content, options = {}) {
 
             if (item.dateValue) dest.dataset.dateValue = item.dateValue;
             else delete dest.dataset.dateValue;
+
+            if (item.richRuns && !item.formula) dest.dataset.richRuns = item.richRuns;
+            else delete dest.dataset.richRuns;
+
+            if (item.hyperlink) {
+                dest.dataset.hyperlink = item.hyperlink;
+                dest.classList.add("ss-hyperlink");
+                dest.title = `${item.hyperlink}（Ctrl+クリックで開く）`;
+            } else {
+                delete dest.dataset.hyperlink;
+                dest.classList.remove("ss-hyperlink");
+                dest.removeAttribute("title");
+            }
 
             if (item.formula) {
                 const nextFormula = copyMode
@@ -16059,6 +17495,12 @@ export default async function initSpreadsheetApp(content, options = {}) {
             return;
         }
 
+        if ((e.ctrlKey || e.metaKey) && !isInFormulaEdit() && extractHyperlinkTarget(cell)) {
+            e.preventDefault();
+            void activateCellHyperlink(cell);
+            return;
+        }
+
         isSelecting = true;
         clearSelection();
         selectionStart = clickedPos;
@@ -16176,6 +17618,8 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 });
                 formatPainterSnapshot = null;
                 appRoot.querySelector(".ss-format-painter-btn")?.classList.remove("selected");
+                applyConditionalFormats();
+                updateToolbarState();
                 statusBarState.stateText = "書式を適用しました";
                 renderWindowStatusBar();
                 setDirtyState(true);
@@ -16375,13 +17819,84 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 }
                 if (key === "a") {
                     e.preventDefault();
-                    const allCells = tbody.querySelectorAll("td");
-                    allCells.forEach(c => {
-                        if (c.style.display !== "none" && c.closest("tr")?.style.display !== "none") {
-                            c.classList.add("selected");
+                    const base = activeCell || getVisibleCell(1, 0);
+                    if (!base) return;
+
+                    const isFilledAt = (r, c) => {
+                        const td = peekCell(r, c);
+                        if (!td || td.closest("tr")?.style.display === "none") return false;
+                        const vis = td.style.display === "none" ? getVisibleCell(r, c) : td;
+                        return Boolean(vis && (vis.dataset.formula || (vis.dataset.rawValue ?? vis.textContent).trim() !== ""));
+                    };
+
+                    // Excelの CurrentRegion 準拠：アクティブセルまたは隣接8マスのデータから外接矩形を拡張
+                    const r0 = parseInt(base.dataset.row, 10);
+                    const c0 = parseInt(base.dataset.col, 10);
+                    const maxR = tbody.rows.length;
+                    const maxC = currentColumns - 1;
+                    let seed = isFilledAt(r0, c0) ? { r: r0, c: c0 } : null;
+                    if (!seed) {
+                        for (const [dr, dc] of [[-1, 0], [1, 0], [0, -1], [0, 1], [-1, -1], [-1, 1], [1, -1], [1, 1]]) {
+                            const nr = r0 + dr, nc = c0 + dc;
+                            if (nr >= 1 && nr <= maxR && nc >= 0 && nc <= maxC && isFilledAt(nr, nc)) {
+                                seed = { r: nr, c: nc };
+                                break;
+                            }
                         }
-                    });
-                    setActiveCell(getVisibleCell(1, 0), true);
+                    }
+
+                    let region = null;
+                    if (seed) {
+                        let minRow = seed.r, maxRow = seed.r, minCol = seed.c, maxCol = seed.c;
+                        let expanded = true;
+                        while (expanded) {
+                            expanded = false;
+                            if (minRow > 1) {
+                                for (let c = Math.max(0, minCol - 1); c <= Math.min(maxC, maxCol + 1); c++) {
+                                    if (isFilledAt(minRow - 1, c)) { minRow--; expanded = true; break; }
+                                }
+                            }
+                            if (maxRow < maxR) {
+                                for (let c = Math.max(0, minCol - 1); c <= Math.min(maxC, maxCol + 1); c++) {
+                                    if (isFilledAt(maxRow + 1, c)) { maxRow++; expanded = true; break; }
+                                }
+                            }
+                            if (minCol > 0) {
+                                for (let r = Math.max(1, minRow - 1); r <= Math.min(maxR, maxRow + 1); r++) {
+                                    if (isFilledAt(r, minCol - 1)) { minCol--; expanded = true; break; }
+                                }
+                            }
+                            if (maxCol < maxC) {
+                                for (let r = Math.max(1, minRow - 1); r <= Math.min(maxR, maxRow + 1); r++) {
+                                    if (isFilledAt(r, maxCol + 1)) { maxCol++; expanded = true; break; }
+                                }
+                            }
+                        }
+                        region = expandBoundsForMergedCells({ minRow, maxRow, minCol, maxCol });
+                    }
+
+                    const cur = getSelectedRangeBounds();
+                    const alreadySelectedRegion = Boolean(
+                        region && cur &&
+                        cur.minRow === region.minRow && cur.maxRow === region.maxRow &&
+                        cur.minCol === region.minCol && cur.maxCol === region.maxCol
+                    );
+
+                    clearSelection();
+                    if (region && !alreadySelectedRegion) {
+                        selectionStart = { row: region.minRow, col: region.minCol };
+                        selectionEnd = { row: region.maxRow, col: region.maxCol };
+                        updateSelection();
+                        setActiveCell(base, true);
+                    } else {
+                        const allCells = tbody.querySelectorAll("td");
+                        allCells.forEach(c => {
+                            if (c.style.display !== "none" && c.closest("tr")?.style.display !== "none") {
+                                c.classList.add("selected");
+                            }
+                        });
+                        setActiveCell(base, true);
+                    }
                     updateSelectedCellsDisplay();
                     updateFillHandle();
                     return;
@@ -16415,6 +17930,11 @@ export default async function initSpreadsheetApp(content, options = {}) {
             if (key === "t" && !e.shiftKey && document.activeElement !== formulaBarInput) {
                 e.preventDefault();
                 convertRangeToStructuredTable("blue");
+                return;
+            }
+            if (key === "k" && !e.shiftKey && document.activeElement !== formulaBarInput) {
+                e.preventDefault();
+                openHyperlinkDialog();
                 return;
             }
             return;
@@ -16629,6 +18149,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
             delete c.dataset.quotePrefix;
             delete c.dataset.valueType;
             delete c.dataset.dateValue;
+            delete c.dataset.richRuns;
             setCellFormattedValue(c, "");
         });
         if (activeCell) {
@@ -16752,7 +18273,10 @@ export default async function initSpreadsheetApp(content, options = {}) {
             { label: "---" },
             { label: "セル結合", action: mergeSelectedCells, disabled: !canMerge },
             { label: "結合解除", action: unmergeSelectedCells, disabled: !canUnmerge },
-            { label: "内容をクリア (Delete)", action: clearTargetCellsContent }
+            { label: "内容をクリア (Delete)", action: clearTargetCellsContent },
+            { label: "---" },
+            ...(extractHyperlinkTarget(cell) ? [{ label: "ハイパーリンクを開く", action: () => void activateCellHyperlink(cell) }] : []),
+            { label: "ハイパーリンクの挿入/編集 (Ctrl+K)...", action: openHyperlinkDialog }
         ];
     });
 
@@ -17189,6 +18713,14 @@ export default async function initSpreadsheetApp(content, options = {}) {
         }, { capture: true, signal });
     }
 
+    window.addEventListener("beforeunload", () => {
+        if (!isDirty) return;
+        try {
+            const serialized = serializeSheetSnapshot({ flush: true, recalcBackground: false });
+            persistCrashRecoveryBackup(serialized);
+        } catch { /* ignore */ }
+    }, { signal });
+
     // =========================================================
     // カーネル連携用ハンドル
     // =========================================================
@@ -17229,6 +18761,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 clearInterval(appRoot._navInterval);
                 appRoot._navInterval = null;
             }
+            disconnectActiveSheetObservers();
             rowObserver?.disconnect();
             containerResizeObserver?.disconnect();
             windowStateObserver?.disconnect();
