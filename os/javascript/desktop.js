@@ -18,12 +18,11 @@ import {
     clearFSClipboard,
     isPathCutInClipboard
 } from "./fs-utils.js";
-import { addRecent } from "./recent.js";
 import { attachContextMenu } from "./context-menu.js";
 import { resolveAppByPath, getIcon, getDisplayFileName } from "./file-associations.js";
 import { openWithDialog as explorerOpenWithDialog, showProperties, emptyTrash } from "./apps/explorer.js";
-import { dbGet, dbSet, moveFileContent, copyFileContent, deleteFileContentRecursive } from "./fs-db.js";
-import { applyDesktopBackground } from "./apps/settings.js";
+import { moveFileContent, copyFileContent, deleteFileContentRecursive } from "./fs-db.js";
+import { applyDesktopBackground, loadSetting, saveSetting } from "./apps/settings.js";
 
 // 選択状態管理 (複数選択・範囲選択対応)
 let globalSelected = { items: new Set(), window: null, lastSelected: null };
@@ -33,15 +32,15 @@ let showFileExtensions = true; // 拡張子表示設定
 
 (async () => {
     try {
-        const savedAutoArrange = await dbGet("desktop_autoArrange", "settings");
-        if (savedAutoArrange !== undefined) autoArrange = savedAutoArrange;
+        const savedAutoArrange = await loadSetting("desktop_autoArrange");
+        if (savedAutoArrange != null) autoArrange = savedAutoArrange;
 
-        const savedPositions = await dbGet("desktop_iconsPositions", "settings");
+        const savedPositions = await loadSetting("desktop_iconsPositions");
         if (savedPositions) iconPositions = savedPositions;
 
         // エクスプローラーと共通の拡張子表示設定をロード
-        const savedShowExt = await dbGet("explorerShowFileExtensions", "settings");
-        if (savedShowExt !== undefined) {
+        const savedShowExt = await loadSetting("explorerShowFileExtensions");
+        if (savedShowExt != null) {
             showFileExtensions = savedShowExt === true || savedShowExt === "true";
         }
 
@@ -58,7 +57,8 @@ let showFileExtensions = true; // 拡張子表示設定
 async function transferItemsToTarget(data, targetPath, targetNode, isCopy) {
     if (!data || !targetNode || targetNode.type !== "folder") return false;
 
-    const isDroppingToTrash = targetPath.toLowerCase() === "c:/trash";
+    const cleanTargetPath = targetPath.replace(/\\/g, "/").replace(/\/+$/, "");
+    const isDroppingToTrash = cleanTargetPath.toLowerCase() === "c:/trash";
     const effectiveIsCopy = isDroppingToTrash ? false : isCopy;
 
     let itemEntries = [];
@@ -93,7 +93,7 @@ async function transferItemsToTarget(data, targetPath, targetNode, isCopy) {
             if (isDescendantOrSelf(sourceFullPath, targetPath)) continue;
 
             // 移動の場合、同じフォルダへのドロップはスキップ
-            if (!effectiveIsCopy && sourcePath === targetPath) continue;
+            if (!effectiveIsCopy && sourcePath === cleanTargetPath) continue;
 
             // ゴミ箱への移動時はシステム保護アイテムをスキップ
             if (isDroppingToTrash && rawItem.system === true) continue;
@@ -118,7 +118,7 @@ async function transferItemsToTarget(data, targetPath, targetNode, isCopy) {
                 delete clonedNode.originalPath;
             }
 
-            const newTargetFullPath = `${targetPath}/${uniqueTargetName}`;
+            const newTargetFullPath = `${cleanTargetPath}/${uniqueTargetName}`;
             if (isTakingOutFromTrash) {
                 await unmarkDefaultDeleted(newTargetFullPath);
             }
@@ -545,7 +545,7 @@ export function buildDesktop() {
                 label: `ファイル名拡張子 ${showFileExtensions ? "✓" : ""}`,
                 action: async () => {
                     showFileExtensions = !showFileExtensions;
-                    await dbSet("explorerShowFileExtensions", showFileExtensions, "settings");
+                    await saveSetting("explorerShowFileExtensions", showFileExtensions);
                     window.dispatchEvent(new Event("fs-updated"));
                     buildDesktop();
                 }
@@ -570,16 +570,16 @@ export function buildDesktop() {
                                     y: rect.top - containerRect.top
                                 };
                             });
-                            dbSet("desktop_iconsPositions", iconPositions, "settings").catch(err => console.error(err));
+                            saveSetting("desktop_iconsPositions", iconPositions).catch(err => console.error(err));
                         }
                     }
 
                     autoArrange = nextAutoArrange;
-                    dbSet("desktop_autoArrange", autoArrange, "settings").catch(err => console.error(err));
+                    saveSetting("desktop_autoArrange", autoArrange).catch(err => console.error(err));
 
                     if (autoArrange) {
                         iconPositions = {};
-                        dbSet("desktop_iconsPositions", {}, "settings").catch(err => console.error(err));
+                        saveSetting("desktop_iconsPositions", {}).catch(err => console.error(err));
                     }
 
                     autoArrangeIcons();
@@ -852,7 +852,7 @@ export function buildDesktop() {
                         });
                     }
 
-                    await dbSet("desktop_iconsPositions", iconPositions, "settings");
+                    await saveSetting("desktop_iconsPositions", iconPositions);
                     buildDesktop();
                 }
                 return;
@@ -1340,7 +1340,6 @@ function openFSItem(name, node, parentPath) {
     // アプリケーションの実行
     if (type === "app") {
         window.nexser?.kernelAPI.launch(targetPath, { path: targetPath, uniqueKey: targetPath });
-        addRecent({ type: "app", path: targetPath });
     }
     // フォルダの展開
     else if (type === "folder") {
@@ -1349,7 +1348,6 @@ function openFSItem(name, node, parentPath) {
             uniqueKey: targetPath,
             showFullPath: true
         });
-        addRecent({ type: "folder", path: targetPath });
     }
     // ファイルの実行
     else if (type === "file") {
@@ -1358,7 +1356,6 @@ function openFSItem(name, node, parentPath) {
         } else {
             explorerOpenWithDialog(targetPath, targetNode);
         }
-        addRecent({ type: "file", path: targetPath });
     }
 }
 
@@ -1379,8 +1376,8 @@ function installDesktopWatcher() {
 
         // 更新時に拡張子設定も再取得して同期する
         try {
-            const savedShowExt = await dbGet("explorerShowFileExtensions", "settings");
-            if (savedShowExt !== undefined) {
+            const savedShowExt = await loadSetting("explorerShowFileExtensions");
+            if (savedShowExt != null) {
                 showFileExtensions = savedShowExt === true || savedShowExt === "true";
             }
         } catch (e) { }
@@ -1787,7 +1784,7 @@ async function snapDesktopIconsToGrid(orderedNames = null) {
     });
 
     iconPositions = nextPositions;
-    await dbSet("desktop_iconsPositions", iconPositions, "settings");
+    await saveSetting("desktop_iconsPositions", iconPositions);
     buildDesktop();
 }
 
@@ -1796,7 +1793,7 @@ window.addEventListener("fs-renamed", async (e) => {
     if (oldPath === `C:/Desktop/${oldName}` && !autoArrange && iconPositions[oldName]) {
         iconPositions[newName] = iconPositions[oldName];
         delete iconPositions[oldName];
-        await dbSet("desktop_iconsPositions", iconPositions, "settings");
+        await saveSetting("desktop_iconsPositions", iconPositions);
         buildDesktop();
     }
 });

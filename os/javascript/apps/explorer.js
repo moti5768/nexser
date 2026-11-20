@@ -556,11 +556,19 @@ export default async function Explorer(root, options = {}) {
             }
         }
 
+        const prevPath = currentPath;
         if (saveHistory) {
             historyStack.push(currentPath);
             forwardStack = [];
         }
         currentPath = path;
+        window.dispatchEvent(new CustomEvent("explorer-path-changed", {
+            detail: {
+                processKey: win?.dataset?.processKey || null,
+                oldPath: prevPath,
+                newPath: currentPath
+            }
+        }));
         render(currentPath);
     };
 
@@ -588,6 +596,7 @@ export default async function Explorer(root, options = {}) {
         switch (effectiveType) {
             case "folder":
                 navigateTo(targetPath);
+                addRecent({ type: "folder", path: targetPath });
                 break;
             case "app":
                 window.nexser?.kernelAPI.launch(targetPath, { path: targetPath, uniqueKey: targetPath });
@@ -602,7 +611,6 @@ export default async function Explorer(root, options = {}) {
                 break;
             }
         }
-        addRecent({ type: effectiveType, path: targetPath });
     }
 
     // ------------------------
@@ -841,10 +849,12 @@ export default async function Explorer(root, options = {}) {
 
                 const dataStr = e.dataTransfer.getData("text/plain");
 
-                // 1. 【最優先】自動整列オフ時のアイコン自由配置（移動）処理
+                // 1. 【最優先】自動整列オフ時の同一フォルダ内アイコン自由配置（移動）処理
                 try {
                     const data = dataStr ? JSON.parse(dataStr) : null;
-                    if (data && data.type === "explorer-icons" && viewMode === "icon" && !autoArrange) {
+                    const normalizedSource = (data?.sourcePath || "").replace(/\\/g, "/").replace(/\/+$/, "");
+                    const normalizedCurrent = (currentPath || "").replace(/\\/g, "/").replace(/\/+$/, "");
+                    if (data && data.type === "explorer-icons" && normalizedSource === normalizedCurrent && viewMode === "icon" && !autoArrange) {
                         const containerRect = listContainer.getBoundingClientRect();
                         if (data.draggedItems) {
                             data.draggedItems.forEach((info) => {
@@ -2046,8 +2056,7 @@ export default async function Explorer(root, options = {}) {
                                             setBulkUpdating(false);
                                         }
 
-                                        if (confirmWin._modalOverlay) confirmWin._modalOverlay.remove();
-                                        confirmWin.remove();
+                                        closeModal(confirmWin);
                                         window.dispatchEvent(new Event("fs-updated"));
                                         render(currentPath);
 
@@ -2059,8 +2068,7 @@ export default async function Explorer(root, options = {}) {
                                 {
                                     label: "キャンセル",
                                     action: () => {
-                                        if (confirmWin._modalOverlay) confirmWin._modalOverlay.remove();
-                                        confirmWin.remove();
+                                        closeModal(confirmWin);
                                     }
                                 }
                             ]
@@ -2095,7 +2103,7 @@ export default async function Explorer(root, options = {}) {
         if (!data) return false;
 
         const resolved = resolveLinkTarget(targetPath);
-        const effectiveTargetPath = resolved.path;
+        const effectiveTargetPath = (resolved.path || "").replace(/\\/g, "/").replace(/\/+$/, "");
         const targetFolderNode = resolved.node;
         if (!targetFolderNode || targetFolderNode.type !== "folder") return false;
 
@@ -2913,8 +2921,7 @@ export default async function Explorer(root, options = {}) {
                                                     setBulkUpdating(false);
                                                 }
 
-                                                if (confirmWin._modalOverlay) confirmWin._modalOverlay.remove();
-                                                confirmWin.remove();
+                                                closeModal(confirmWin);
                                                 window.dispatchEvent(new Event("fs-updated"));
                                                 render(currentPath);
 
@@ -2926,8 +2933,7 @@ export default async function Explorer(root, options = {}) {
                                         {
                                             label: "キャンセル",
                                             action: () => {
-                                                if (confirmWin._modalOverlay) confirmWin._modalOverlay.remove();
-                                                confirmWin.remove();
+                                                closeModal(confirmWin);
                                             }
                                         }
                                     ]
@@ -3347,19 +3353,23 @@ export function openWithDialog(filePath, fileNode) {
 
         btn.onclick = () => {
             window.nexser?.kernelAPI.launch(app.path, { path: filePath, node: fileNode, uniqueKey: filePath });
-            const win = content.closest(".window") || content.parentElement;
-            if (win) {
-                win.remove();
-                win._modalOverlay?.remove();
-            }
+            closeModal(content);
         };
         content.appendChild(btn);
     });
 }
 
-function closeModal(win) {
-    if (win?._modalOverlay) win._modalOverlay.remove();
-    win?.remove();
+function closeModal(winOrContent) {
+    const targetWin = winOrContent?.classList?.contains("window")
+        ? winOrContent
+        : (winOrContent?.closest?.(".window") || winOrContent);
+    if (!targetWin) return;
+    if (window.nexser?.windowAPI?.destroyWindow) {
+        window.nexser.windowAPI.destroyWindow(targetWin);
+    } else {
+        if (targetWin._modalOverlay) targetWin._modalOverlay.remove();
+        targetWin.remove();
+    }
 }
 
 function getDecodedContent(content) {
@@ -3489,7 +3499,7 @@ export async function showProperties(name, node, path) {
         }
     ];
 
-    const win = window.nexser?.windowAPI?.showModalWindow(`${name} のプロパティ`, msg, {
+    const content = window.nexser?.windowAPI?.showModalWindow(`${name} のプロパティ`, msg, {
         width: 350,
         height: 420,
         taskbar: false,
@@ -3500,6 +3510,7 @@ export async function showProperties(name, node, path) {
         buttons: dialogButtons
     });
 
+    const win = content?.closest(".window") || content;
     propertyWindows[path] = win;
 
     const observer = new MutationObserver(() => {

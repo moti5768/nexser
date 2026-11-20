@@ -18,6 +18,7 @@ const ERROR_MAP = {
 export function showBSOD(message, error = null) {
     if (isDead) return;
     isDead = true;
+    window.dispatchEvent(new Event("nexser-bsod"));
 
     // 🔥 ブルースクリーン発生時に #os-root 要素のみを削除する
     try {
@@ -139,8 +140,8 @@ Contact your administrator for further assistance.
 
     const reboot = (e) => {
         if (i < fullMessage.length) return;
-        const allowedKeys = ["Enter", " ", "Escape"];
-        if (e.type.startsWith("key") && !allowedKeys.includes(e.key)) return;
+        const modifierKeys = ["Shift", "Control", "Alt", "Meta"];
+        if (e.type.startsWith("key") && modifierKeys.includes(e.key)) return;
         e.preventDefault();
         e.stopImmediatePropagation();
         location.reload();

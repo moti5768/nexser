@@ -39,6 +39,7 @@ function isCriticalError(msg) {
 }
 
 let systemErrorHandlerInstalled = false;
+let isSystemDead = false;
 
 // ?pid=123 クエリから該当プロセスキーを直接特定する
 function findProcessKeyByPidTag(text) {
@@ -110,6 +111,7 @@ export function initSystemErrorHandler() {
 
     // 非同期エラー（Promise拒否）
     window.addEventListener("unhandledrejection", (e) => {
+        if (isSystemDead) return;
         const error = e.reason;
         const msg = error?.message || String(error);
 
@@ -137,6 +139,7 @@ export function initSystemErrorHandler() {
 
     // 通常のエラー（キャプチャフェーズで要素読み込みエラーも捕捉）
     window.addEventListener("error", (e) => {
+        if (isSystemDead) return;
         const msg = e.error ? e.error.message : (e.message || "Resource load error");
         if (isCriticalError(msg)) {
             showBSOD(`KERNEL_FAULT: ${msg}`, e.error);
@@ -168,7 +171,7 @@ let cpuLoad = 0;
 let lastTick = performance.now();
 
 // イベントループ負荷からCPU近似値を計測
-setInterval(() => {
+const cpuMetricsInterval = setInterval(() => {
     const now = performance.now();
     const diff = now - lastTick;
     lastTick = now;
@@ -1007,7 +1010,7 @@ async function launchApp(item, path, options) {
                     return new Proxy(node, {
                         get(target, prop, receiver) {
                             if (isUnderCDrive && typeof prop === "string" && RESTRICTED_DIRS.has(prop)) {
-                                return Object.freeze(cloneFSNode(target[prop] || {}));
+                                throw new Error(`[Security] システム領域 'C:/${prop}' の読み取りは許可されていません。`);
                             }
                             const res = Reflect.get(target, prop, receiver);
                             return wrapSecure(res, target === cDriveProxy || prop === "C:");
@@ -1120,7 +1123,11 @@ async function launchApp(item, path, options) {
         throw e;
     }
 
-    addRecent(processPath);
+    if (!isShell) {
+        const recentType = isExplorer ? "folder" : (options.path && options.path !== path ? "file" : "app");
+        const recentPath = options.path || processPath;
+        addRecent({ type: recentType, path: recentPath });
+    }
 
     if (isExplorer) explorerWindows.set(explorerTargetKey, win);
 }
@@ -1150,22 +1157,23 @@ function registerProcess(win, key, path, handle, isShell = false, options = {}, 
     const observer = new MutationObserver((mutations, obs) => {
         if (!document.body.contains(win)) {
             obs.disconnect();
-            if (processes.has(key)) killProcess(key);
+            const currentKey = win.dataset.processKey || key;
+            if (processes.has(currentKey)) killProcess(currentKey);
         }
     });
     observer.observe(document.body, { childList: true, subtree: true });
     win._observer = observer;
 
     win._cleanup = () => {
-        if (processes.has(key)) killProcess(key);
+        const currentKey = win.dataset.processKey || key;
+        if (processes.has(currentKey)) killProcess(currentKey);
     };
 }
-
 
 /* =========================
    Watchdog & Process Metrics
 ========================= */
-setInterval(async () => {
+const processWatchdogInterval = setInterval(async () => {
     const mem = getMemoryMB();
     const now = performance.now();
 
@@ -1280,7 +1288,9 @@ export function killProcess(key) {
 
             win.innerHTML = "";
 
-            if (win._taskbarBtn) {
+            if (typeof getWindowAPI()?.detachWindowResources === "function") {
+                getWindowAPI().detachWindowResources(win);
+            } else if (win._taskbarBtn) {
                 win._taskbarBtn.remove();
                 win._taskbarBtn = null;
             }
@@ -1496,9 +1506,9 @@ export async function logOff() {
                 "[4/5] ファイルシステムの整合性を検証しています..."
             );
 
-            // 4. DB強制保存と整合性診断・修復
+            // 4. DB強制保存と整合性診断・修復（ゴミ箱は消去しない）
             await forceSave();
-            const fsReport = await diagnoseAndCleanFS(true);
+            const fsReport = await diagnoseAndCleanFS(true, { cleanTrash: false });
             if (fsReport.corruptionDetected) {
                 console.warn("[Logoff] ファイルシステムの破損を検知し、修復を実行しました。", fsReport.logs);
             }
@@ -1601,9 +1611,15 @@ if (typeof window !== "undefined") {
         const windowAPI = getWindowAPI();
 
         for (const [key, proc] of Array.from(processes.entries())) {
-            if (proc.path === oldPath || proc.path.startsWith(oldPath + "/")) {
-                const updatedPath = replacePrefix(proc.path);
-                proc.path = updatedPath;
+            const matchProcPath = proc.path === oldPath || proc.path.startsWith(oldPath + "/");
+            const optPath = typeof proc.options?.path === "string" ? proc.options.path : "";
+            const matchOptPath = optPath === oldPath || optPath.startsWith(oldPath + "/");
+
+            if (matchProcPath || matchOptPath) {
+                const updatedPath = matchProcPath ? replacePrefix(proc.path) : replacePrefix(optPath);
+                if (matchProcPath) {
+                    proc.path = updatedPath;
+                }
 
                 // 再起動（restartProcess）に備えて proc.options 内のパス情報も更新
                 if (proc.options && typeof proc.options === "object") {
@@ -1662,6 +1678,37 @@ if (typeof window !== "undefined") {
         window.dispatchEvent(new CustomEvent("process-updated", {
             detail: { oldPath, newPath }
         }));
+    });
+}
+
+// Explorer 内のフォルダ移動を explorerWindows と processes へ同期
+if (typeof window !== "undefined") {
+    window.addEventListener("explorer-path-changed", (e) => {
+        const { processKey, oldPath, newPath } = e.detail || {};
+        if (!processKey || !newPath) return;
+
+        const proc = processes.get(processKey);
+        if (!proc || !proc.window || !document.body.contains(proc.window)) return;
+
+        const normOld = oldPath ? normalizePath(oldPath) : null;
+        const normNew = normalizePath(newPath);
+
+        if (normOld && explorerWindows.get(normOld) === proc.window) {
+            explorerWindows.delete(normOld);
+        } else {
+            for (const [k, w] of explorerWindows.entries()) {
+                if (w === proc.window) {
+                    explorerWindows.delete(k);
+                    break;
+                }
+            }
+        }
+        explorerWindows.set(normNew, proc.window);
+
+        proc.path = normNew;
+        if (proc.options && typeof proc.options === "object") {
+            proc.options.path = normNew;
+        }
     });
 }
 
@@ -1779,4 +1826,12 @@ export function logSystemEvent(category, level, source, eventId, taskCategory, d
     });
 
     return logWriteChain;
+}
+
+if (typeof window !== "undefined") {
+    window.addEventListener("nexser-bsod", () => {
+        isSystemDead = true;
+        clearInterval(cpuMetricsInterval);
+        clearInterval(processWatchdogInterval);
+    });
 }

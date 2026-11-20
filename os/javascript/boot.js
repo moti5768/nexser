@@ -1,6 +1,6 @@
 // boot.js
 import { initFS } from './fs.js';
-import { resolveFS, normalizePath as fsNormalizePath } from './fs-utils.js';
+import { resolveFS, normalizePath as fsNormalizePath, readFileContent } from './fs-utils.js';
 import { loadSetting } from "./apps/settings.js";
 import { initScreensaver } from "./screensaver.js";
 import { showBSOD } from "./bsod.js";
@@ -156,7 +156,7 @@ const commands = {
 
     type: {
         desc: 'Displays the contents of a text file (Alias for cat)',
-        run(args) { commands.cat.run(args); }
+        run(args) { return commands.cat.run(args); }
     },
 
     md: {
@@ -293,7 +293,7 @@ const commands = {
 
     find: {
         desc: 'Searches for a text string in a file',
-        run(args) {
+        async run(args) {
             if (args.length < 2) return print("Usage: find <string> <file>");
             const searchStr = args[0];
             const targetPath = normalizePath(args[1]);
@@ -303,7 +303,8 @@ const commands = {
             if (node.type !== 'file') return print("Access denied");
 
             print(`---------- ${args[1].toUpperCase()}`);
-            const lines = (node.content || "").split("\n");
+            const raw = await readFileContent(targetPath);
+            const lines = (typeof raw === "string" ? raw : "").split("\n");
             lines.forEach(line => {
                 if (line.includes(searchStr)) print(line);
             });
@@ -340,14 +341,15 @@ const commands = {
 
     cat: {
         desc: 'Show file content',
-        run(args) {
+        async run(args) {
             if (!args[0]) return print('Usage: cat <file>');
             const targetPath = normalizePath(args[0]);
             const fsSearchPath = targetPath.replace(/^C:\//, "");
             const node = resolveFS(fsSearchPath);
             if (!node) return print('File not found');
             if (node.type !== 'file') return print('Not a file');
-            print(node.content || "");
+            const raw = await readFileContent(targetPath);
+            print(typeof raw === "string" ? raw : "[Binary Data]");
         }
     },
 
@@ -652,11 +654,16 @@ const commands = {
                                     }
                                     const systemFolder = resolveFS("System");
                                     if (systemFolder) {
-                                        systemFolder["FileAssociations.json"] = {
-                                            type: "file",
-                                            system: true,
-                                            content: JSON.stringify(exportCustomAssociations(), null, 2)
-                                        };
+                                        const serialized = JSON.stringify(exportCustomAssociations(), null, 2);
+                                        if (!systemFolder["FileAssociations.json"]) {
+                                            systemFolder["FileAssociations.json"] = {
+                                                type: "file",
+                                                system: true,
+                                                content: serialized
+                                            };
+                                        } else {
+                                            systemFolder["FileAssociations.json"].content = serialized;
+                                        }
                                     }
                                 }
 
@@ -734,7 +741,8 @@ const commands = {
             if (node.type !== "file") return print("Not a file");
 
             print("---- Editor (type :wq to save, :e <line> <text> to edit) ----");
-            let editorBuffer = node.content ? node.content.split("\n") : [];
+            const rawContent = await readFileContent(targetPath);
+            let editorBuffer = typeof rawContent === "string" && rawContent ? rawContent.split("\n") : [];
             editorBuffer.forEach(line => print(line));
 
             return new Promise(resolve => {

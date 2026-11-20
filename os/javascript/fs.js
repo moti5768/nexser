@@ -302,6 +302,18 @@ function queueDirtyPath(nodePath) {
     dirtyNodePaths.add(nodePath);
 }
 
+function queueMetaOnlyPath(nodePath) {
+    if (!nodePath) return;
+    deletedNodePaths.delete(nodePath);
+    const parts = nodePath.split("/");
+    for (let i = 1; i <= parts.length; i++) {
+        const ancestor = parts.slice(0, i).join("/");
+        deletedNodePaths.delete(ancestor);
+        if (dirtyNodePaths.has(ancestor)) return;
+    }
+    dirtyMetaOnlyPaths.add(nodePath);
+}
+
 function queueDeletedPath(nodePath) {
     if (!nodePath) return;
 
@@ -435,9 +447,9 @@ function wrapProxy(obj, path = "") {
                 const isChildNode = isChildNodeObject(cleanValue);
 
                 if (isChildNode) {
-                    // 該当階層（および新規フォルダなら配下）と直近の親フォルダの2階層だけを差分登録
+                    // 該当階層（および新規フォルダなら配下）と親フォルダのメタ情報だけを差分登録
                     queueDirtyPath(currentPath);
-                    if (path) queueDirtyPath(path);
+                    if (path) queueMetaOnlyPath(path);
                 } else if (path) {
                     // ファイル内容（content）や属性変更は、そのファイル階層（path）の1件だけを差分登録
                     queueDirtyPath(path);
@@ -473,9 +485,9 @@ function wrapProxy(obj, path = "") {
                 target.lastModified = Date.now();
 
                 if (isChildNode) {
-                    // 子ノード（ファイル・フォルダ等）の削除時のみ削除キューへ登録
+                    // 子ノード（ファイル・フォルダ等）の削除時のみ削除キューへ登録し、親はメタ情報のみ更新
                     queueDeletedPath(currentPath);
-                    if (path) queueDirtyPath(path);
+                    if (path) queueMetaOnlyPath(path);
                 } else if (path) {
                     // hidden等の単なるメタ属性削除時は、該当ノードの更新キューのみ登録
                     queueDirtyPath(path);
@@ -756,7 +768,7 @@ export async function initFS(progressCallback = () => { }) {
             console.error("[FS] Critical: Storage I/O error during boot.", loadError);
             const { showBSOD } = await import("./bsod.js");
             showBSOD("UNMOUNTABLE_BOOT_VOLUME", loadError);
-            return;
+            throw loadError;
         }
 
         if (!saved && localStorage.getItem("nexser_installed") === "true") {
@@ -827,7 +839,7 @@ export async function initFS(progressCallback = () => { }) {
     return initFSPromise;
 }
 
-export async function diagnoseAndCleanFS(executeRepair = false) {
+export async function diagnoseAndCleanFS(executeRepair = false, { cleanTrash = executeRepair } = {}) {
     const report = {
         garbageItems: 0,
         garbageNames: [],
@@ -837,14 +849,14 @@ export async function diagnoseAndCleanFS(executeRepair = false) {
 
     const { deleteFileContentRecursive, getFileContent } = await import("./fs-db.js");
 
-    // 1. ゴミ箱内のアイテムを完全に空にする（実データ削除 + デフォルト削除マーク付き）
+    // 1. ゴミ箱内のアイテムを完全に空にする（cleanTrash が true の場合のみ実行）
     const trashNode = FS["C:"] ? FS["C:"].Trash : null;
     if (trashNode) {
         const trashKeys = Object.keys(trashNode).filter(key => isChildNodeObject(trashNode[key]));
         report.garbageItems += trashKeys.length;
         report.garbageNames = trashKeys;
 
-        if (executeRepair && trashKeys.length > 0) {
+        if (cleanTrash && trashKeys.length > 0) {
             let deletedCount = 0;
             setBulkUpdating(true);
             try {
@@ -1050,4 +1062,15 @@ if (typeof window !== "undefined") {
             }
         }
     }, 3000);
+
+    window.addEventListener("nexser-bsod", () => {
+        if (watchdogInterval) {
+            clearInterval(watchdogInterval);
+            watchdogInterval = null;
+        }
+        if (saveTimer) {
+            clearTimeout(saveTimer);
+            saveTimer = null;
+        }
+    });
 }

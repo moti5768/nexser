@@ -251,7 +251,16 @@ export function isDescendantOrSelf(sourcePath, targetPath) {
 // 以下、Desktop / Explorer 共通FS操作ユーティリティ
 // ========================================================
 
-const META_KEYS = new Set(["type", "system", "originalPath", "lastModified"]);
+const META_KEYS = new Set([
+    "type",
+    "system",
+    "originalPath",
+    "lastModified",
+    "hidden",
+    "icon",
+    "name",
+    "size"
+]);
 
 /**
  * フォルダ内のメタデータキー（子ノード以外）かどうかを判定

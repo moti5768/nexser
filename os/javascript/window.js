@@ -2281,6 +2281,31 @@ if (typeof window !== "undefined") {
     window.setWindowAnimationEnabled = setWindowAnimationEnabled; // 必要であればアニメーション設定も同様に
 }
 
+export function detachWindowResources(win) {
+    if (!win) return;
+
+    if (win._abortController) {
+        try { win._abortController.abort(); } catch (_) { }
+        win._abortController = null;
+    }
+
+    if (win._modalOverlay) {
+        if (win._modalOverlay.isConnected) win._modalOverlay.remove();
+        win._modalOverlay = null;
+    }
+
+    const tbBtn = win._taskbarBtn || taskbarButtons.find(b => b._window === win);
+    if (tbBtn) {
+        tbBtn._window = null;
+        if (tbBtn.isConnected) tbBtn.remove();
+        const idx = taskbarButtons.indexOf(tbBtn);
+        if (idx !== -1) taskbarButtons.splice(idx, 1);
+    }
+    win._taskbarBtn = null;
+
+    scheduleRefreshTopWindow();
+}
+
 export function destroyWindow(win) {
     if (!win) return;
 
@@ -2433,6 +2458,7 @@ export function initWindowAPI() {
         focusWindowById: (id) => focusWindowById(id),
         bringToFront: (win) => bringToFront(win),
         destroyWindow: (win) => destroyWindow(win),
+        detachWindowResources: (win) => detachWindowResources(win),
         removeAllTaskbarButtons: () => removeAllTaskbarButtons(),
         updateWindowTitle: (win, title, isDirty, newNode) => updateWindowTitle(win, title, isDirty, newNode),
         getWindows: () => getWindows().map(({ el, ...rest }) => rest),

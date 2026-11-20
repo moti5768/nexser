@@ -175,7 +175,9 @@ const SCOPED_CSS = `
     min-height: 20px;
     font-size: small;
 }
-.nexser-spreadsheet-app .ss-ribbon-panels select.ss-font-size {
+    
+.nexser-spreadsheet-app .ss-ribbon-panels select.ss-font-size,
+.nexser-spreadsheet-app .ss-ribbon-panels select.ss-font-family {
     height: 20px;
     font-size: small;
 }
@@ -381,6 +383,8 @@ const SCOPED_CSS = `
     overflow-y: auto;
     scrollbar-width: auto;
     position: relative;
+    contain: layout paint style;
+    will-change: scroll-position;
 }
 
 /* 共通CSSのスクロールバー非表示ルールを上書き */
@@ -483,7 +487,6 @@ const SCOPED_CSS = `
     text-align: center;
     font-size: 13px;
     background-color: #C3C7CB;
-    will-change: transform;
 }
 
 .nexser-spreadsheet-app .ss-table thead th.ss-corner {
@@ -502,7 +505,6 @@ const SCOPED_CSS = `
     font-size: 13px;
     background-color: #C3C7CB;
     cursor: e-resize;
-    will-change: transform;
 }
 
 .nexser-spreadsheet-app .ss-table thead th.col_number {
@@ -1205,21 +1207,66 @@ const SCOPED_CSS = `
     box-shadow: inset -2px 0 0 #404040;
 }
 
-/* スクロール領域外の非表示セル（border-collapse下でも枠線・影を残さない） */
-.nexser-spreadsheet-app .ss-table tr.ss-row-offscreen > th,
-.nexser-spreadsheet-app .ss-table tr.ss-row-offscreen > td,
-.nexser-spreadsheet-app .ss-table td.ss-offscreen-hidden,
-.nexser-spreadsheet-app .ss-table th.ss-offscreen-hidden {
-    visibility: hidden !important;
-    border-style: none !important;
-    box-shadow: none !important;
-    outline: none !important;
-}
-
 /* スクロール領域外のテキストボックス・グラフ非表示 */
 .nexser-spreadsheet-app .floating-textbox.ss-obj-offscreen {
     visibility: hidden !important;
     pointer-events: none !important;
+}
+
+/* セル編集中テキスト選択ミニツールバー（Excel準拠） */
+.ss-inline-mini-toolbar {
+    position: fixed;
+    display: none;
+    align-items: center;
+    gap: 3px;
+    padding: 3px 5px;
+    background: #C3C7CB;
+    color: #000;
+    border: 1px solid;
+    border-color: #fff #404040 #404040 #fff;
+    box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.35);
+    z-index: 2147483647;
+    font-family: 'MS PGothic', 'MS Gothic', sans-serif;
+    font-size: 12px;
+    user-select: none;
+}
+.ss-inline-mini-toolbar .ss-mt-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 22px;
+    height: 22px;
+    padding: 0 4px;
+    background: #d4d8dc;
+    border: 1px solid;
+    border-color: #fff #606060 #606060 #fff;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 12px;
+}
+.ss-inline-mini-toolbar .ss-mt-btn:hover {
+    background: #e4e8ec;
+}
+.ss-inline-mini-toolbar .ss-mt-sep {
+    width: 1px;
+    height: 18px;
+    background: #808080;
+    margin: 0 2px;
+}
+.ss-inline-mini-toolbar .ss-mt-swatch {
+    width: 16px;
+    height: 16px;
+    border: 1px solid #404040;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+.ss-inline-mini-toolbar .ss-mt-color-input {
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border: 1px solid #606060;
+    cursor: pointer;
+    background: #fff;
 }
 
 @media print {
@@ -1322,57 +1369,144 @@ function flattenArray(arr) {
     return arr.reduce((acc, val) => acc.concat(Array.isArray(val) ? flattenArray(val) : val), []);
 }
 
+function buildWildcardRegex(pattern) {
+    const escaped = String(pattern)
+        .replace(/[.+^${}()|[\]\\]/g, "\\$&")
+        .replace(/\*/g, ".*")
+        .replace(/\?/g, ".");
+    return new RegExp(`^${escaped}$`, "i");
+}
+
 function buildConditionMatcher(condition) {
-    const condStr = String(condition ?? "").trim();
+    const condStr = String(unwrapBlank(condition) ?? "").trim();
     const match = condStr.match(/^(>=|<=|<>|!=|>|<|=)(.*)$/);
+
     if (match) {
         const op = match[1];
         const rawTarget = match[2].trim();
+
+        // Excel仕様: "=" は空白セルのみ、"<>" は空白以外（数値0も含む）に一致
+        if (rawTarget === "") {
+            if (op === "=") return (v) => isBlankVal(v);
+            if (op === "<>" || op === "!=") return (v) => !isBlankVal(v);
+        }
+
         const numTarget = Number(rawTarget);
         const isNum = rawTarget !== "" && !isNaN(numTarget);
-        return (v) => {
-            const val = isNum && v !== "" && !isNaN(Number(v)) ? Number(v) : String(v ?? "");
-            const tgt = isNum ? numTarget : rawTarget;
-            if (op === ">") return val > tgt;
-            if (op === ">=") return val >= tgt;
-            if (op === "<") return val < tgt;
-            if (op === "<=") return val <= tgt;
-            if (op === "<>" || op === "!=") return val != tgt;
-            if (op === "=") return val == tgt;
-            return false;
+        const hasWildcard = !isNum && (op === "=" || op === "<>" || op === "!=") && /[*?]/.test(rawTarget);
+        const wcRegex = hasWildcard ? buildWildcardRegex(rawTarget) : null;
+        const lowerTarget = rawTarget.toLowerCase();
+
+        return (rawV) => {
+            const v = unwrapBlank(rawV);
+            const blank = v === "" || v == null;
+            const isBool = typeof v === "boolean";
+            const numVal = (!blank && !isBool && !isNaN(Number(v))) ? Number(v) : NaN;
+            const vIsNum = !isNaN(numVal);
+
+            // 大小比較 (<, <=, >, >=) は空白や異型データを除外（Excel準拠）
+            if (op === ">" || op === ">=" || op === "<" || op === "<=") {
+                if (blank || isBool) return false;
+                if (isNum) {
+                    if (!vIsNum) return false;
+                    if (op === ">") return numVal > numTarget;
+                    if (op === ">=") return numVal >= numTarget;
+                    if (op === "<") return numVal < numTarget;
+                    return numVal <= numTarget;
+                }
+                if (vIsNum) return false;
+                const lv = String(v).toLowerCase();
+                if (op === ">") return lv > lowerTarget;
+                if (op === ">=") return lv >= lowerTarget;
+                if (op === "<") return lv < lowerTarget;
+                return lv <= lowerTarget;
+            }
+
+            // 等価・不等価 (=, <>)
+            let eq = false;
+            if (wcRegex) {
+                eq = !blank && wcRegex.test(String(v));
+            } else if (isNum && vIsNum) {
+                eq = numVal === numTarget;
+            } else if (!blank) {
+                eq = String(v).toLowerCase() === lowerTarget;
+            }
+            return (op === "<>" || op === "!=") ? !eq : eq;
         };
     }
+
     if (/[*?]/.test(condStr)) {
-        const escaped = condStr
-            .replace(/[.+^${}()|[\]\\]/g, "\\$&")
-            .replace(/\*/g, ".*")
-            .replace(/\?/g, ".");
-        const regex = new RegExp(`^${escaped}$`, "i");
-        return (v) => regex.test(String(v ?? ""));
+        const regex = buildWildcardRegex(condStr);
+        return (v) => {
+            const uv = unwrapBlank(v);
+            return uv !== "" && uv != null && regex.test(String(uv));
+        };
     }
+
+    if (condStr === "") {
+        return (v) => isBlankVal(v);
+    }
+
     const numTarget = Number(condStr);
-    const isNum = condStr !== "" && !isNaN(numTarget);
-    return (v) => (isNum && v !== "" && !isNaN(Number(v))) ? Number(v) === numTarget : String(v ?? "") === condStr;
+    const isNum = !isNaN(numTarget);
+    const lowerCond = condStr.toLowerCase();
+    return (rawV) => {
+        const v = unwrapBlank(rawV);
+        if (v === "" || v == null) return false;
+        if (isNum && typeof v !== "boolean" && !isNaN(Number(v))) {
+            return Number(v) === numTarget;
+        }
+        return String(v).toLowerCase() === lowerCond;
+    };
 }
 
+const EXCEL_ERROR_RE = /^#(ERROR!|DIV\/0!|N\/A|VALUE!|CIRCULAR!|REF!|NAME\?|NUM!|CALC!|SPILL!)$/;
+
+function collectNumericValues(args) {
+    const flat = flattenArray(args);
+    const nums = [];
+    for (let i = 0; i < flat.length; i++) {
+        const v = unwrapBlank(flat[i]);
+        if (typeof v === "string" && EXCEL_ERROR_RE.test(v.trim())) {
+            return { error: v.trim(), nums: [] };
+        }
+        if (v === "" || v == null || typeof v === "boolean") continue;
+        const n = Number(v);
+        if (Number.isFinite(n)) nums.push(n);
+    }
+    return { error: null, nums };
+}
 const FORMULA_FUNCTIONS = {
     SUM(...args) {
-        const flat = flattenArray(args);
-        return flat.map(Number).filter(v => !isNaN(v)).reduce((a, b) => a + b, 0);
+        const { error, nums } = collectNumericValues(args);
+        if (error) return error;
+        let total = 0;
+        for (let i = 0; i < nums.length; i++) total += nums[i];
+        return total;
     },
     AVERAGE(...args) {
-        const flat = flattenArray(args);
-        const nums = flat.filter(v => v !== "" && v != null && !isNaN(Number(v))).map(Number);
+        const { error, nums } = collectNumericValues(args);
+        if (error) return error;
         if (nums.length === 0) return "#DIV/0!";
-        return nums.reduce((a, b) => a + b, 0) / nums.length;
+        let total = 0;
+        for (let i = 0; i < nums.length; i++) total += nums[i];
+        return total / nums.length;
     },
     MIN(...args) {
-        const flat = flattenArray(args).filter(v => v !== "" && v != null && !isNaN(Number(v))).map(Number);
-        return flat.length ? Math.min(...flat) : 0;
+        const { error, nums } = collectNumericValues(args);
+        if (error) return error;
+        if (!nums.length) return 0;
+        let min = nums[0];
+        for (let i = 1; i < nums.length; i++) if (nums[i] < min) min = nums[i];
+        return min;
     },
     MAX(...args) {
-        const flat = flattenArray(args).filter(v => v !== "" && v != null && !isNaN(Number(v))).map(Number);
-        return flat.length ? Math.max(...flat) : 0;
+        const { error, nums } = collectNumericValues(args);
+        if (error) return error;
+        if (!nums.length) return 0;
+        let max = nums[0];
+        for (let i = 1; i < nums.length; i++) if (nums[i] > max) max = nums[i];
+        return max;
     },
     COUNT(...args) {
         const flat = flattenArray(args);
@@ -2155,6 +2289,15 @@ const FORMULA_FUNCTIONS = {
 const FORMULA_FN_NAMES = Object.keys(FORMULA_FUNCTIONS);
 const FORMULA_FN_VALUES = Object.values(FORMULA_FUNCTIONS);
 
+function escapeHtml(str) {
+    return String(str ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+}
+
 // =========================================================
 // メインアプリケーション エントリーポイント
 // =========================================================
@@ -2249,6 +2392,17 @@ export default async function initSpreadsheetApp(content, options = {}) {
                     <div class="ss-ribbon-group">
                         <div class="ss-ribbon-group-body">
                             <label>
+                                <select class="ss-font-family" style="outline:none; max-width:112px;" title="フォント">
+                                    <option value="'MS PGothic', 'MS Gothic', sans-serif" selected>MS Pゴシック</option>
+                                    <option value="'Meiryo', 'メイリオ', sans-serif">メイリオ</option>
+                                    <option value="'Yu Gothic', '游ゴシック', sans-serif">游ゴシック</option>
+                                    <option value="'MS PMincho', 'MS Mincho', serif">MS P明朝</option>
+                                    <option value="'Yu Mincho', '游明朝', serif">游明朝</option>
+                                    <option value="Arial, Helvetica, sans-serif">Arial</option>
+                                    <option value="Consolas, 'Courier New', monospace">Consolas</option>
+                                </select>
+                            </label>
+                            <label>
                                 <select class="ss-font-size" style="outline:none;" title="フォントサイズ">
                                     <option value="8px">8</option>
                                     <option value="9px">9</option>
@@ -2273,13 +2427,32 @@ export default async function initSpreadsheetApp(content, options = {}) {
                             <span class="button ss-toggle-bold" title="太字">&nbsp;B&nbsp;</span>
                             <span class="button ss-toggle-italic" style="font-style:italic; font-weight:bold;" title="斜体">&nbsp;i&nbsp;</span>
                             <span class="button ss-toggle-underline" title="下線">&nbsp;<span style="text-decoration:underline;">U</span>&nbsp;</span>
+                            <span class="button ss-toggle-strike" title="取り消し線">&nbsp;<span style="text-decoration:line-through;">S</span>&nbsp;</span>
                             <span class="button ss-toggle-textshadow" title="影付き">&nbsp;<span style="text-shadow:2px 2px #555;">A</span>&nbsp;</span>
 
                             <div class="pulldown_menu_parent">
                                 <span class="button pulldown_btn" title="罫線">&nbsp;罫線 ▼&nbsp;</span>
-                                <ul class="pulldown_menu">
+                                <ul class="pulldown_menu" style="min-width:178px;">
+                                    <li style="padding:3px 4px; display:flex; flex-direction:column; gap:4px; border-bottom:1px solid #808080; margin-bottom:3px;">
+                                        <div style="display:flex; align-items:center; justify-content:space-between; gap:4px; font-size:11px;">
+                                            <span>線種:</span>
+                                            <select class="ss-border-style-select" style="height:20px; font-size:11px; flex:1;">
+                                                <option value="1px solid">細実線</option>
+                                                <option value="2px solid" selected>実線 (標準)</option>
+                                                <option value="4px solid">太実線</option>
+                                                <option value="3px double">二重線</option>
+                                                <option value="2px dashed">破線</option>
+                                                <option value="2px dotted">点線</option>
+                                            </select>
+                                        </div>
+                                        <div style="display:flex; align-items:center; justify-content:space-between; gap:4px; font-size:11px;">
+                                            <span>線の色:</span>
+                                            <input type="color" class="ss-border-color-input" value="#000000" style="width:48px; height:20px; padding:0; border:1px solid #666;">
+                                        </div>
+                                    </li>
                                     <li class="button" data-border="top">上罫線</li>
                                     <li class="button" data-border="bottom">下罫線</li>
+                                    <li class="button" data-border="bottom-double">下二重罫線</li>
                                     <li class="button" data-border="left">左罫線</li>
                                     <li class="button" data-border="right">右罫線</li>
                                     <li class="button" data-border="outer">外枠</li>
@@ -2359,6 +2532,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
                                 <span class="button" data-align="center" title="中央揃え">&nbsp;=&nbsp;</span>
                                 <span class="button" data-align="right" title="右揃え">&nbsp;&nbsp;=</span>
                             </div>
+                            <span class="button ss-toggle-vertical" title="縦書き / 横書き切替">縦書</span>
                             <span class="button ss-toggle-wrap" title="折り返して全体を表示する">折り返し</span>
                             <span class="button ss-merge-cells" title="セルを結合して中央揃え">セル結合</span>
                             <span class="button ss-unmerge-cells" title="セル結合の解除">解除</span>
@@ -2375,6 +2549,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
                             <span class="button" data-numfmt="comma" title="桁区切りスタイル (1,000)">&nbsp;,&nbsp;</span>
                             <span class="button" data-numfmt="date-jp" title="日付表示 (2025年7月8日)">年月日</span>
                             <span class="button" data-numfmt="date-md" title="短い日付 (7/8)">M/D</span>
+                            <span class="button" data-action="custom-numfmt" title="ユーザー定義の表示形式を設定 (例: #,##0&quot;円&quot;)">詳細書式...</span>
                             <span class="button" data-decimal-step="1" title="小数点以下の表示桁数を増やす">.00→.0</span>
                             <span class="button" data-decimal-step="-1" title="小数点以下の表示桁数を減らす">.0→.00</span>
                         </div>
@@ -2544,8 +2719,10 @@ export default async function initSpreadsheetApp(content, options = {}) {
                     <div class="ss-ribbon-group">
                         <div class="ss-ribbon-group-body">
                             <span class="button" data-action="insert-chart-bar">📊 縦棒</span>
+                            <span class="button" data-action="insert-chart-stacked">🧱 積み上げ</span>
                             <span class="button" data-action="insert-chart-line">📈 折れ線</span>
                             <span class="button" data-action="insert-chart-pie">🥧 円グラフ</span>
+                            <span class="button" data-action="insert-chart-scatter">⚬ 散布図</span>
                         </div>
                         <div class="ss-ribbon-group-title">グラフ</div>
                     </div>
@@ -2570,6 +2747,9 @@ export default async function initSpreadsheetApp(content, options = {}) {
                                     <li class="button" data-pagesize="B4">B4</li>
                                 </ul>
                             </div>
+                            <span class="button ss-print-orient-btn" data-action="toggle-print-orientation" title="印刷の向き（縦 / 横）">向き: 縦</span>
+                            <span class="button ss-print-fit-btn selected" data-action="toggle-print-fit" title="すべての列を用紙幅に収めて印刷">幅を1ページに収める</span>
+                            <span class="button ss-print-grid-btn" data-action="toggle-print-grid" title="セルの薄い枠線も印刷に含める">枠線を印刷</span>
                             <span class="button" data-action="print">🖨 印刷実行</span>
                         </div>
                         <div class="ss-ribbon-group-title">ページ設定</div>
@@ -2884,9 +3064,9 @@ export default async function initSpreadsheetApp(content, options = {}) {
     const zoomDisplay = appRoot.querySelector(".ss-zoom-display");
 
     const INITIAL_ROWS = 80;
-    const ROW_BATCH = 10;
-    const INITIAL_COLUMNS = 80;
-    const COLUMN_BATCH = 10;
+    const ROW_BATCH = 40;
+    const INITIAL_COLUMNS = 40;
+    const COLUMN_BATCH = 15;
 
     let currentColumns = 0;
     let rowCount = 1;
@@ -3016,7 +3196,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
         const bodyHtml = `
             <div style="width:100%; display:flex; flex-direction:column; gap:8px;">
                 <div>新しいシート名を入力してください:</div>
-                <input type="text" class="ss-sheet-rename-input border" value="${target.name}" style="width:100%; padding:4px 6px; font-size:12px; background:#fff; color:#000; box-sizing:border-box;">
+                <input type="text" class="ss-sheet-rename-input border" value="${escapeHtml(target.name)}" maxlength="31" style="width:100%; padding:4px 6px; font-size:12px; background:#fff; color:#000; box-sizing:border-box;">
             </div>
         `;
         const modalContent = openAppModal("シート名の変更", bodyHtml, {
@@ -3028,7 +3208,11 @@ export default async function initSpreadsheetApp(content, options = {}) {
                     onClick: () => {
                         const nextName = modalContent.querySelector(".ss-sheet-rename-input")?.value.trim();
                         if (!nextName || nextName === target.name) return;
-                        if (sheets.some((s, i) => i !== index && s.name === nextName)) {
+                        if (nextName.length > 31 || /[\\/?*[\]:]/.test(nextName) || nextName.startsWith("'") || nextName.endsWith("'")) {
+                            showAlert("シート名は31文字以内で、\\ / ? * [ ] : および先頭・末尾の「'」は使用できません。", "名前の変更");
+                            return;
+                        }
+                        if (sheets.some((s, i) => i !== index && s.name.toLowerCase() === nextName.toLowerCase())) {
                             showAlert(`「${nextName}」という名前のシートは既に存在します。`, "名前の変更");
                             return;
                         }
@@ -3040,14 +3224,45 @@ export default async function initSpreadsheetApp(content, options = {}) {
                             ? `${nextName}!`
                             : `'${nextName}'!`;
 
-                        tbody.querySelectorAll("td[data-formula]").forEach(td => {
-                            td.dataset.formula = td.dataset.formula.replace(sheetRefPattern, formattedNewPrefix);
+                        // 1. アクティブシートの数式・入力規則の参照を更新
+                        tbody.querySelectorAll("td[data-formula], td[data-dropdown-list], td[data-dv-rule]").forEach(td => {
+                            if (td.dataset.formula) {
+                                td.dataset.formula = td.dataset.formula.replace(sheetRefPattern, formattedNewPrefix);
+                            }
+                            if (td.dataset.dropdownList) {
+                                td.dataset.dropdownList = td.dataset.dropdownList.replace(sheetRefPattern, formattedNewPrefix);
+                            }
+                            if (td.dataset.dvRule) {
+                                try {
+                                    const r = JSON.parse(td.dataset.dvRule);
+                                    if (r.listSpec) r.listSpec = r.listSpec.replace(sheetRefPattern, formattedNewPrefix);
+                                    if (r.formula) r.formula = r.formula.replace(sheetRefPattern, formattedNewPrefix);
+                                    td.dataset.dvRule = JSON.stringify(r);
+                                } catch { /* ignore */ }
+                            }
                         });
+
+                        // 2. 全シートの条件付き書式および非アクティブシートのセル参照を更新
                         sheets.forEach((s, idx) => {
+                            if (Array.isArray(s.conditionalFormats)) {
+                                s.conditionalFormats.forEach(rule => {
+                                    if (rule.formula) rule.formula = rule.formula.replace(sheetRefPattern, formattedNewPrefix);
+                                    if (typeof rule.val1 === "string" && rule.val1.startsWith("=")) {
+                                        rule.val1 = rule.val1.replace(sheetRefPattern, formattedNewPrefix);
+                                    }
+                                    if (typeof rule.val2 === "string" && rule.val2.startsWith("=")) {
+                                        rule.val2 = rule.val2.replace(sheetRefPattern, formattedNewPrefix);
+                                    }
+                                });
+                            }
                             if (idx === activeSheetIndex || !Array.isArray(s.cells)) return;
                             s.cells.forEach(entry => {
                                 if (entry.f) entry.f = entry.f.replace(sheetRefPattern, formattedNewPrefix);
+                                if (entry.dl) entry.dl = entry.dl.replace(sheetRefPattern, formattedNewPrefix);
+                                if (entry.dv?.listSpec) entry.dv.listSpec = entry.dv.listSpec.replace(sheetRefPattern, formattedNewPrefix);
+                                if (entry.dv?.formula) entry.dv.formula = entry.dv.formula.replace(sheetRefPattern, formattedNewPrefix);
                             });
+                            backgroundSheetIndexCache.delete(s);
                         });
 
                         renderSheetTabs();
@@ -3066,7 +3281,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
             inp.addEventListener("keydown", (e) => {
                 if (e.key === "Enter") {
                     e.preventDefault();
-                    modalContent.querySelector(".button-container button")?.click();
+                    (modalContent.closest(".window") || modalContent).querySelector(".button-container button")?.click();
                 }
             });
         }
@@ -3358,9 +3573,15 @@ export default async function initSpreadsheetApp(content, options = {}) {
     }
 
     function openAppModal(title, bodyHtml, opts = {}) {
+        if (!windowAPI?.showModalWindow) return null;
+        const { onClose, parentWin = win, ...restOpts } = opts;
         const modalContent = windowAPI.showModalWindow(title, bodyHtml, {
-            parentWin: win,
-            ...opts
+            ...(parentWin ? { parentWin } : {}),
+            ...restOpts,
+            onClose: (...args) => {
+                onClose?.(...args);
+                if (parentWin) restoreMainWindowFocus();
+            }
         });
         const modalWin = modalContent?.closest?.(".window");
         if (modalWin && windowAPI?.toggleWindowControl) {
@@ -3663,16 +3884,35 @@ export default async function initSpreadsheetApp(content, options = {}) {
         syncCellDropdownButtonPosition();
     }
 
-    function attachColResizeHandle(th, colIndex) {
-        if (th.querySelector(".col-resize-handle")) return;
-        th.setAttribute("data-col", String(colIndex));
-        const handle = document.createElement("div");
-        handle.className = "col-resize-handle";
-        handle.title = "ドラッグで幅変更 / ダブルクリックで自動調整";
-        th.appendChild(handle);
+    const baseColResizeHandle = document.createElement("div");
+    baseColResizeHandle.className = "col-resize-handle";
+    baseColResizeHandle.title = "ドラッグで幅変更 / ダブルクリックで自動調整";
 
-        handle.addEventListener("mousedown", (e) => {
+    const baseRowResizeHandle = document.createElement("div");
+    baseRowResizeHandle.className = "row-resize-handle";
+    baseRowResizeHandle.title = "ドラッグで高さ変更 / ダブルクリックで自動調整";
+
+    function attachColResizeHandle(th, colIndex) {
+        th.setAttribute("data-col", String(colIndex));
+        if (!th.querySelector(".col-resize-handle")) {
+            th.appendChild(baseColResizeHandle.cloneNode(false));
+        }
+    }
+
+    function attachRowResizeHandle(th, _tr) {
+        if (!th.querySelector(".row-resize-handle")) {
+            th.appendChild(baseRowResizeHandle.cloneNode(false));
+        }
+    }
+
+    table.addEventListener("mousedown", (e) => {
+        const colHandle = e.target.closest(".col-resize-handle");
+        if (colHandle) {
+            const th = colHandle.closest("th");
+            if (!th) return;
+            const colIndex = Number(th.dataset.col);
             e.stopPropagation();
+            e.stopImmediatePropagation();
             e.preventDefault();
             const startX = e.clientX;
             const startWidth = th.offsetWidth || getColumnWidth(colIndex);
@@ -3695,10 +3935,50 @@ export default async function initSpreadsheetApp(content, options = {}) {
             };
             document.addEventListener("mousemove", onMove, { signal });
             document.addEventListener("mouseup", onUp, { signal });
-        }, { signal });
+            return;
+        }
 
-        handle.addEventListener("dblclick", (e) => {
+        const rowHandle = e.target.closest(".row-resize-handle");
+        if (rowHandle) {
+            const tr = rowHandle.closest("tr");
+            if (!tr) return;
             e.stopPropagation();
+            e.stopImmediatePropagation();
+            e.preventDefault();
+            const startY = e.clientY;
+            const startHeight = tr.offsetHeight || 30;
+            let moved = false;
+
+            const onMove = (eMove) => {
+                moved = true;
+                const newHeight = Math.max(20, startHeight + (eMove.clientY - startY));
+                tr.style.height = `${newHeight}px`;
+                syncCellDropdownButtonPosition();
+                updateResizeTooltip(eMove.clientX, eMove.clientY, `${newHeight}px`);
+            };
+            const onUp = () => {
+                document.removeEventListener("mousemove", onMove);
+                document.removeEventListener("mouseup", onUp);
+                hideResizeTooltip();
+                if (moved) {
+                    if (freezeRows > 0) applyFreezePanes();
+                    setDirtyState(true);
+                    debouncedSaveState();
+                }
+            };
+            document.addEventListener("mousemove", onMove, { signal });
+            document.addEventListener("mouseup", onUp, { signal });
+        }
+    }, { capture: true, signal });
+
+    table.addEventListener("dblclick", (e) => {
+        const colHandle = e.target.closest(".col-resize-handle");
+        if (colHandle) {
+            const th = colHandle.closest("th");
+            if (!th) return;
+            const colIndex = Number(th.dataset.col);
+            e.stopPropagation();
+            e.stopImmediatePropagation();
             e.preventDefault();
             const isWholeColSelected = (c) =>
                 tbody.rows.length > 0 &&
@@ -3716,47 +3996,15 @@ export default async function initSpreadsheetApp(content, options = {}) {
             }
             setDirtyState(true);
             debouncedSaveState();
-        }, { signal });
-    }
+            return;
+        }
 
-    function attachRowResizeHandle(th, tr) {
-        if (th.querySelector(".row-resize-handle")) return;
-        const handle = document.createElement("div");
-        handle.className = "row-resize-handle";
-        handle.title = "ドラッグで高さ変更 / ダブルクリックで自動調整";
-        th.appendChild(handle);
-
-        handle.addEventListener("mousedown", (e) => {
+        const rowHandle = e.target.closest(".row-resize-handle");
+        if (rowHandle) {
+            const tr = rowHandle.closest("tr");
+            if (!tr) return;
             e.stopPropagation();
-            e.preventDefault();
-            const startY = e.clientY;
-            const startHeight = tr.offsetHeight || 30;
-            let moved = false;
-
-            const onMove = (eMove) => {
-                moved = true;
-                const newHeight = Math.max(20, startHeight + (eMove.clientY - startY));
-                tr.style.height = `${newHeight}px`;
-                refreshVisibleRows();
-                syncCellDropdownButtonPosition();
-                updateResizeTooltip(eMove.clientX, eMove.clientY, `${newHeight}px`);
-            };
-            const onUp = () => {
-                document.removeEventListener("mousemove", onMove);
-                document.removeEventListener("mouseup", onUp);
-                hideResizeTooltip();
-                if (moved) {
-                    if (freezeRows > 0) applyFreezePanes();
-                    setDirtyState(true);
-                    debouncedSaveState();
-                }
-            };
-            document.addEventListener("mousemove", onMove, { signal });
-            document.addEventListener("mouseup", onUp, { signal });
-        }, { signal });
-
-        handle.addEventListener("dblclick", (e) => {
-            e.stopPropagation();
+            e.stopImmediatePropagation();
             e.preventDefault();
             const rowNum = Number(tr.dataset.row);
             const isWholeRowSelected = (r) =>
@@ -3775,8 +4023,8 @@ export default async function initSpreadsheetApp(content, options = {}) {
             }
             setDirtyState(true);
             debouncedSaveState();
-        }, { signal });
-    }
+        }
+    }, { capture: true, signal });
 
     const baseTdTemplate = document.createElement("td");
     baseTdTemplate.tabIndex = -1;
@@ -3792,6 +4040,8 @@ export default async function initSpreadsheetApp(content, options = {}) {
         const tr = document.createElement("tr");
         const th = document.createElement("th");
         th.className = "row_number button";
+        th.appendChild(document.createTextNode(""));
+        th.appendChild(baseRowResizeHandle.cloneNode(false));
         tr.appendChild(th);
         for (let c = 0; c < colLen; c++) {
             const td = baseTdTemplate.cloneNode(false);
@@ -3838,7 +4088,45 @@ export default async function initSpreadsheetApp(content, options = {}) {
         currentColumns = end;
         cachedRowTemplate = null;
         syncTableWidth();
-        if (freezeRows > 0 || freezeCols > 0) applyFreezePanes();
+        if (freezeRows > 0) {
+            const theadHeight = theadRow.offsetHeight || 30;
+            let accTop = theadHeight;
+            for (let r = 1; r <= freezeRows; r++) {
+                const tr = getRow(r);
+                if (!tr) break;
+                const isBottomEdge = r === freezeRows;
+                for (let c = start; c < end; c++) {
+                    const td = tr.cells[c + 1];
+                    if (!td) continue;
+                    td.classList.add("ss-frozen-row");
+                    td.style.top = `${accTop}px`;
+                    if (isBottomEdge) td.classList.add("ss-freeze-edge-bottom");
+                }
+                accTop += parseInt(tr.style.height, 10) || tr.offsetHeight || 30;
+            }
+        }
+    }
+
+    function applyFreezeToRowsRange(startRowIndex) {
+        if (freezeCols <= 0) return;
+        const rowHeaderWidth = parseInt(colgroup.children[0]?.style.width, 10) || 54;
+        const colLeftOffsets = [];
+        let accLeft = rowHeaderWidth;
+        for (let c = 0; c < freezeCols; c++) {
+            colLeftOffsets[c] = accLeft;
+            accLeft += getColumnWidth(c);
+        }
+        for (let i = startRowIndex; i < tbody.rows.length; i++) {
+            const tr = tbody.rows[i];
+            const limit = Math.min(freezeCols, tr.cells.length - 1);
+            for (let c = 0; c < limit; c++) {
+                const td = tr.cells[c + 1];
+                if (!td) continue;
+                td.classList.add("ss-frozen-col");
+                td.style.left = `${colLeftOffsets[c]}px`;
+                if (c === freezeCols - 1) td.classList.add("ss-freeze-edge-right");
+            }
+        }
     }
 
     function loadRowsSync(count) {
@@ -3851,15 +4139,17 @@ export default async function initSpreadsheetApp(content, options = {}) {
             const tr = template.cloneNode(true);
             tr.dataset.row = rStr;
             const cells = tr.children;
-            cells[0].textContent = rStr;
+            cells[0].firstChild.nodeValue = rStr;
             for (let c = 1; c < cells.length; c++) {
                 cells[c].dataset.row = rStr;
             }
-            attachRowResizeHandle(cells[0], tr);
             frag.appendChild(tr);
         }
+        const addedStartIdx = tbody.rows.length;
         tbody.appendChild(frag);
-        if (freezeRows > 0 || freezeCols > 0) applyFreezePanes();
+        if (freezeCols > 0) {
+            applyFreezeToRowsRange(addedStartIdx);
+        }
     }
 
     // =========================================================
@@ -3869,7 +4159,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
     const SINGLE_REF_REGEX = /(?<![A-Za-z0-9_])(\$?)([A-Za-z]+)(\$?)(\d+)(?!\s*\()/g;
 
     function isDateFormat(str) {
-        return /^\d{1,2}\/\d{1,2}(\/\d{2,4})?$/.test(str) || /^\d{4}\/\d{1,2}\/\d{1,2}$/.test(str);
+        return /^\d{1,2}[\/\-]\d{1,2}([\/\-]\d{2,4})?$/.test(str) || /^\d{4}[\/\-]\d{1,2}[\/\-]\d{1,2}$/.test(str);
     }
     function formatDate(date) {
         const y = date.getFullYear();
@@ -3946,6 +4236,109 @@ export default async function initSpreadsheetApp(content, options = {}) {
         return Number(cleaned);
     }
 
+    function formatByCustomPattern(rawVal, pattern) {
+        const str = String(rawVal ?? "");
+        if (!pattern) return str;
+
+        // セミコロン区切り（正;負;ゼロ）を引用符外で分割
+        const sections = [];
+        let buf = "";
+        let inQ = false;
+        for (let i = 0; i < pattern.length; i++) {
+            const ch = pattern[i];
+            if (ch === '"') inQ = !inQ;
+            if (ch === ";" && !inQ) {
+                sections.push(buf);
+                buf = "";
+            } else {
+                buf += ch;
+            }
+        }
+        sections.push(buf);
+
+        const num = parseFormattedNumber(str);
+        const dateObj = parseExcelDate(str);
+
+        // 日付カスタム書式（例: yyyy"年"m"月"d"日"(aaa)）
+        const firstClean = sections[0].replace(/"[^"]*"/g, "");
+        if (dateObj && /[ymda]/i.test(firstClean) && !/[#0]/.test(firstClean)) {
+            const lits = [];
+            const masked = sections[0].replace(/"([^"]*)"/g, (_, inner) => {
+                const tok = `\uE000${lits.length}\uE001`;
+                lits.push(inner);
+                return tok;
+            });
+            const daysJp = ["日", "月", "火", "水", "木", "金", "土"];
+            const formatted = masked
+                .replace(/yyyy/gi, String(dateObj.getFullYear()))
+                .replace(/yy/gi, String(dateObj.getFullYear()).slice(-2))
+                .replace(/mm/gi, String(dateObj.getMonth() + 1).padStart(2, "0"))
+                .replace(/m/gi, String(dateObj.getMonth() + 1))
+                .replace(/dd/gi, String(dateObj.getDate()).padStart(2, "0"))
+                .replace(/d/gi, String(dateObj.getDate()))
+                .replace(/aaaa/g, `${daysJp[dateObj.getDay()]}曜日`)
+                .replace(/aaa/g, daysJp[dateObj.getDay()]);
+            return formatted.replace(/\uE000(\d+)\uE001/g, (_, idx) => lits[Number(idx)]);
+        }
+
+        if (isNaN(num)) return str;
+
+        let activeSec = sections[0];
+        let useAbs = false;
+        if (num < 0 && sections[1]) {
+            activeSec = sections[1];
+            useAbs = true;
+        } else if (num === 0 && sections[2]) {
+            activeSec = sections[2];
+            useAbs = true;
+        }
+
+        // [赤] などの色タグは表示文字列から除去
+        activeSec = activeSec.replace(/^\[(赤|青|緑|黄|黒|白|Red|Blue|Green|Yellow|Black|White)\]/i, "");
+
+        const lits = [];
+        const masked = activeSec.replace(/"([^"]*)"/g, (_, inner) => {
+            const tok = `\uE000${lits.length}\uE001`;
+            lits.push(inner);
+            return tok;
+        });
+
+        const coreMatch = masked.match(/[#0,.]+%?/);
+        if (!coreMatch) {
+            return masked.replace(/\uE000(\d+)\uE001/g, (_, idx) => lits[Number(idx)]);
+        }
+
+        const core = coreMatch[0];
+        const isPct = core.endsWith("%");
+        const val = (useAbs ? Math.abs(num) : num) * (isPct ? 100 : 1);
+        const [intPart = "", decPart = ""] = core.replace(/%$/, "").split(".");
+        const useComma = intPart.includes(",");
+        const minInt = Math.max(1, (intPart.match(/0/g) || []).length);
+        const minDec = (decPart.match(/0/g) || []).length;
+        const maxDec = (decPart.match(/[0#]/g) || []).length;
+
+        let formattedNum;
+        if (useComma) {
+            formattedNum = val.toLocaleString("ja-JP", {
+                minimumIntegerDigits: minInt,
+                minimumFractionDigits: minDec,
+                maximumFractionDigits: maxDec
+            });
+        } else {
+            const sign = val < 0 ? "-" : "";
+            const fixed = Math.abs(val).toFixed(maxDec);
+            const [fi, fd = ""] = fixed.split(".");
+            const paddedInt = fi.padStart(minInt, "0");
+            const trimmedDec = fd.length > minDec ? fd.replace(/0+$/, "") : fd;
+            const finalDec = trimmedDec.length < minDec ? trimmedDec.padEnd(minDec, "0") : trimmedDec;
+            formattedNum = sign + paddedInt + (finalDec ? `.${finalDec}` : "");
+        }
+        if (isPct) formattedNum += "%";
+
+        const replaced = masked.slice(0, coreMatch.index) + formattedNum + masked.slice(coreMatch.index + core.length);
+        return replaced.replace(/\uE000(\d+)\uE001/g, (_, idx) => lits[Number(idx)]);
+    }
+
     function formatDisplayByNumFmt(rawVal, fmt, cell = null) {
         const str = String(rawVal ?? "");
         const hasDecimals = cell?.dataset?.decimalPlaces !== undefined && cell?.dataset?.decimalPlaces !== "";
@@ -3953,6 +4346,11 @@ export default async function initSpreadsheetApp(content, options = {}) {
 
         if ((!fmt || fmt === "general") && !hasDecimals) return str;
         if (str.trim() === "" || str.startsWith("#")) return str;
+
+        if (fmt && fmt.startsWith("custom:")) {
+            return formatByCustomPattern(str, fmt.slice(7));
+        }
+
         if (fmt === "date-jp" || fmt === "date-md") {
             const m = str.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})$/);
             if (m) {
@@ -4012,7 +4410,41 @@ export default async function initSpreadsheetApp(content, options = {}) {
 
     function setCellTextPreservingControls(cell, text) {
         const filterBtn = cell.querySelector(".ss-filter-arrow");
-        cell.textContent = text;
+        const strText = String(text ?? "");
+
+        if (cell.dataset.richRuns && !cell.dataset.formula) {
+            try {
+                const runs = JSON.parse(cell.dataset.richRuns);
+                if (Array.isArray(runs) && runs.map(r => r.text).join("") === strText) {
+                    cell.textContent = "";
+                    const frag = document.createDocumentFragment();
+                    for (const run of runs) {
+                        const st = run.style || {};
+                        const hasStyle = st.color || st.bold || st.italic || st.underline || st.strike;
+                        if (!hasStyle) {
+                            frag.appendChild(document.createTextNode(run.text));
+                        } else {
+                            const span = document.createElement("span");
+                            span.textContent = run.text;
+                            if (st.color) span.style.color = st.color;
+                            if (st.bold) span.style.fontWeight = "bold";
+                            if (st.italic) span.style.fontStyle = "italic";
+                            const decos = [];
+                            if (st.underline) decos.push("underline");
+                            if (st.strike) decos.push("line-through");
+                            if (decos.length) span.style.textDecoration = decos.join(" ");
+                            frag.appendChild(span);
+                        }
+                    }
+                    cell.appendChild(frag);
+                    if (filterBtn) cell.appendChild(filterBtn);
+                    return;
+                }
+            } catch { /* ignore */ }
+            delete cell.dataset.richRuns;
+        }
+
+        cell.textContent = strText;
         if (filterBtn) cell.appendChild(filterBtn);
     }
 
@@ -4023,6 +4455,12 @@ export default async function initSpreadsheetApp(content, options = {}) {
             delete cell.dataset.valueType;
             delete cell.dataset.dateValue;
             setCellTextPreservingControls(cell, "");
+            cell.classList.remove("ss-auto-align-right", "ss-auto-align-center");
+            return;
+        }
+        if (cell.dataset.quotePrefix === "1") {
+            cell.dataset.rawValue = rawStr;
+            setCellTextPreservingControls(cell, rawStr);
             cell.classList.remove("ss-auto-align-right", "ss-auto-align-center");
             return;
         }
@@ -4059,13 +4497,31 @@ export default async function initSpreadsheetApp(content, options = {}) {
         return isNaN(dt.getTime()) ? null : dateToSerial(dt);
     }
 
+
+    const backgroundSheetIndexCache = new WeakMap();
+
+    function getBackgroundSheetCellMap(sheetObj) {
+        let map = backgroundSheetIndexCache.get(sheetObj);
+        if (!map) {
+            map = new Map();
+            if (Array.isArray(sheetObj?.cells)) {
+                for (let i = 0; i < sheetObj.cells.length; i++) {
+                    const item = sheetObj.cells[i];
+                    map.set(`${Number(item.r)},${Number(item.c)}`, item);
+                }
+            }
+            backgroundSheetIndexCache.set(sheetObj, map);
+        }
+        return map;
+    }
+
     const compiledFormulaCache = new Map();
     const formulaEvalCache = new Map();
     let isBatchRecalculating = false;
 
     function getSheetCellValue(sheetIdx, row, col, visited = new Set()) {
         const cellKey = `${sheetIdx}:${row},${col}`;
-        if (formulaEvalCache.has(cellKey)) {
+        if (isBatchRecalculating && formulaEvalCache.has(cellKey)) {
             return formulaEvalCache.get(cellKey);
         }
 
@@ -4079,14 +4535,14 @@ export default async function initSpreadsheetApp(content, options = {}) {
                     const evaluated = evaluateFormula(cell.dataset.formula, visited, sheetIdx);
                     if (evaluated === "#CIRCULAR!") return "#CIRCULAR!";
                     if (Array.isArray(evaluated)) {
-                        formulaEvalCache.set(cellKey, evaluated);
+                        if (isBatchRecalculating) formulaEvalCache.set(cellKey, evaluated);
                         return evaluated;
                     }
                     const dateSerial = tryParseDateToSerial(evaluated);
                     const finalVal = dateSerial !== null
                         ? dateSerial
                         : ((evaluated !== "" && !isNaN(Number(evaluated))) ? Number(evaluated) : evaluated);
-                    formulaEvalCache.set(cellKey, finalVal);
+                    if (isBatchRecalculating) formulaEvalCache.set(cellKey, finalVal);
                     return finalVal;
                 } finally {
                     visited.delete(cellKey);
@@ -4094,6 +4550,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
             }
             const contentStr = (cell.dataset.rawValue ?? cell.textContent).trim();
             if (contentStr === "") return "";
+            if (cell.dataset.quotePrefix === "1") return cell.dataset.rawValue ?? cell.textContent;
             const dateSerial = tryParseDateToSerial(contentStr);
             if (dateSerial !== null) return dateSerial;
             const num = Number(contentStr.replace(/,/g, ""));
@@ -4101,7 +4558,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
         }
 
         const targetSheet = sheets[sheetIdx];
-        const entry = targetSheet.cells.find(item => Number(item.r) === row && Number(item.c) === col);
+        const entry = getBackgroundSheetCellMap(targetSheet).get(`${row},${col}`);
         if (!entry) return "";
         if (entry.f) {
             if (visited.has(cellKey)) return "#CIRCULAR!";
@@ -4110,14 +4567,14 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 const evaluated = evaluateFormula(entry.f, visited, sheetIdx);
                 if (evaluated === "#CIRCULAR!") return "#CIRCULAR!";
                 if (Array.isArray(evaluated)) {
-                    formulaEvalCache.set(cellKey, evaluated);
+                    if (isBatchRecalculating) formulaEvalCache.set(cellKey, evaluated);
                     return evaluated;
                 }
                 const dateSerial = tryParseDateToSerial(evaluated);
                 const finalVal = dateSerial !== null
                     ? dateSerial
                     : ((evaluated !== "" && !isNaN(Number(evaluated))) ? Number(evaluated) : evaluated);
-                formulaEvalCache.set(cellKey, finalVal);
+                if (isBatchRecalculating) formulaEvalCache.set(cellKey, finalVal);
                 return finalVal;
             } finally {
                 visited.delete(cellKey);
@@ -4136,7 +4593,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
         return getSheetCellValue(activeSheetIndex, parseInt(cell.dataset.row, 10), parseInt(cell.dataset.col, 10), visited);
     }
 
-    function buildRange2DLiteral(sheetIdx, startRef, endRef, visited) {
+    function buildRange2DLiteral(sheetIdx, startRef, endRef, visited, excludeHiddenRows = false) {
         const startMatch = startRef?.match(/^\$?([A-Za-z]+)\$?(\d+)$/);
         const endMatch = endRef?.match(/^\$?([A-Za-z]+)\$?(\d+)$/);
         if (!startMatch || !endMatch) return "[]";
@@ -4162,6 +4619,10 @@ export default async function initSpreadsheetApp(content, options = {}) {
         const cEnd = Math.min(Math.max(startCol, endCol), maxC);
         const matrix = [];
         for (let r = rStart; r <= rEnd; r++) {
+            if (excludeHiddenRows && sheetIdx === activeSheetIndex) {
+                const tr = getRow(r);
+                if (tr && tr.style.display === "none") continue;
+            }
             const rowVals = [];
             for (let c = cStart; c <= cEnd; c++) {
                 const val = getSheetCellValue(sheetIdx, r, c, visited);
@@ -4196,34 +4657,89 @@ export default async function initSpreadsheetApp(content, options = {}) {
 
             expr = resolveStructuredReferences(expr, contextSheetIdx);
 
-            // Excelの文字列結合演算子（&）を括弧ネスト対応で CONCAT(...) に変換
+            // Excelの演算子優先順位（比較 < & < 四則）と任意階層の括弧・関数引数に対応した結合変換
             const convertExcelConcat = (src) => {
-                const parts = [];
-                let current = "";
-                let depth = 0;
+                // 1. まず括弧 (...) 内部を再帰変換（関数引数のカンマ境界を破壊しない）
+                let resolved = "";
                 for (let i = 0; i < src.length; i++) {
-                    const ch = src[i];
-                    if (ch === "(") {
-                        depth++;
-                        current += ch;
-                    } else if (ch === ")") {
-                        depth = Math.max(0, depth - 1);
-                        current += ch;
-                    } else if (ch === "&" && src[i + 1] !== "&" && src[i - 1] !== "&" && depth === 0) {
-                        parts.push(current.trim());
-                        current = "";
+                    if (src[i] === "(") {
+                        let depth = 1;
+                        let j = i + 1;
+                        while (j < src.length && depth > 0) {
+                            if (src[j] === "(") depth++;
+                            else if (src[j] === ")") depth--;
+                            j++;
+                        }
+                        const inner = src.slice(i + 1, j - 1);
+                        // カンマ区切り（関数引数）ごとに独立して変換
+                        const args = [];
+                        let argBuf = "";
+                        let d = 0;
+                        for (let k = 0; k < inner.length; k++) {
+                            const c = inner[k];
+                            if (c === "(") d++;
+                            else if (c === ")") d = Math.max(0, d - 1);
+                            if (c === "," && d === 0) {
+                                args.push(convertExcelConcat(argBuf));
+                                argBuf = "";
+                            } else {
+                                argBuf += c;
+                            }
+                        }
+                        args.push(convertExcelConcat(argBuf));
+                        resolved += `(${args.join(",")})`;
+                        i = j - 1;
                     } else {
-                        current += ch;
+                        resolved += src[i];
                     }
                 }
-                parts.push(current.trim());
 
-                const processed = parts.map(part =>
-                    part.replace(/\(([^()]+)\)/g, (m, inner) =>
-                        /(?<!&)&(?!&)/.test(inner) ? `(${convertExcelConcat(inner)})` : m
-                    )
-                );
-                return processed.length > 1 ? `CONCAT(${processed.join(", ")})` : processed[0];
+                // 2. トップレベルの比較演算子で分割し、各辺ごとに & を CONCAT(...) に変換
+                const cmpSegments = [];
+                let seg = "";
+                let depth = 0;
+                for (let i = 0; i < resolved.length; i++) {
+                    const ch = resolved[i];
+                    if (ch === "(") depth++;
+                    else if (ch === ")") depth = Math.max(0, depth - 1);
+                    if (depth === 0) {
+                        const two = resolved.slice(i, i + 2);
+                        if (two === ">=" || two === "<=" || two === "<>" || two === "==" || two === "!=") {
+                            cmpSegments.push({ text: seg, op: two });
+                            seg = "";
+                            i++;
+                            continue;
+                        }
+                        if (ch === "=" || ch === "<" || ch === ">") {
+                            cmpSegments.push({ text: seg, op: ch });
+                            seg = "";
+                            continue;
+                        }
+                    }
+                    seg += ch;
+                }
+                cmpSegments.push({ text: seg, op: "" });
+
+                const convertAmp = (exprPart) => {
+                    const parts = [];
+                    let buf = "";
+                    let d = 0;
+                    for (let i = 0; i < exprPart.length; i++) {
+                        const c = exprPart[i];
+                        if (c === "(") d++;
+                        else if (c === ")") d = Math.max(0, d - 1);
+                        if (c === "&" && exprPart[i + 1] !== "&" && exprPart[i - 1] !== "&" && d === 0) {
+                            parts.push(buf.trim());
+                            buf = "";
+                        } else {
+                            buf += c;
+                        }
+                    }
+                    parts.push(buf.trim());
+                    return parts.length > 1 ? `CONCAT(${parts.join(", ")})` : exprPart;
+                };
+
+                return cmpSegments.map(s => convertAmp(s.text) + s.op).join("");
             };
 
             // Excel演算子・リテラル・関数名の大文字正規化
@@ -4256,10 +4772,11 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 return toJSValueLiteral(val, true);
             });
 
-            // 自シート範囲参照（2次元配列として展開）
+            // 自シート範囲参照（SUBTOTAL / AGGREGATE 内はフィルター非表示行を除外）
+            const isSubtotalExpr = /\b(SUBTOTAL|AGGREGATE)\s*\(/i.test(expr);
             expr = expr.replace(RANGE_REF_REGEX, (match) => {
                 const [startRef, endRef] = match.split(":");
-                return buildRange2DLiteral(contextSheetIdx, startRef, endRef, visited);
+                return buildRange2DLiteral(contextSheetIdx, startRef, endRef, visited, isSubtotalExpr);
             });
 
             // 自シート単一セル参照
@@ -4269,6 +4786,18 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 const val = getSheetCellValue(contextSheetIdx, rowNumber, colIndex, visited);
                 return toJSValueLiteral(val, true);
             });
+
+            // 文字列リテラル復元前に、許可された識別子のみであることを検証（任意JS実行防止 & #NAME? 判定）
+            const ALLOWED_IDENTIFIERS = new Set(["EXCEL_BLANK_CELL", "true", "false", ...FORMULA_FN_NAMES]);
+            const unsafeIdentMatch = expr.match(/\b[A-Za-z_$][A-Za-z0-9_$]*\b/g);
+            if (unsafeIdentMatch) {
+                for (const ident of unsafeIdentMatch) {
+                    if (/^__STR_LIT_\d+__$/.test(ident)) continue;
+                    if (!ALLOWED_IDENTIFIERS.has(ident)) {
+                        return "#NAME?";
+                    }
+                }
+            }
 
             expr = expr.replace(/__STR_LIT_(\d+)__/g, (_, idx) => stringLiterals[Number(idx)]);
 
@@ -4476,7 +5005,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
         if (op === "error") return /^#(ERROR!|DIV\/0!|N\/A|VALUE!|CIRCULAR!|REF!|NAME\?|NUM!|CALC!|SPILL!)$/.test(str);
         if (op === "notError") return !/^#(ERROR!|DIV\/0!|N\/A|VALUE!|CIRCULAR!|REF!|NAME\?|NUM!|CALC!|SPILL!)$/.test(str);
         if (op === "contains") return str !== "" && resolvedVal1 !== "" && str.toLowerCase().includes(resolvedVal1.toLowerCase());
-        if (op === "notContains") return !str.toLowerCase().includes(resolvedVal1.toLowerCase());
+        if (op === "notContains") return resolvedVal1 !== "" && !str.toLowerCase().includes(resolvedVal1.toLowerCase());
         if (op === "duplicate") return str !== "" && (valueCountMap?.get(str) || 0) > 1;
         if (op === "unique") return str !== "" && (valueCountMap?.get(str) || 0) === 1;
         if (op === "date") return matchDatePeriod(str, rule.datePeriod || "today");
@@ -4490,12 +5019,65 @@ export default async function initSpreadsheetApp(content, options = {}) {
             return String(res ?? "").trim().toUpperCase() === "TRUE";
         }
 
+        // 空白セルや未入力条件に対する誤一致を防止
+        if (str === "" || resolvedVal1 === "") return false;
+
+        // 数値比較（カンマ・¥・%付きも正しく数値として評価）
         const num = parseFormattedNumber(str);
         const v1 = parseFormattedNumber(resolvedVal1);
         const v2 = parseFormattedNumber(resolvedVal2);
-        if (op === "between") return !isNaN(num) && !isNaN(v1) && !isNaN(v2) && num >= Math.min(v1, v2) && num <= Math.max(v1, v2);
-        if (op === "notBetween") return !isNaN(num) && !isNaN(v1) && !isNaN(v2) && (num < Math.min(v1, v2) || num > Math.max(v1, v2));
-        return buildConditionMatcher(`${op}${resolvedVal1}`)(rawVal);
+        if (!isNaN(num) && !isNaN(v1)) {
+            if (op === "between") return !isNaN(v2) && num >= Math.min(v1, v2) && num <= Math.max(v1, v2);
+            if (op === "notBetween") return !isNaN(v2) && (num < Math.min(v1, v2) || num > Math.max(v1, v2));
+            if (op === ">") return num > v1;
+            if (op === ">=") return num >= v1;
+            if (op === "<") return num < v1;
+            if (op === "<=") return num <= v1;
+            if (op === "=") return num === v1;
+            if (op === "<>") return num !== v1;
+        }
+
+        // 日付比較（2026/11/20 など）
+        const dCell = parseExcelDate(str);
+        const d1 = parseExcelDate(resolvedVal1);
+        const d2 = parseExcelDate(resolvedVal2);
+        if (dCell && d1) {
+            const t = dCell.getTime(), t1 = d1.getTime(), t2 = d2 ? d2.getTime() : NaN;
+            if (op === "between") return !isNaN(t2) && t >= Math.min(t1, t2) && t <= Math.max(t1, t2);
+            if (op === "notBetween") return !isNaN(t2) && (t < Math.min(t1, t2) || t > Math.max(t1, t2));
+            if (op === ">") return t > t1;
+            if (op === ">=") return t >= t1;
+            if (op === "<") return t < t1;
+            if (op === "<=") return t <= t1;
+            if (op === "=") return t === t1;
+            if (op === "<>") return t !== t1;
+        }
+
+        // 文字列フォールバック
+        if (op === "between" || op === "notBetween") return false;
+        return buildConditionMatcher(`${op}${resolvedVal1}`)(str);
+    }
+
+    function clearAppliedConditionalStyle(td) {
+        if (!td || !td.dataset.cfApplied) return;
+        td.style.backgroundColor = td.dataset.cfOrigBg || "";
+        td.style.backgroundImage = td.dataset.cfOrigBgImg || "";
+        td.style.color = td.dataset.cfOrigColor || "";
+        td.style.fontWeight = td.dataset.cfOrigWeight || "";
+        td.style.fontStyle = td.dataset.cfOrigItalic || "";
+        td.style.textDecoration = td.dataset.cfOrigDeco || "";
+        td.style.outline = td.dataset.cfOrigOutline || "";
+        td.style.outlineOffset = td.dataset.cfOrigOutlineOffset || "";
+
+        delete td.dataset.cfOrigBg;
+        delete td.dataset.cfOrigBgImg;
+        delete td.dataset.cfOrigColor;
+        delete td.dataset.cfOrigWeight;
+        delete td.dataset.cfOrigItalic;
+        delete td.dataset.cfOrigDeco;
+        delete td.dataset.cfOrigOutline;
+        delete td.dataset.cfOrigOutlineOffset;
+        delete td.dataset.cfApplied;
     }
 
     function applyConditionalFormats() {
@@ -4505,18 +5087,22 @@ export default async function initSpreadsheetApp(content, options = {}) {
             td.style.removeProperty("--cf-icon-color");
         });
         tbody.querySelectorAll("td[data-cf-applied]").forEach(td => {
-            td.style.backgroundColor = td.dataset.cfOrigBg || "";
-            td.style.backgroundImage = td.dataset.cfOrigBgImg || "";
-            td.style.color = td.dataset.cfOrigColor || "";
-            td.style.fontWeight = td.dataset.cfOrigWeight || "";
-            td.style.fontStyle = td.dataset.cfOrigItalic || "";
-            td.style.textDecoration = td.dataset.cfOrigDeco || "";
-            td.style.borderColor = td.dataset.cfOrigBorder || "";
-            delete td.dataset.cfApplied;
+            clearAppliedConditionalStyle(td);
         });
         if (!rules.length) return;
 
         const stoppedCells = new Set();
+        // Excel準拠：上位ルールが設定済みのスタイル属性は下位ルールで上書きしない
+        const lockedPropsByCell = new Map();
+        const getLockedSet = (cellKey) => {
+            let s = lockedPropsByCell.get(cellKey);
+            if (!s) {
+                s = new Set();
+                lockedPropsByCell.set(cellKey, s);
+            }
+            return s;
+        };
+
         const saveOrig = (td) => {
             if (!td.dataset.cfApplied) {
                 td.dataset.cfOrigBg = td.style.backgroundColor || "";
@@ -4525,12 +5111,14 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 td.dataset.cfOrigWeight = td.style.fontWeight || "";
                 td.dataset.cfOrigItalic = td.style.fontStyle || "";
                 td.dataset.cfOrigDeco = td.style.textDecoration || "";
-                td.dataset.cfOrigBorder = td.style.borderColor || "";
+                td.dataset.cfOrigOutline = td.style.outline || "";
+                td.dataset.cfOrigOutlineOffset = td.style.outlineOffset || "";
                 td.dataset.cfApplied = "1";
             }
         };
 
         for (const rule of rules) {
+            const ruleOp = String(rule.op || "expr");
             const rangeNums = [];
             const valueCountMap = new Map();
             const maxExistingRow = Math.min(rule.maxRow, tbody.rows.length);
@@ -4545,13 +5133,22 @@ export default async function initSpreadsheetApp(content, options = {}) {
                     if (!isNaN(v)) rangeNums.push(v);
                 }
             }
-            const minNum = rangeNums.length ? Math.min(...rangeNums) : 0;
-            const maxNum = rangeNums.length ? Math.max(...rangeNums) : 1;
-            const avgNum = rangeNums.length ? rangeNums.reduce((a, b) => a + b, 0) / rangeNums.length : 0;
+            let minNum = Infinity, maxNum = -Infinity, sumNum = 0;
+            for (let i = 0; i < rangeNums.length; i++) {
+                const v = rangeNums[i];
+                if (v < minNum) minNum = v;
+                if (v > maxNum) maxNum = v;
+                sumNum += v;
+            }
+            if (!rangeNums.length) {
+                minNum = 0;
+                maxNum = 1;
+            }
+            const avgNum = rangeNums.length ? sumNum / rangeNums.length : 0;
             const sortedDesc = [...rangeNums].sort((a, b) => b - a);
             const sortedAsc = [...rangeNums].sort((a, b) => a - b);
             const rankVal = Math.max(1, Number(rule.rank) || 10);
-            const nCount = rule.op.endsWith("Percent")
+            const nCount = ruleOp.endsWith("Percent")
                 ? Math.max(1, Math.floor((rangeNums.length * rankVal) / 100))
                 : rankVal;
             const topCut = sortedDesc[Math.min(sortedDesc.length - 1, nCount - 1)] ?? Infinity;
@@ -4566,89 +5163,126 @@ export default async function initSpreadsheetApp(content, options = {}) {
                     const rawVal = getCellPureText(td);
                     const num = parseFormattedNumber(rawVal);
 
-                    if (rule.op === "databar" && !isNaN(num) && maxNum > Math.min(0, minNum)) {
-                        saveOrig(td);
-                        const base = Math.min(0, minNum);
-                        const pct = Math.max(2, Math.min(100, Math.round(((num - base) / (maxNum - base)) * 100)));
-                        const barColor = rule.barColor || "#638ec6";
-                        td.style.backgroundImage = rule.solid
-                            ? `linear-gradient(90deg, ${barColor} ${pct}%, transparent ${pct}%)`
-                            : `linear-gradient(90deg, ${barColor} 0%, rgba(255,255,255,0.85) ${pct}%, transparent ${pct}%)`;
-                        if (rule.stopIfTrue) stoppedCells.add(cellKey);
-                        continue;
-                    }
-
-                    if (rule.op === "colorscale" && !isNaN(num) && maxNum > minNum) {
-                        saveOrig(td);
-                        const ratio = (num - minNum) / (maxNum - minNum);
-                        const t = rule.reverse ? 1 - ratio : ratio;
-                        const cLow = rule.cLow || [248, 105, 107];
-                        const cMid = rule.cMid || [255, 235, 132];
-                        const cHigh = rule.cHigh || [99, 190, 123];
-                        let rgb;
-                        if (rule.twoColor) {
-                            rgb = cLow.map((v, i) => Math.round(v + t * (cHigh[i] - v)));
-                        } else if (t < 0.5) {
-                            rgb = cLow.map((v, i) => Math.round(v + (t * 2) * (cMid[i] - v)));
-                        } else {
-                            rgb = cMid.map((v, i) => Math.round(v + ((t - 0.5) * 2) * (cHigh[i] - v)));
+                    if (ruleOp === "databar" && !isNaN(num)) {
+                        const locked = getLockedSet(cellKey);
+                        if (!locked.has("bgImg")) {
+                            saveOrig(td);
+                            const base = Math.min(0, minNum);
+                            const span = maxNum - base;
+                            const pct = span > 0
+                                ? Math.max(2, Math.min(100, Math.round(((num - base) / span) * 100)))
+                                : (num !== 0 ? 100 : 0);
+                            if (pct > 0) {
+                                const barColor = rule.barColor || "#638ec6";
+                                td.style.backgroundImage = rule.solid
+                                    ? `linear-gradient(90deg, ${barColor} ${pct}%, transparent ${pct}%)`
+                                    : `linear-gradient(90deg, ${barColor} 0%, rgba(255,255,255,0.85) ${pct}%, transparent ${pct}%)`;
+                                locked.add("bgImg");
+                            }
                         }
-                        td.style.backgroundColor = `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
                         if (rule.stopIfTrue) stoppedCells.add(cellKey);
                         continue;
                     }
 
-                    if (rule.op === "iconset" && !isNaN(num) && maxNum >= minNum) {
-                        saveOrig(td);
-                        const pct = maxNum === minNum ? 100 : ((num - minNum) / (maxNum - minNum)) * 100;
-                        const setType = rule.iconSet || "arrows3";
-                        const sets = {
-                            arrows3: [
-                                { char: "▼", color: "#d13438" },
-                                { char: "▶", color: "#e39c00" },
-                                { char: "▲", color: "#107c41" }
-                            ],
-                            traffic3: [
-                                { char: "●", color: "#d13438" },
-                                { char: "●", color: "#e39c00" },
-                                { char: "●", color: "#107c41" }
-                            ],
-                            signs3: [
-                                { char: "✖", color: "#d13438" },
-                                { char: "❗", color: "#e39c00" },
-                                { char: "✔", color: "#107c41" }
-                            ],
-                            stars3: [
-                                { char: "☆", color: "#b8860b" },
-                                { char: "⯪", color: "#daa520" },
-                                { char: "★", color: "#daa520" }
-                            ]
-                        };
-                        const palette = sets[setType] || sets.arrows3;
-                        const icon = pct >= 67 ? palette[2] : (pct >= 33 ? palette[1] : palette[0]);
-                        td.dataset.cfIcon = icon.char;
-                        td.style.setProperty("--cf-icon-color", icon.color);
+                    if (ruleOp === "colorscale" && !isNaN(num)) {
+                        const locked = getLockedSet(cellKey);
+                        if (!locked.has("bg")) {
+                            saveOrig(td);
+                            const ratio = maxNum > minNum ? (num - minNum) / (maxNum - minNum) : 0.5;
+                            const t = rule.reverse ? 1 - ratio : ratio;
+                            const cLow = rule.cLow || [248, 105, 107];
+                            const cMid = rule.cMid || [255, 235, 132];
+                            const cHigh = rule.cHigh || [99, 190, 123];
+                            let rgb;
+                            if (rule.twoColor) {
+                                rgb = cLow.map((v, i) => Math.round(v + t * (cHigh[i] - v)));
+                            } else if (t < 0.5) {
+                                rgb = cLow.map((v, i) => Math.round(v + (t * 2) * (cMid[i] - v)));
+                            } else {
+                                rgb = cMid.map((v, i) => Math.round(v + ((t - 0.5) * 2) * (cHigh[i] - v)));
+                            }
+                            td.style.backgroundColor = `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
+                            locked.add("bg");
+                        }
+                        if (rule.stopIfTrue) stoppedCells.add(cellKey);
+                        continue;
+                    }
+
+                    if (ruleOp === "iconset" && !isNaN(num) && maxNum >= minNum) {
+                        const locked = getLockedSet(cellKey);
+                        if (!locked.has("icon")) {
+                            saveOrig(td);
+                            const pct = maxNum === minNum ? 100 : ((num - minNum) / (maxNum - minNum)) * 100;
+                            const setType = rule.iconSet || "arrows3";
+                            const sets = {
+                                arrows3: [
+                                    { char: "▼", color: "#d13438" },
+                                    { char: "▶", color: "#e39c00" },
+                                    { char: "▲", color: "#107c41" }
+                                ],
+                                traffic3: [
+                                    { char: "●", color: "#d13438" },
+                                    { char: "●", color: "#e39c00" },
+                                    { char: "●", color: "#107c41" }
+                                ],
+                                signs3: [
+                                    { char: "✖", color: "#d13438" },
+                                    { char: "❗", color: "#e39c00" },
+                                    { char: "✔", color: "#107c41" }
+                                ],
+                                stars3: [
+                                    { char: "☆", color: "#b8860b" },
+                                    { char: "⯪", color: "#daa520" },
+                                    { char: "★", color: "#daa520" }
+                                ]
+                            };
+                            const palette = sets[setType] || sets.arrows3;
+                            const icon = pct >= 67 ? palette[2] : (pct >= 33 ? palette[1] : palette[0]);
+                            td.dataset.cfIcon = icon.char;
+                            td.style.setProperty("--cf-icon-color", icon.color);
+                            locked.add("icon");
+                        }
                         if (rule.stopIfTrue) stoppedCells.add(cellKey);
                         continue;
                     }
 
                     let matched = false;
-                    if (rule.op === "topN" || rule.op === "topPercent") matched = !isNaN(num) && num >= topCut;
-                    else if (rule.op === "bottomN" || rule.op === "bottomPercent") matched = !isNaN(num) && num <= bottomCut;
-                    else if (rule.op === "aboveAvg") matched = !isNaN(num) && num > avgNum;
-                    else if (rule.op === "belowAvg") matched = !isNaN(num) && num < avgNum;
-                    else if (rule.op === "aboveEqAvg") matched = !isNaN(num) && num >= avgNum;
-                    else if (rule.op === "belowEqAvg") matched = !isNaN(num) && num <= avgNum;
+                    if (ruleOp === "topN" || ruleOp === "topPercent") matched = !isNaN(num) && num >= topCut;
+                    else if (ruleOp === "bottomN" || ruleOp === "bottomPercent") matched = !isNaN(num) && num <= bottomCut;
+                    else if (ruleOp === "aboveAvg") matched = !isNaN(num) && num > avgNum;
+                    else if (ruleOp === "belowAvg") matched = !isNaN(num) && num < avgNum;
+                    else if (ruleOp === "aboveEqAvg") matched = !isNaN(num) && num >= avgNum;
+                    else if (ruleOp === "belowEqAvg") matched = !isNaN(num) && num <= avgNum;
                     else matched = matchConditionalRule(rule, rawVal, valueCountMap, r, c);
 
                     if (matched) {
                         saveOrig(td);
-                        if (rule.bgColor) td.style.backgroundColor = rule.bgColor;
-                        if (rule.textColor) td.style.color = rule.textColor;
-                        if (rule.bold) td.style.fontWeight = "bold";
-                        if (rule.italic) td.style.fontStyle = "italic";
-                        if (rule.underline) td.style.textDecoration = "underline";
-                        if (rule.borderColor) td.style.borderColor = rule.borderColor;
+                        const locked = getLockedSet(cellKey);
+                        if (rule.bgColor && !locked.has("bg")) {
+                            td.style.backgroundColor = rule.bgColor;
+                            locked.add("bg");
+                        }
+                        if (rule.textColor && !locked.has("color")) {
+                            td.style.color = rule.textColor;
+                            locked.add("color");
+                        }
+                        if (rule.bold && !locked.has("bold")) {
+                            td.style.fontWeight = "bold";
+                            locked.add("bold");
+                        }
+                        if (rule.italic && !locked.has("italic")) {
+                            td.style.fontStyle = "italic";
+                            locked.add("italic");
+                        }
+                        if (rule.underline && !locked.has("underline")) {
+                            td.style.textDecoration = "underline";
+                            locked.add("underline");
+                        }
+                        if (rule.borderColor && !locked.has("border")) {
+                            td.style.outline = `2px solid ${rule.borderColor}`;
+                            td.style.outlineOffset = "-2px";
+                            locked.add("border");
+                        }
                         if (rule.stopIfTrue) stoppedCells.add(cellKey);
                     }
                 }
@@ -4758,6 +5392,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
         const cleanupPicker = async (applyVal) => {
             if (pickerClosed) return;
             pickerClosed = true;
+            signal.removeEventListener("abort", onAppAbort);
             document.removeEventListener("mousedown", onPickDown, true);
             document.removeEventListener("mousemove", onPickMove, true);
             document.removeEventListener("mouseup", onPickUp, true);
@@ -4782,10 +5417,15 @@ export default async function initSpreadsheetApp(content, options = {}) {
             targetInput.focus();
         };
 
-        document.addEventListener("mousedown", onPickDown, true);
-        document.addEventListener("mousemove", onPickMove, true);
-        document.addEventListener("mouseup", onPickUp, true);
-        document.addEventListener("keydown", onPickKeydown, true);
+        const onAppAbort = () => {
+            void cleanupPicker(null);
+        };
+        signal.addEventListener("abort", onAppAbort, { once: true });
+
+        document.addEventListener("mousedown", onPickDown, { capture: true, signal });
+        document.addEventListener("mousemove", onPickMove, { capture: true, signal });
+        document.addEventListener("mouseup", onPickUp, { capture: true, signal });
+        document.addEventListener("keydown", onPickKeydown, { capture: true, signal });
 
         pickerBar.querySelector(".ss-range-picker-ok").addEventListener("click", () => {
             void cleanupPicker(previewInput.value.trim());
@@ -4923,9 +5563,9 @@ export default async function initSpreadsheetApp(content, options = {}) {
     }
 
     function openConditionalFormatModal(editIndex = null) {
-        const bounds = getSelectedRangeBounds();
-        if (!bounds) return;
         const existing = editIndex !== null ? sheets[activeSheetIndex]?.conditionalFormats?.[editIndex] : null;
+        const bounds = getSelectedRangeBounds();
+        if (!bounds && !existing) return;
         const targetBounds = existing
             ? { minRow: existing.minRow, maxRow: existing.maxRow, minCol: existing.minCol, maxCol: existing.maxCol }
             : bounds;
@@ -5080,7 +5720,11 @@ export default async function initSpreadsheetApp(content, options = {}) {
                         const bold = modalContent.querySelector(".ss-cf-bold").checked;
                         const italic = modalContent.querySelector(".ss-cf-italic").checked;
 
-                        const rawRangeText = modalContent.querySelector(".ss-cf-apply-range")?.value.replace(/^=/, "").trim().toUpperCase() || "";
+                        const rawRangeText = (modalContent.querySelector(".ss-cf-apply-range")?.value || "")
+                            .replace(/^=/, "")
+                            .replace(/^.*!/, "")
+                            .trim()
+                            .toUpperCase();
                         let finalBounds = { ...targetBounds };
                         if (rawRangeText.includes(":")) {
                             const parsedRng = parseRangeReference(rawRangeText);
@@ -5105,6 +5749,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
                         }
 
                         let rule = {
+                            ...(existing || {}),
                             ...finalBounds,
                             bgColor,
                             textColor,
@@ -5117,9 +5762,12 @@ export default async function initSpreadsheetApp(content, options = {}) {
                             const sbMode = modalContent.querySelector(".ss-cf-sb-mode").value;
                             rule.op = sbMode;
                             if (sbMode === "databar") rule.barColor = modalContent.querySelector(".ss-cf-barcolor").value;
-                            if (sbMode === "iconset") rule.iconSet = "arrows3";
+                            if (sbMode === "iconset") rule.iconSet = existing?.iconSet || "arrows3";
                         } else if (rType === "cellValue") {
-                            rule.op = modalContent.querySelector(".ss-cf-op").value;
+                            const selectedOp = modalContent.querySelector(".ss-cf-op").value;
+                            rule.op = (existing?.op === "date" && selectedOp === "between" && !modalContent.querySelector(".ss-cf-v1").value.trim())
+                                ? "date"
+                                : selectedOp;
                             rule.val1 = modalContent.querySelector(".ss-cf-v1").value.trim();
                             rule.val2 = modalContent.querySelector(".ss-cf-v2").value.trim();
                         } else if (rType === "topBottom") {
@@ -5365,10 +6013,17 @@ export default async function initSpreadsheetApp(content, options = {}) {
 
         const closeManagerAndOpenEditor = (editIdx) => {
             sheets[activeSheetIndex].conditionalFormats = draftRules;
-            if (windowAPI?.destroyWindow) {
-                windowAPI.destroyWindow(modalContent);
-            } else {
-                modalContent.closest(".window")?.querySelector(".close-btn")?.click();
+            const modalWin = modalContent?.closest?.(".window");
+            if (modalWin) {
+                if (windowAPI?.closeWindow) {
+                    windowAPI.closeWindow(modalWin);
+                }
+                if (modalWin.isConnected && windowAPI?.destroyWindow) {
+                    windowAPI.destroyWindow(modalWin);
+                }
+                if (modalWin.isConnected) {
+                    modalWin.querySelector(".close-btn, .window-close")?.click();
+                }
             }
             openConditionalFormatModal(editIdx);
         };
@@ -5641,6 +6296,19 @@ export default async function initSpreadsheetApp(content, options = {}) {
         if (!target) return;
 
         const computed = getComputedStyle(target);
+        const fontSelect = appRoot.querySelector(".ss-font-family");
+        if (fontSelect) {
+            const curFont = (target.style.fontFamily || computed.fontFamily || "").toLowerCase().replace(/["']/g, "");
+            let matched = false;
+            for (const opt of fontSelect.options) {
+                const primary = opt.value.split(",")[0].trim().toLowerCase().replace(/["']/g, "");
+                const isMatch = curFont.includes(primary);
+                opt.selected = isMatch;
+                if (isMatch) matched = true;
+            }
+            if (!matched && fontSelect.options.length) fontSelect.options[0].selected = true;
+        }
+
         const select = appRoot.querySelector(".ss-font-size");
         if (select) {
             const currentSize = target.style.fontSize || computed.fontSize;
@@ -5648,9 +6316,11 @@ export default async function initSpreadsheetApp(content, options = {}) {
         }
 
         const isBold = target.style.fontWeight === "bold" || Number(computed.fontWeight) >= 600;
+        const deco = target.style.textDecoration || "";
         appRoot.querySelector(".ss-toggle-bold")?.classList.toggle("selected", isBold);
         appRoot.querySelector(".ss-toggle-italic")?.classList.toggle("selected", target.style.fontStyle === "italic");
-        appRoot.querySelector(".ss-toggle-underline")?.classList.toggle("selected", (target.style.textDecoration || "").includes("underline"));
+        appRoot.querySelector(".ss-toggle-underline")?.classList.toggle("selected", deco.includes("underline"));
+        appRoot.querySelector(".ss-toggle-strike")?.classList.toggle("selected", deco.includes("line-through"));
         appRoot.querySelector(".ss-toggle-textshadow")?.classList.toggle("selected", Boolean(target.style.textShadow && target.style.textShadow !== "none"));
 
         const align = target.style.textAlign || "left";
@@ -5663,6 +6333,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
         appRoot.querySelector(".ss-valign-middle")?.classList.toggle("selected", valign === "middle");
         appRoot.querySelector(".ss-valign-bottom")?.classList.toggle("selected", valign === "bottom");
 
+        appRoot.querySelector(".ss-toggle-vertical")?.classList.toggle("selected", target.style.writingMode === "vertical-rl");
         appRoot.querySelector(".ss-toggle-wrap")?.classList.toggle("selected", target.style.whiteSpace === "pre-wrap");
 
         const numFmt = target.dataset.numFormat || "general";
@@ -5891,6 +6562,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
     }
 
     function closeCellDropdownList() {
+        if (!activeDropdownCleanup && !floatingDropdownBtn.classList.contains("open")) return;
         if (activeDropdownCleanup) {
             activeDropdownCleanup();
             activeDropdownCleanup = null;
@@ -6192,17 +6864,22 @@ export default async function initSpreadsheetApp(content, options = {}) {
 
             const hadRaw = Object.prototype.hasOwnProperty.call(cell.dataset, "rawValue");
             const prevRaw = cell.dataset.rawValue;
+            const hadFormula = Object.prototype.hasOwnProperty.call(cell.dataset, "formula");
+            const prevFormula = cell.dataset.formula;
             const prevText = Array.from(cell.childNodes)
                 .filter(n => n.nodeType === Node.TEXT_NODE)
                 .map(n => n.nodeValue)
                 .join("");
             try {
+                delete cell.dataset.formula;
                 cell.dataset.rawValue = String(newText);
                 setCellTextPreservingControls(cell, String(newText));
                 formulaEvalCache.clear();
                 const res = evaluateFormula(f, new Set(), activeSheetIndex);
                 isValid = res === true || res === 1 || String(res ?? "").trim().toUpperCase() === "TRUE";
             } finally {
+                if (hadFormula) cell.dataset.formula = prevFormula;
+                else delete cell.dataset.formula;
                 if (hadRaw) cell.dataset.rawValue = prevRaw;
                 else delete cell.dataset.rawValue;
                 setCellTextPreservingControls(cell, prevText);
@@ -6224,13 +6901,18 @@ export default async function initSpreadsheetApp(content, options = {}) {
                     title,
                     message: `${msg}\n\nこの値を入力して続行しますか？`,
                     onConfirm: (ok) => {
-                        if (ok) {
-                            const prevRule = cell.dataset.dvRule;
-                            delete cell.dataset.dvRule;
+                        if (!ok) return;
+                        const prevRule = cell.dataset.dvRule;
+                        delete cell.dataset.dvRule;
+                        try {
                             commitCellValue(cell, newText);
-                            cell.dataset.dvRule = prevRule;
-                            updateSelectedCellsDisplay();
+                        } finally {
+                            if (prevRule !== undefined) cell.dataset.dvRule = prevRule;
                         }
+                        if (activeCell === cell) {
+                            formulaBarInput.value = cell.dataset.formula || (cell.dataset.rawValue ?? cell.textContent);
+                        }
+                        updateSelectedCellsDisplay();
                     }
                 });
                 return false;
@@ -6615,15 +7297,183 @@ export default async function initSpreadsheetApp(content, options = {}) {
     spreadsheetContent.appendChild(cellEditor);
 
     let editingCell = null;
+    let editingRichRuns = null;
+    let savedEditorSelection = { start: 0, end: 0 };
+
+    // ----- セル編集中テキスト選択ミニツールバー -----
+    const inlineMiniToolbar = document.createElement("div");
+    inlineMiniToolbar.className = "ss-inline-mini-toolbar";
+    inlineMiniToolbar.innerHTML = `
+        <span class="ss-mt-btn" data-mt-style="bold" title="選択文字を太字">B</span>
+        <span class="ss-mt-btn" data-mt-style="italic" style="font-style:italic;" title="選択文字を斜体">i</span>
+        <span class="ss-mt-btn" data-mt-style="underline" style="text-decoration:underline;" title="選択文字に下線">U</span>
+        <span class="ss-mt-btn" data-mt-style="strike" style="text-decoration:line-through;" title="選択文字に取り消し線">S</span>
+        <span class="ss-mt-sep"></span>
+        <span class="ss-mt-swatch" data-mt-color="#000000" style="background:#000000;" title="黒"></span>
+        <span class="ss-mt-swatch" data-mt-color="#FF0000" style="background:#FF0000;" title="赤"></span>
+        <span class="ss-mt-swatch" data-mt-color="#0000FF" style="background:#0000FF;" title="青"></span>
+        <span class="ss-mt-swatch" data-mt-color="#008000" style="background:#008000;" title="緑"></span>
+        <span class="ss-mt-swatch" data-mt-color="#FF8C00" style="background:#FF8C00;" title="オレンジ"></span>
+        <span class="ss-mt-swatch" data-mt-color="#800080" style="background:#800080;" title="紫"></span>
+        <input type="color" class="ss-mt-color-input" value="#ff0000" title="詳細色を選択">
+        <span class="ss-mt-btn" data-mt-clear="1" title="選択文字の書式をクリア" style="font-weight:normal;">戻</span>
+    `;
+    document.body.appendChild(inlineMiniToolbar);
+    signal.addEventListener("abort", () => inlineMiniToolbar.remove(), { once: true });
+
+    function normalizeRichRuns(runs) {
+        const merged = [];
+        for (const r of runs) {
+            if (!r.text) continue;
+            const st = r.style || {};
+            const key = JSON.stringify(st);
+            if (merged.length && JSON.stringify(merged[merged.length - 1].style || {}) === key) {
+                merged[merged.length - 1].text += r.text;
+            } else {
+                merged.push({ text: r.text, style: { ...st } });
+            }
+        }
+        return merged;
+    }
+
+    function syncRichRunsWithText(runs, newText) {
+        const str = String(newText ?? "");
+        if (!runs || !runs.length) return [{ text: str, style: {} }];
+        const oldText = runs.map(r => r.text).join("");
+        if (oldText === str) return runs;
+
+        // 先頭と末尾の共通部分を維持して、変更された中央部分だけ置き換える
+        let p = 0;
+        while (p < oldText.length && p < str.length && oldText[p] === str[p]) p++;
+        let s = 0;
+        while (s < oldText.length - p && s < str.length - p && oldText[oldText.length - 1 - s] === str[str.length - 1 - s]) s++;
+
+        const charStyles = [];
+        for (const r of runs) {
+            for (let i = 0; i < r.text.length; i++) charStyles.push(r.style || {});
+        }
+        const insertedStyle = p > 0 ? { ...(charStyles[p - 1] || {}) } : {};
+        const nextChars = [];
+        for (let i = 0; i < p; i++) nextChars.push({ text: str[i], style: charStyles[i] || {} });
+        for (let i = p; i < str.length - s; i++) nextChars.push({ text: str[i], style: insertedStyle });
+        for (let i = 0; i < s; i++) {
+            const oldIdx = oldText.length - s + i;
+            nextChars.push({ text: str[str.length - s + i], style: charStyles[oldIdx] || {} });
+        }
+        return normalizeRichRuns(nextChars);
+    }
+
+    function applyPartialStyleToEditor(patch) {
+        if (!editingCell || !isCellEditing(editingCell)) return;
+        const text = cellEditor.value;
+        if (!text || text.trimStart().startsWith("=")) return;
+
+        let start = cellEditor.selectionStart;
+        let end = cellEditor.selectionEnd;
+        if (start === end) {
+            start = savedEditorSelection.start;
+            end = savedEditorSelection.end;
+        }
+        if (start === end || start < 0 || end > text.length) return;
+
+        const baseRuns = syncRichRunsWithText(editingRichRuns, text);
+        const chars = [];
+        for (const r of baseRuns) {
+            for (let i = 0; i < r.text.length; i++) {
+                chars.push({ text: r.text[i], style: { ...(r.style || {}) } });
+            }
+        }
+
+        const slice = chars.slice(start, end);
+        for (const ch of slice) {
+            if (patch.clear) {
+                ch.style = {};
+            } else {
+                if (patch.color !== undefined) {
+                    if (patch.color) ch.style.color = patch.color;
+                    else delete ch.style.color;
+                }
+                for (const flag of ["bold", "italic", "underline", "strike"]) {
+                    if (patch[flag] === "toggle") {
+                        const allOn = slice.every(c => Boolean(c.style[flag]));
+                        if (allOn) delete ch.style[flag];
+                        else ch.style[flag] = true;
+                    }
+                }
+            }
+        }
+
+        editingRichRuns = normalizeRichRuns(chars);
+        // フォーカスと選択範囲を復元
+        cellEditor.focus();
+        cellEditor.setSelectionRange(start, end);
+        savedEditorSelection = { start, end };
+    }
+
+    function hideInlineMiniToolbar() {
+        inlineMiniToolbar.style.display = "none";
+    }
+
+    function updateInlineMiniToolbar() {
+        if (!editingCell || !isCellEditing(editingCell)) {
+            hideInlineMiniToolbar();
+            return;
+        }
+        const val = cellEditor.value;
+        const start = cellEditor.selectionStart ?? 0;
+        const end = cellEditor.selectionEnd ?? 0;
+        if (start === end || val.trimStart().startsWith("=")) {
+            hideInlineMiniToolbar();
+            return;
+        }
+        savedEditorSelection = { start, end };
+        const rect = cellEditor.getBoundingClientRect();
+        inlineMiniToolbar.style.display = "flex";
+        const tbW = inlineMiniToolbar.offsetWidth || 260;
+        const tbH = inlineMiniToolbar.offsetHeight || 30;
+        const left = Math.min(window.innerWidth - tbW - 8, Math.max(8, rect.left));
+        const top = rect.top - tbH - 6 >= 8 ? rect.top - tbH - 6 : rect.bottom + 6;
+        inlineMiniToolbar.style.left = `${left}px`;
+        inlineMiniToolbar.style.top = `${top}px`;
+    }
+
+    // mousedownでフォーカス移動を抑止（color inputのみネイティブUIを開くため除外）
+    inlineMiniToolbar.addEventListener("mousedown", (e) => {
+        if (e.target.classList.contains("ss-mt-color-input")) {
+            savedEditorSelection = {
+                start: cellEditor.selectionStart ?? savedEditorSelection.start,
+                end: cellEditor.selectionEnd ?? savedEditorSelection.end
+            };
+            return;
+        }
+        e.preventDefault();
+        e.stopPropagation();
+        const styleBtn = e.target.closest("[data-mt-style]");
+        if (styleBtn) {
+            applyPartialStyleToEditor({ [styleBtn.dataset.mtStyle]: "toggle" });
+            return;
+        }
+        const swatch = e.target.closest("[data-mt-color]");
+        if (swatch) {
+            applyPartialStyleToEditor({ color: swatch.dataset.mtColor });
+            return;
+        }
+        if (e.target.closest("[data-mt-clear]")) {
+            applyPartialStyleToEditor({ clear: true });
+        }
+    }, { signal });
+
+    inlineMiniToolbar.querySelector(".ss-mt-color-input").addEventListener("change", (e) => {
+        applyPartialStyleToEditor({ color: e.target.value });
+    }, { signal });
 
     function isCellEditing(cell = activeCell) {
         return Boolean(cell && editingCell === cell && cellEditor.style.display !== "none");
     }
 
-    function syncCellEditorLayout(cell) {
-        if (!cell) return;
+    let editorMetricsCache = null;
 
-        // 上の行の高さ変更・結合セル・ズームの影響を受けないローカル座標を算出
+    function computeCellEditorMetrics(cell) {
         let left = 0;
         let top = 0;
         let el = cell;
@@ -6634,117 +7484,108 @@ export default async function initSpreadsheetApp(content, options = {}) {
         }
         const cellW = cell.offsetWidth || 120;
         const cellH = cell.offsetHeight || 30;
-        const minH = Math.max(cellH, 28);
-
-        // 1. セルの計算済みスタイルを取得し、同じフォント条件でテキスト幅を計測
         const computed = getComputedStyle(cell);
-        const text = cellEditor.value !== undefined ? cellEditor.value : (cell.dataset.rawValue ?? cell.textContent ?? "");
         const fStyle = cell.style.fontStyle || computed.fontStyle || "normal";
         const fWeight = cell.style.fontWeight || computed.fontWeight || "normal";
         const fSize = cell.style.fontSize || computed.fontSize || "14px";
         const fFamily = cell.style.fontFamily || computed.fontFamily || "'MS PGothic', 'MS Gothic', sans-serif";
+        const fSizeNum = parseFloat(fSize) || 14;
+        const computedLH = parseFloat(computed.lineHeight);
+        const lineHeightPx = !Number.isNaN(computedLH) ? computedLH : Math.round(fSizeNum * 1.3);
+        const valign = cell.style.verticalAlign || computed.verticalAlign || "middle";
+
+        return {
+            cell, left, top, cellW, cellH, minH: Math.max(cellH, 28),
+            computed, fStyle, fWeight, fSize, fSizeNum, fFamily, lineHeightPx, valign
+        };
+    }
+
+    function syncCellEditorLayout(cell, forceMeasure = false) {
+        if (!cell) return;
+        if (forceMeasure || !editorMetricsCache || editorMetricsCache.cell !== cell) {
+            editorMetricsCache = computeCellEditorMetrics(cell);
+            const m = editorMetricsCache;
+            const c = m.computed;
+            cellEditor.style.left = `${m.left}px`;
+            cellEditor.style.top = `${m.top}px`;
+            cellEditor.style.minHeight = `${m.minH}px`;
+            cellEditor.style.scrollbarWidth = "none";
+            cellEditor.style.msOverflowStyle = "none";
+            cellEditor.style.fontFamily = m.fFamily;
+            cellEditor.style.fontSize = m.fSize;
+            cellEditor.style.fontWeight = m.fWeight;
+            cellEditor.style.fontStyle = m.fStyle;
+            cellEditor.style.textDecoration = cell.style.textDecoration || c.textDecoration || "none";
+            cellEditor.style.textShadow = cell.style.textShadow || c.textShadow || "none";
+            cellEditor.style.letterSpacing = cell.style.letterSpacing || c.letterSpacing || "normal";
+            cellEditor.style.wordSpacing = cell.style.wordSpacing || c.wordSpacing || "normal";
+            cellEditor.style.fontKerning = c.fontKerning || "auto";
+            cellEditor.style.fontFeatureSettings = c.fontFeatureSettings || "normal";
+            cellEditor.style.fontVariantLigatures = c.fontVariantLigatures || "normal";
+            cellEditor.style.textRendering = c.textRendering || "auto";
+            cellEditor.style.webkitFontSmoothing = c.webkitFontSmoothing || "antialiased";
+            cellEditor.style.textAlign = cell.style.textAlign || (
+                cell.classList.contains("ss-auto-align-right") ? "right" :
+                    cell.classList.contains("ss-auto-align-center") ? "center" : "left"
+            );
+            cellEditor.style.backgroundColor = cell.style.backgroundColor || c.backgroundColor || "#fff";
+            cellEditor.style.color = cell.style.color || c.color || "#000";
+            cellEditor.style.lineHeight = `${m.lineHeightPx}px`;
+        }
+
+        const m = editorMetricsCache;
+        const text = cellEditor.value ?? "";
         if (measureCtx) {
-            measureCtx.font = `${fStyle} ${fWeight} ${fSize} ${fFamily}`;
+            measureCtx.font = `${m.fStyle} ${m.fWeight} ${m.fSize} ${m.fFamily}`;
         }
         let maxTextWidth = 0;
         const lines = text.split("\n");
-        for (const line of lines) {
-            const w = measureCtx ? measureCtx.measureText(line).width : line.length * (parseInt(fSize, 10) || 14);
-            maxTextWidth = Math.max(maxTextWidth, w);
+        for (let i = 0; i < lines.length; i++) {
+            const w = measureCtx ? measureCtx.measureText(lines[i]).width : lines[i].length * m.fSizeNum;
+            if (w > maxTextWidth) maxTextWidth = w;
         }
 
-        // 2. セルの折り返し（折りたたみ）設定を考慮して幅を決定
         const isWrapped = cell.style.whiteSpace === "pre-wrap";
-        let targetW = cellW;
-
+        let targetW = m.cellW;
         if (!isWrapped) {
             const r = parseInt(cell.dataset.row, 10);
             const c = parseInt(cell.dataset.col, 10);
             const colSpan = parseInt(cell.getAttribute("colspan") || "1", 10);
-            let availableWidth = cellW;
+            let availableWidth = m.cellW;
             let curC = c + colSpan;
             while (curC < currentColumns) {
                 const nextCell = peekCell(r, curC);
-                if (!nextCell || nextCell.style.display === "none" || (nextCell.textContent || "").trim() !== "") {
-                    break;
-                }
+                if (!nextCell || nextCell.style.display === "none" || (nextCell.textContent || "").trim() !== "") break;
                 availableWidth += getColumnWidth(curC);
                 curC++;
             }
-            const requiredWidth = Math.max(cellW, maxTextWidth + 16);
-            targetW = Math.max(cellW, Math.min(requiredWidth, availableWidth));
+            targetW = Math.max(m.cellW, Math.min(Math.max(m.cellW, maxTextWidth + 16), availableWidth));
         }
 
-        cellEditor.style.left = `${left}px`;
-        cellEditor.style.top = `${top}px`;
         cellEditor.style.width = `${targetW}px`;
-        cellEditor.style.minHeight = `${minH}px`;
-        cellEditor.style.height = `${minH}px`;
-
-        // 3. 折り返しONまたは複数行のときはpre-wrapを維持
         cellEditor.style.whiteSpace = (isWrapped || lines.length > 1 || text.includes("\n")) ? "pre-wrap" : "pre";
 
-        // --- スクロールバーの非表示設定（全ブラウザ対応） ---
-        cellEditor.style.scrollbarWidth = "none"; // Firefox用
-        cellEditor.style.msOverflowStyle = "none"; // IE, 旧Edge用
-        // 注: WebKit系（Chrome, Safari, Edge）用の ::-webkit-scrollbar は CSS 側（SCOPED_CSS）で定義済みですが、念のためJS側で制御する場合はそのまま機能します。
-
-        // --- フォント・太さ・文字間隔・装飾の完全同期 ---
-        cellEditor.style.fontFamily = fFamily;
-        cellEditor.style.fontSize = fSize;
-        cellEditor.style.fontWeight = fWeight;
-        cellEditor.style.fontStyle = fStyle;
-        cellEditor.style.textDecoration = cell.style.textDecoration || computed.textDecoration || "none";
-        cellEditor.style.textShadow = cell.style.textShadow || computed.textShadow || "none";
-        cellEditor.style.letterSpacing = cell.style.letterSpacing || computed.letterSpacing || "normal";
-        cellEditor.style.wordSpacing = cell.style.wordSpacing || computed.wordSpacing || "normal";
-        cellEditor.style.fontKerning = computed.fontKerning || "auto";
-        cellEditor.style.fontFeatureSettings = computed.fontFeatureSettings || "normal";
-        cellEditor.style.fontVariantLigatures = computed.fontVariantLigatures || "normal";
-        cellEditor.style.textRendering = computed.textRendering || "auto";
-        cellEditor.style.webkitFontSmoothing = computed.webkitFontSmoothing || "antialiased";
-
-        // --- 配置・背景色・文字色の同期 (Excel準拠) ---
-        cellEditor.style.textAlign = cell.style.textAlign || (
-            cell.classList.contains("ss-auto-align-right") ? "right" :
-                cell.classList.contains("ss-auto-align-center") ? "center" : "left"
-        );
-
-        // 背景色と文字色をセルから完全に引き継ぐ
-        cellEditor.style.backgroundColor = cell.style.backgroundColor || computed.backgroundColor || "#fff";
-        cellEditor.style.color = cell.style.color || computed.color || "#000";
-
-        // 垂直配置（上・中・下揃え）と枠線差分（td:1px vs editor:2px）を吸収して位置ジャンプを完全防止
-        const fSizeNum = parseFloat(fSize) || 14;
-        const computedLH = parseFloat(computed.lineHeight);
-        const lineHeightPx = !Number.isNaN(computedLH) ? computedLH : Math.round(fSizeNum * 1.3);
-        cellEditor.style.lineHeight = `${lineHeightPx}px`;
-
-        // tdのborder(1px)+padding(4px)=5px と editorのborder(2px)+padding(3px)=5px を一致させる
         const padX = 3;
         let visualLines = 0;
         const innerW = Math.max(16, targetW - (padX * 2 + 4));
-        for (const line of lines) {
-            const w = measureCtx ? measureCtx.measureText(line).width : line.length * fSizeNum;
+        for (let i = 0; i < lines.length; i++) {
+            const w = measureCtx ? measureCtx.measureText(lines[i]).width : lines[i].length * m.fSizeNum;
             visualLines += Math.max(1, Math.ceil((w || 1) / innerW));
         }
-
-        const textBlockH = visualLines * lineHeightPx;
-        const valign = cell.style.verticalAlign || computed.verticalAlign || "middle";
-        const innerBoxH = Math.max(0, minH - 4);
+        const textBlockH = visualLines * m.lineHeightPx;
+        const innerBoxH = Math.max(0, m.minH - 4);
         let padTop = 0;
         if (textBlockH < innerBoxH) {
-            if (valign === "middle") padTop = Math.floor((innerBoxH - textBlockH) / 2);
-            else if (valign === "bottom") padTop = Math.max(0, innerBoxH - textBlockH);
+            if (m.valign === "middle") padTop = Math.floor((innerBoxH - textBlockH) / 2);
+            else if (m.valign === "bottom") padTop = Math.max(0, innerBoxH - textBlockH);
         }
-
         cellEditor.style.padding = `${padTop}px ${padX}px 0 ${padX}px`;
-        cellEditor.style.height = `${Math.max(minH, textBlockH + padTop + 4)}px`;
+        cellEditor.style.height = `${Math.max(m.minH, textBlockH + padTop + 4)}px`;
     }
 
     window.addEventListener("resize", () => {
         if (isCellEditing() && editingCell) {
-            syncCellEditorLayout(editingCell);
+            syncCellEditorLayout(editingCell, true);
         }
         closeCellDropdownList();
         closeAutocompletePopup();
@@ -6798,6 +7639,9 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 targetInput.setSelectionRange(toggled.caret, toggled.caret);
                 if (targetInput === cellEditor) {
                     formulaBarInput.value = toggled.text;
+                } else if (targetInput === formulaBarInput) {
+                    isFormulaBarDirty = true;
+                    syncFormulaBarToCellEditor();
                 }
                 highlightCalculationRange(toggled.text.trim());
             }
@@ -6926,6 +7770,8 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 formulaBarInput.value = cur.slice(0, item.tokenStart) + item.insertText + cur.slice(item.tokenEnd);
                 const nextPos = item.tokenStart + item.insertText.length;
                 formulaBarInput.setSelectionRange(nextPos, nextPos);
+                isFormulaBarDirty = true;
+                syncFormulaBarToCellEditor();
                 autoResizeFormulaBar();
             } else if (isCellEditing() && editingCell) {
                 const cur = cellEditor.value;
@@ -6989,19 +7835,75 @@ export default async function initSpreadsheetApp(content, options = {}) {
         return false;
     }
 
+    // 数式バー ⇔ セル内エディタ即時同期ヘルパー
+    function syncFormulaBarToCellEditor() {
+        if (!activeCell) return;
+        if (!isCellEditing(activeCell)) {
+            enterCellEditMode(activeCell, true, "formulabar");
+        }
+        if (editingCell === activeCell) {
+            cellEditor.value = formulaBarInput.value;
+            syncCellEditorLayout(editingCell);
+        }
+    }
+
+    // 数式バーイベント（前半・後半を完全統合）
+    formulaBarInput.addEventListener("focus", () => {
+        lastPointRefRange = null;
+        if (!activeCell) return;
+        const quotePrefix = activeCell.dataset.quotePrefix === "1" ? "'" : "";
+        const initialVal = activeCell.dataset.formula
+            ? activeCell.dataset.formula
+            : quotePrefix + (activeCell.dataset.rawValue ?? activeCell.textContent);
+        if (!isFormulaBarDirty && formulaBarInput.value !== initialVal) {
+            formulaBarInput.value = initialVal;
+        }
+        // クリック（focus）した瞬間にセル側エディタを起動して数式文字列を即時表示
+        syncFormulaBarToCellEditor();
+        const trimmed = formulaBarInput.value.trim();
+        if (trimmed.startsWith("=")) highlightCalculationRange(trimmed);
+        else clearCalculationRangeHighlights();
+        updateFillHandle();
+    }, { signal });
+
+    formulaBarInput.addEventListener("click", () => {
+        if (!activeCell) return;
+        syncFormulaBarToCellEditor();
+        const trimmed = formulaBarInput.value.trim();
+        if (trimmed.startsWith("=")) highlightCalculationRange(trimmed);
+        else clearCalculationRangeHighlights();
+    }, { signal });
+
+    formulaBarInput.addEventListener("blur", (e) => {
+        // セル内エディタやテーブル操作（範囲参照クリック）へのフォーカス移動時は閉じない
+        const nextFocus = e.relatedTarget;
+        if (nextFocus && (nextFocus === cellEditor || table.contains(nextFocus))) return;
+        if (!isFormulaBarDirty && isCellEditing(activeCell)) {
+            closeCellEditor();
+        }
+        clearCalculationRangeHighlights();
+    }, { signal });
+
     formulaBarInput.addEventListener("input", () => {
         isFormulaBarDirty = true;
+        const val = formulaBarInput.value;
+        const trimmed = val.trim();
+        syncFormulaBarToCellEditor();
         autoResizeFormulaBar();
-        showAutocompletePopup(formulaBarInput, formulaBarInput.value, formulaBarInput.selectionStart ?? formulaBarInput.value.length);
-        if (formulaBarInput.value.trim().startsWith("=")) {
-            highlightCalculationRange(formulaBarInput.value.trim());
-        } else {
-            clearCalculationRangeHighlights();
-        }
+        showAutocompletePopup(formulaBarInput, val, formulaBarInput.selectionStart ?? val.length);
+
+        if (trimmed.startsWith("=")) highlightCalculationRange(trimmed);
+        else clearCalculationRangeHighlights();
+
+        if (trimmed === '{"mergecell"}') highlightMergedCells();
+        else removeMergedCellsHighlight();
     }, { signal });
 
     formulaBarInput.addEventListener("keydown", (e) => {
+        if (isImeActive(e)) return;
         if (handleAutocompleteKeydown(e)) return;
+        if (handleF4ReferenceToggle(e)) return;
+
         if (e.key === "Enter" && (e.altKey || e.shiftKey)) {
             e.preventDefault();
             e.stopPropagation();
@@ -7009,14 +7911,35 @@ export default async function initSpreadsheetApp(content, options = {}) {
             formulaBarInput.value = formulaBarInput.value.slice(0, pos) + "\n" + formulaBarInput.value.slice(pos);
             formulaBarInput.setSelectionRange(pos + 1, pos + 1);
             isFormulaBarDirty = true;
-            if (activeCell) {
-                setCellTextPreservingControls(activeCell, formulaBarInput.value);
-            }
+            syncFormulaBarToCellEditor();
             autoResizeFormulaBar();
             return;
         }
-        handleF4ReferenceToggle(e);
-    }, { capture: true, signal });
+        if (e.key === "Enter") {
+            e.preventDefault();
+            if (activeCell) {
+                const isBulk = e.ctrlKey || e.metaKey;
+                const ok = commitValueToTargets(activeCell, getTargetCells(), formulaBarInput.value, isBulk);
+                formulaBarInput.blur();
+                if (!ok) {
+                    activeCell.focus({ preventScroll: true });
+                    return;
+                }
+                if (isBulk) {
+                    activeCell.focus({ preventScroll: true });
+                    updateSelectedCellsDisplay();
+                    updateFillHandle();
+                } else {
+                    moveActiveInSelectionOrStep(activeCell, "vertical", e.shiftKey);
+                }
+            }
+        } else if (e.key === "Escape") {
+            e.preventDefault();
+            revertSelectedCellsText();
+            formulaBarInput.blur();
+            if (activeCell) activeCell.focus({ preventScroll: true });
+        }
+    }, { signal });
 
     // シングルクリックで選択したセルからの直接入力・F2編集・F4参照切替を統合
     tbody.addEventListener("keydown", (e) => {
@@ -7107,12 +8030,18 @@ export default async function initSpreadsheetApp(content, options = {}) {
         if (targetInput === cellEditor) {
             formulaBarInput.value = cellEditor.value;
             syncCellEditorLayout(editingCell);
+        } else if (targetInput === formulaBarInput) {
+            isFormulaBarDirty = true;
+            syncFormulaBarToCellEditor();
         }
         highlightCalculationRange(targetInput.value.trim());
     }
 
     function closeCellEditor() {
         editingCell = null;
+        editingRichRuns = null;
+        editorMetricsCache = null;
+        hideInlineMiniToolbar();
         cellEditor.style.display = "none";
         cellEditor.value = "";
         isComposing = false;
@@ -7131,16 +8060,22 @@ export default async function initSpreadsheetApp(content, options = {}) {
             if (cell.dataset.formula) {
                 cell.dataset.originalFormula = cell.dataset.formula;
                 cellEditor.value = cell.dataset.formula;
+                editingRichRuns = null;
             } else {
                 delete cell.dataset.originalFormula;
                 cellEditor.value = quotePrefix + (cell.dataset.rawValue !== undefined ? cell.dataset.rawValue : cell.textContent);
+                if (cell.dataset.richRuns) {
+                    try { editingRichRuns = JSON.parse(cell.dataset.richRuns); } catch { editingRichRuns = null; }
+                } else {
+                    editingRichRuns = null;
+                }
             }
         }
         editingCell = cell;
         cell.dataset.editBy = editBy;
         updateOSStatusBar(["type", "ime", "backspace"].includes(editBy) ? "入力" : "編集");
         cellEditor.style.display = "block";
-        syncCellEditorLayout(cell);
+        syncCellEditorLayout(cell, true);
 
         const currentFormula = cellEditor.value.trim();
         if (currentFormula.startsWith("=")) {
@@ -7170,15 +8105,25 @@ export default async function initSpreadsheetApp(content, options = {}) {
     }, { signal });
 
     cellEditor.addEventListener("input", () => {
+        if (editingRichRuns) {
+            editingRichRuns = syncRichRunsWithText(editingRichRuns, cellEditor.value);
+        }
         formulaBarInput.value = cellEditor.value;
         syncCellEditorLayout(editingCell);
         showAutocompletePopup(cellEditor, cellEditor.value, cellEditor.selectionStart ?? cellEditor.value.length);
         if (cellEditor.value.trim().startsWith("=")) {
             highlightCalculationRange(cellEditor.value.trim());
+            hideInlineMiniToolbar();
         } else {
             clearCalculationRangeHighlights();
         }
     }, { signal });
+
+    ["mouseup", "keyup", "select"].forEach(evName => {
+        cellEditor.addEventListener(evName, () => {
+            updateInlineMiniToolbar();
+        }, { signal });
+    });
 
     cellEditor.addEventListener("mousedown", () => {
         if (editingCell && ["type", "ime", "backspace"].includes(editingCell.dataset.editBy)) {
@@ -7278,6 +8223,9 @@ export default async function initSpreadsheetApp(content, options = {}) {
 
     function commitCellValue(cell, rawValue) {
         if (!cell) return true;
+        const pendingRichRuns = (editingCell === cell && editingRichRuns)
+            ? syncRichRunsWithText(editingRichRuns, String(rawValue ?? ""))
+            : null;
         closeAutocompletePopup();
         closeCellEditor();
         isFormulaBarDirty = false;
@@ -7287,6 +8235,15 @@ export default async function initSpreadsheetApp(content, options = {}) {
         if (!validateCellInputByRule(cell, newText)) {
             revertSelectedCellsText();
             return false;
+        }
+        if (
+            !trimmedStr.startsWith("=") &&
+            pendingRichRuns &&
+            pendingRichRuns.some(r => r.style && Object.keys(r.style).length > 0)
+        ) {
+            cell.dataset.richRuns = JSON.stringify(pendingRichRuns);
+        } else {
+            delete cell.dataset.richRuns;
         }
         delete cell.dataset.spillOrigin;
         clearSpillCellsFromAnchor(parseInt(cell.dataset.row, 10), parseInt(cell.dataset.col, 10));
@@ -7314,7 +8271,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
             cell.dataset.formula = trimmedStr;
             setCellFormattedValue(cell, evaluateFormula(trimmedStr));
         } else if (isDateFormat(trimmedStr)) {
-            const parts = newText.split("/");
+            const parts = trimmedStr.split(/[\/\-]/);
             let year, month, day;
             if (parts.length === 2) {
                 year = new Date().getFullYear();
@@ -7358,7 +8315,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
             delete cell.dataset.dateValue;
 
             const trimmedInput = newText.trim();
-            if (/^[¥￥]\s*-?[\d,]+(?:\.\d+)?$/.test(trimmedInput)) {
+            if (/^(?:[¥￥]\s*-?|-?\s*[¥￥]\s*)[\d,]+(?:\.\d+)?$/.test(trimmedInput)) {
                 cell.dataset.numFormat = "currency";
                 setCellFormattedValue(cell, parseFormattedNumber(trimmedInput));
             } else if (/^-?[\d,]+(?:\.\d+)?\s*%$/.test(trimmedInput)) {
@@ -7706,10 +8663,16 @@ export default async function initSpreadsheetApp(content, options = {}) {
             return token;
         };
 
-        // 文字列リテラルと他シート参照（Sheet2!A1 / 'シート 2'!$A$1:B5）を退避して誤変更を防止
+        const maskSheetPrefix = (m) => {
+            const token = `__ADJ_SH_${protectedTokens.length}__!`;
+            protectedTokens.push(m);
+            return token;
+        };
+
+        // 文字列リテラルと「シート名!」プレフィックスのみを退避し、直後のセル番地は $ 指定に従って相対移動させる
         const maskedBody = formula.substring(1)
             .replace(/"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'(?!\s*!)/g, maskToken)
-            .replace(/(?:'[^']+'|[A-Za-z0-9_\u3040-\u30FF\u4E00-\u9FAF]+)!\$?[A-Za-z]+\$?\d+(?::\$?[A-Za-z]+\$?\d+)?/g, maskToken);
+            .replace(/(?:'[^']+'|[A-Za-z0-9_\u3040-\u30FF\u4E00-\u9FAF]+)!/g, maskSheetPrefix);
 
         const adjustedBody = maskedBody
             .replace(/(?<![A-Za-z0-9_$])(\$?)([A-Za-z]+)(\$?)(\d+)(?!\s*\()/g, (_, absCol, colLetters, absRow, rowStr) => {
@@ -7717,6 +8680,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 const nextRow = absRow ? parseInt(rowStr, 10) : Math.max(1, parseInt(rowStr, 10) + rowOffset);
                 return `${absCol}${getColumnName(nextCol)}${absRow}${nextRow}`;
             })
+            .replace(/__ADJ_SH_(\d+)__!/g, (_, idx) => protectedTokens[Number(idx)])
             .replace(/__ADJ_TOK_(\d+)__/g, (_, idx) => protectedTokens[Number(idx)]);
 
 
@@ -8218,12 +9182,16 @@ export default async function initSpreadsheetApp(content, options = {}) {
         if (!selectedCells.length) return;
 
         let minRow = Infinity, maxRow = -Infinity, minCol = Infinity, maxCol = -Infinity;
+        let coveredCount = 0;
         selectedCells.forEach(cell => {
-            const r = +cell.dataset.row, c = +cell.dataset.col;
-            minRow = Math.min(minRow, r);
-            maxRow = Math.max(maxRow, r);
-            minCol = Math.min(minCol, c);
-            maxCol = Math.max(maxCol, c);
+            const r0 = +cell.dataset.row, c0 = +cell.dataset.col;
+            const rs = parseInt(cell.getAttribute("rowspan") || "1", 10);
+            const cs = parseInt(cell.getAttribute("colspan") || "1", 10);
+            minRow = Math.min(minRow, r0);
+            maxRow = Math.max(maxRow, r0 + rs - 1);
+            minCol = Math.min(minCol, c0);
+            maxCol = Math.max(maxCol, c0 + cs - 1);
+            coveredCount += rs * cs;
         });
 
         const expectedCount = (maxRow - minRow + 1) * (maxCol - minCol + 1);
@@ -8231,7 +9199,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
             showAlert("単体セルでは結合できません。", "セル結合");
             return;
         }
-        if (selectedCells.length !== expectedCount) {
+        if (coveredCount !== expectedCount) {
             showAlert("連続した矩形状のセルを選択してください。", "セル結合");
             return;
         }
@@ -8480,6 +9448,9 @@ export default async function initSpreadsheetApp(content, options = {}) {
             col: +cell.dataset.col,
             value: cell.dataset.rawValue ?? getCellPureText(cell),
             formula: cell.dataset.formula || "",
+            quotePrefix: cell.dataset.quotePrefix || "",
+            valueType: cell.dataset.valueType || "",
+            dateValue: cell.dataset.dateValue || "",
             numFormat: cell.dataset.numFormat || "",
             decimalPlaces: cell.dataset.decimalPlaces ?? "",
             dropdownList: cell.dataset.dropdownList || "",
@@ -8672,6 +9643,12 @@ export default async function initSpreadsheetApp(content, options = {}) {
             if (valuesOnly) {
                 delete dest.dataset.formula;
                 const resolvedVal = item.formula ? evaluateFormula(item.formula) : item.value;
+                if (item.quotePrefix === "1") dest.dataset.quotePrefix = "1";
+                else delete dest.dataset.quotePrefix;
+                if (item.valueType) dest.dataset.valueType = item.valueType;
+                else delete dest.dataset.valueType;
+                if (item.dateValue) dest.dataset.dateValue = item.dateValue;
+                else delete dest.dataset.dateValue;
                 setCellFormattedValue(dest, resolvedVal);
                 return;
             }
@@ -8701,9 +9678,21 @@ export default async function initSpreadsheetApp(content, options = {}) {
 
             if (newFormula) {
                 dest.dataset.formula = newFormula;
+                if (item.quotePrefix === "1") dest.dataset.quotePrefix = "1";
+                else delete dest.dataset.quotePrefix;
+                if (item.valueType) dest.dataset.valueType = item.valueType;
+                else delete dest.dataset.valueType;
+                if (item.dateValue) dest.dataset.dateValue = item.dateValue;
+                else delete dest.dataset.dateValue;
                 setCellFormattedValue(dest, evaluateFormula(newFormula));
             } else {
                 delete dest.dataset.formula;
+                if (item.quotePrefix === "1") dest.dataset.quotePrefix = "1";
+                else delete dest.dataset.quotePrefix;
+                if (item.valueType) dest.dataset.valueType = item.valueType;
+                else delete dest.dataset.valueType;
+                if (item.dateValue) dest.dataset.dateValue = item.dateValue;
+                else delete dest.dataset.dateValue;
                 setCellFormattedValue(dest, item.value);
             }
             applyCellStyleData(dest, item.styleObj);
@@ -8839,7 +9828,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
             });
             if (!valuesOnly && Array.isArray(clipboardData.sourceFloatingEls)) {
                 clipboardData.sourceFloatingEls.forEach(el => {
-                    if (el && el.isConnected) el.remove();
+                    if (el && el.isConnected) removeFloatingObject(el);
                 });
             }
             if (!valuesOnly && srcMinR <= srcMaxR) {
@@ -8891,6 +9880,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
     // ユーザー設定スタイルのみを構造化して抽出・復元するヘルパー
     // =========================================================
     const PERSISTED_STYLE_PROPS = [
+        "fontFamily",
         "fontSize",
         "fontWeight",
         "fontStyle",
@@ -8900,6 +9890,8 @@ export default async function initSpreadsheetApp(content, options = {}) {
         "backgroundColor",
         "textAlign",
         "verticalAlign",
+        "writingMode",
+        "textOrientation",
         "whiteSpace",
         "wordBreak",
         "borderTop",
@@ -8980,6 +9972,10 @@ export default async function initSpreadsheetApp(content, options = {}) {
         }
     }
 
+    function clearCrashRecoveryBackup() {
+        try { localStorage.removeItem(RECOVERY_STORAGE_KEY); } catch { /* ignore */ }
+    }
+
     function saveState() {
         try {
             const serialized = JSON.stringify(buildSheetSnapshot({ flush: false }));
@@ -8988,7 +9984,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
             undoHistory.push(serialized);
             if (undoHistory.length > 50) undoHistory.shift();
             updateQATButtonsState();
-            persistCrashRecoveryBackup(serialized);
+            if (isDirty) persistCrashRecoveryBackup(serialized);
         } catch (err) {
             console.warn("[Spreadsheet] スナップショット保存中にエラーが発生しました:", err);
         }
@@ -9007,6 +10003,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
         container.scrollLeft = prevLeft;
         updateSelectedCellsDisplay();
         updateFillHandle();
+        updateQATButtonsState();
         setDirtyState(true);
     }
 
@@ -9152,7 +10149,24 @@ export default async function initSpreadsheetApp(content, options = {}) {
         });
     }
 
+    function removeFloatingObject(box) {
+        if (!box) return;
+        box._abortController?.abort();
+        box._abortController = null;
+        box.remove();
+    }
+
     function enableTextboxDragging(box) {
+        box._abortController?.abort();
+        const boxAbort = new AbortController();
+        box._abortController = boxAbort;
+        const boxSignal = boxAbort.signal;
+        const onAppAbort = () => boxAbort.abort(); // ★ここを変更（終了時の自動解除を綺麗に管理）
+        signal.addEventListener("abort", onAppAbort, { once: true });
+        boxSignal.addEventListener("abort", () => {
+            signal.removeEventListener("abort", onAppAbort);
+        }, { once: true });
+
         let isDragging = false;
         let isPendingDrag = false;
         let startX = 0, startY = 0;
@@ -9190,7 +10204,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
             startY = e.clientY - (parseFloat(box.dataset.initialTop) * zoom - container.scrollTop);
             mouseX = e.clientX;
             mouseY = e.clientY;
-        }, { signal });
+        }, { signal: boxSignal }); // ★ここを変更
 
         const updatePosition = (cx, cy) => {
             const zoom = parseFloat(spreadsheetContent.style.zoom || "1") || 1;
@@ -9212,11 +10226,11 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 box.style.userSelect = "none";
             }
             if (isDragging) updatePosition(e.clientX, e.clientY);
-        }, { signal });
+        }, { signal: boxSignal });
 
         container.addEventListener("scroll", () => {
             if (isDragging) updatePosition(mouseX, mouseY);
-        }, { passive: true, signal });
+        }, { passive: true, signal: boxSignal });
 
         document.addEventListener("mouseup", () => {
             isPendingDrag = false;
@@ -9225,14 +10239,14 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 box.style.userSelect = "auto";
                 debouncedSaveState();
             }
-        }, { signal });
+        }, { signal: boxSignal });
 
         box.addEventListener("keydown", (e) => {
             const editor = box.querySelector(".floating-textbox-editor");
             if (editor && document.activeElement === editor) return;
             if (e.key === "Delete" || e.key === "Backspace") {
                 e.preventDefault();
-                box.remove();
+                removeFloatingObject(box); // ★ここを変更
                 setDirtyState(true);
                 debouncedSaveState();
             } else if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
@@ -9251,12 +10265,12 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 setDirtyState(true);
                 debouncedSaveState();
             }
-        }, { signal });
+        }, { signal: boxSignal }); // ★ここを変更
 
         box.addEventListener("input", () => {
             setDirtyState(true);
             debouncedSaveState();
-        }, { signal });
+        }, { signal: boxSignal }); // ★ここを変更
     }
 
     // グリッドクリック時にテキストボックス・グラフの選択状態を解除
@@ -9304,7 +10318,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
         delBtn.addEventListener("mousedown", (e) => {
             e.stopPropagation();
             e.preventDefault();
-            box.remove();
+            removeFloatingObject(box); // ★ここを変更
             setDirtyState(true);
             debouncedSaveState();
         }, { signal });
@@ -9339,11 +10353,44 @@ export default async function initSpreadsheetApp(content, options = {}) {
         return niceFrac * exp;
     }
 
+    const CHART_COLOR_THEMES = {
+        office: ["#1f4e78", "#c65911", "#375623", "#7030a0", "#bf8f00", "#008080", "#2f75b5", "#a61c1c"],
+        warm: ["#c0392b", "#e67e22", "#f1c40f", "#d35400", "#a93226", "#f39c12", "#8e44ad", "#b7950b"],
+        vivid: ["#0078d4", "#107c10", "#d13438", "#ff8c00", "#8764b8", "#00b7c3", "#e3008c", "#498205"],
+        mono: ["#222222", "#555555", "#7f7f7f", "#a6a6a6", "#3b3b3b", "#6e6e6e", "#949494", "#bdbdbd"]
+    };
+
+    function drawLinearTrendlineSvg(points, color) {
+        if (!points || points.length < 2) return "";
+        const n = points.length;
+        let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
+        for (let i = 0; i < n; i++) {
+            sumX += points[i].x;
+            sumY += points[i].y;
+            sumXY += points[i].x * points[i].y;
+            sumXX += points[i].x * points[i].x;
+        }
+        const denom = n * sumXX - sumX * sumX;
+        if (Math.abs(denom) < 1e-9) return "";
+        const slope = (n * sumXY - sumX * sumY) / denom;
+        const intercept = (sumY - slope * sumX) / n;
+        const minX = Math.min(...points.map(p => p.x));
+        const maxX = Math.max(...points.map(p => p.x));
+        const y1 = slope * minX + intercept;
+        const y2 = slope * maxX + intercept;
+        return `<line x1="${minX.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${maxX.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="${color}" stroke-width="1.6" stroke-dasharray="5,3" opacity="0.85" />`;
+    }
+
     function renderChartBoxSVG(chartBox) {
         const rangeStr = chartBox.dataset.sourceRange;
         const chartType = chartBox.dataset.chartType || "bar";
         const chartTitle = (chartBox.dataset.chartTitle || "").trim();
         const showLabels = chartBox.dataset.showLabels === "1";
+        const showTrendline = chartBox.dataset.trendline === "1";
+        const useSecondaryAxis = chartBox.dataset.secondaryAxis === "1";
+        const themeKey = chartBox.dataset.colorTheme || "office";
+        const xAxisTitle = (chartBox.dataset.xAxisTitle || "").trim();
+        const yAxisTitle = (chartBox.dataset.yAxisTitle || "").trim();
         const bounds = rangeStr ? parseRangeReference(rangeStr) : null;
         if (!bounds) return false;
 
@@ -9373,9 +10420,13 @@ export default async function initSpreadsheetApp(content, options = {}) {
         }
 
         const categories = [];
+        const xNumericVals = [];
         const seriesData = seriesNames.map(() => []);
         for (let r = dataStartR; r <= maxR; r++) {
-            const catText = (getVisibleCell(r, minC)?.textContent || `項目${r - dataStartR + 1}`).trim();
+            const catCell = getVisibleCell(r, minC);
+            const catRaw = catCell?.dataset.rawValue ?? catCell?.textContent ?? "";
+            const catText = (catCell?.textContent || `項目${r - dataStartR + 1}`).trim();
+            const parsedX = parseFormattedNumber(catRaw);
             const rowNums = [];
             let hasAnyNum = false;
             for (let c = minC + 1; c <= maxC; c++) {
@@ -9389,44 +10440,60 @@ export default async function initSpreadsheetApp(content, options = {}) {
             }
             if (hasAnyNum) {
                 categories.push(catText);
+                xNumericVals.push(!isNaN(parsedX) ? parsedX : (categories.length));
                 rowNums.forEach((n, idx) => seriesData[idx].push(n));
             }
         }
         if (!categories.length) return false;
 
-        const w = 380, h = 240;
-        const topPad = (chartTitle ? 26 : 12) + (seriesNames.length > 1 && chartType !== "pie" ? 18 : 0);
-        const leftPad = chartType === "hbar" ? 68 : 44;
-        const rightPad = 14;
-        const bottomPad = 28;
+        const canUseSecondary = useSecondaryAxis && seriesData.length >= 2 && (chartType === "bar" || chartType === "line");
+        const w = 400, h = 250;
+        const topPad = (chartTitle ? 24 : 10) + (seriesNames.length > 1 && chartType !== "pie" ? 18 : 0);
+        const leftPad = (chartType === "hbar" ? 68 : 44) + (yAxisTitle ? 14 : 0);
+        const rightPad = canUseSecondary ? 44 : 14;
+        const bottomPad = 28 + (xAxisTitle ? 14 : 0);
         const plotW = w - leftPad - rightPad;
         const plotH = h - topPad - bottomPad;
-        const colors = ["#1f4e78", "#c65911", "#375623", "#7030a0", "#bf8f00", "#008080", "#2f75b5", "#a61c1c"];
+        const colors = CHART_COLOR_THEMES[themeKey] || CHART_COLOR_THEMES.office;
         let innerSvg = "";
 
         if (chartTitle) {
-            innerSvg += `<text x="${w / 2}" y="16" font-size="12" font-weight="bold" text-anchor="middle" fill="#222">${escapeSvgText(chartTitle)}</text>`;
+            innerSvg += `<text x="${w / 2}" y="15" font-size="12" font-weight="bold" text-anchor="middle" fill="#222">${escapeSvgText(chartTitle)}</text>`;
         }
 
-        // 複数系列時の凡例
         if (seriesNames.length > 1 && chartType !== "pie") {
             const legendY = chartTitle ? 31 : 13;
             let lx = leftPad;
             seriesNames.forEach((sName, sIdx) => {
                 const col = colors[sIdx % colors.length];
-                innerSvg += `<rect x="${lx}" y="${legendY - 8}" width="9" height="9" fill="${col}" />
-                             <text x="${lx + 12}" y="${legendY}" font-size="10" fill="#333">${escapeSvgText(sName.slice(0, 8))}</text>`;
-                lx += Math.min(78, sName.length * 10 + 22);
+                const isSecLine = canUseSecondary && sIdx === seriesData.length - 1;
+                innerSvg += isSecLine
+                    ? `<line x1="${lx}" y1="${legendY - 4}" x2="${lx + 10}" y2="${legendY - 4}" stroke="${col}" stroke-width="2.5" />`
+                    : `<rect x="${lx}" y="${legendY - 8}" width="9" height="9" fill="${col}" />`;
+                innerSvg += `<text x="${lx + 12}" y="${legendY}" font-size="10" fill="#333">${escapeSvgText(sName.slice(0, 8))}</text>`;
+                lx += Math.min(82, sName.length * 10 + 22);
             });
         }
 
-        const allVals = seriesData.flat();
-        const axisMax = computeNiceAxisMax(Math.max(...allVals, 1));
+        if (xAxisTitle && chartType !== "pie") {
+            innerSvg += `<text x="${leftPad + plotW / 2}" y="${h - 4}" font-size="10" font-weight="bold" text-anchor="middle" fill="#333">${escapeSvgText(xAxisTitle)}</text>`;
+        }
+        if (yAxisTitle && chartType !== "pie") {
+            const yMid = topPad + plotH / 2;
+            innerSvg += `<text x="12" y="${yMid}" font-size="10" font-weight="bold" text-anchor="middle" fill="#333" transform="rotate(-90 12 ${yMid})">${escapeSvgText(yAxisTitle)}</text>`;
+        }
+
+        const primarySeries = canUseSecondary ? seriesData.slice(0, -1) : seriesData;
+        const secondarySeries = canUseSecondary ? seriesData[seriesData.length - 1] : null;
+        const primaryMax = chartType === "stacked"
+            ? computeNiceAxisMax(Math.max(...categories.map((_, i) => seriesData.reduce((acc, s) => acc + Math.max(0, s[i]), 0)), 1))
+            : computeNiceAxisMax(Math.max(...primarySeries.flat(), 1));
+        const secondaryMax = secondarySeries ? computeNiceAxisMax(Math.max(...secondarySeries, 1)) : 1;
 
         if (chartType === "pie") {
             const vals = seriesData[0];
             const total = vals.reduce((a, b) => a + Math.max(0, b), 0) || 1;
-            const cx = 122, cy = topPad + plotH / 2, radius = Math.min(76, plotH / 2 - 4);
+            const cx = 128, cy = topPad + plotH / 2, radius = Math.min(78, plotH / 2 - 4);
             let startAngle = -Math.PI / 2;
             vals.forEach((v, i) => {
                 const ratio = Math.max(0, v) / total;
@@ -9441,18 +10508,52 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 if (i < 8) {
                     const ly = topPad + 12 + i * 21;
                     const labelSuffix = showLabels ? `${v.toLocaleString()} (${Math.round(ratio * 100)}%)` : `${Math.round(ratio * 100)}%`;
-                    innerSvg += `<rect x="218" y="${ly - 8}" width="10" height="10" fill="${color}" />
-                                 <text x="232" y="${ly}" font-size="10" fill="#222">${escapeSvgText(categories[i].slice(0, 7))} ${labelSuffix}</text>`;
+                    innerSvg += `<rect x="228" y="${ly - 8}" width="10" height="10" fill="${color}" />
+                                 <text x="242" y="${ly}" font-size="10" fill="#222">${escapeSvgText(categories[i].slice(0, 7))} ${labelSuffix}</text>`;
                 }
                 startAngle = endAngle;
             });
-        } else if (chartType === "hbar") {
-            // 横棒グラフ（複数系列対応）
+        } else if (chartType === "scatter") {
+            const xMin = Math.min(...xNumericVals);
+            const xMaxRaw = Math.max(...xNumericVals);
+            const xSpan = Math.max(1e-6, xMaxRaw - xMin);
+            const yAxisMax = computeNiceAxisMax(Math.max(...seriesData.flat(), 1));
+
             for (let t = 0; t <= 4; t++) {
-                const val = (axisMax / 4) * t;
+                const yVal = (yAxisMax / 4) * t;
+                const y = topPad + plotH - (plotH / 4) * t;
+                innerSvg += `<line x1="${leftPad}" y1="${y}" x2="${w - rightPad}" y2="${y}" stroke="${t === 0 ? "#444" : "#e2e5e9"}" />
+                             <text x="${leftPad - 5}" y="${y + 3}" font-size="9" text-anchor="end" fill="#555">${Math.round(yVal).toLocaleString()}</text>`;
+
+                const xVal = xMin + (xSpan / 4) * t;
+                const x = leftPad + (plotW / 4) * t;
+                innerSvg += `<line x1="${x}" y1="${topPad}" x2="${x}" y2="${topPad + plotH}" stroke="${t === 0 ? "#444" : "#eef0f3"}" />
+                             <text x="${x}" y="${topPad + plotH + 13}" font-size="9" text-anchor="middle" fill="#555">${Number(xVal.toFixed(1)).toLocaleString()}</text>`;
+            }
+
+            seriesData.forEach((sArr, sIdx) => {
+                const col = colors[sIdx % colors.length];
+                const pts = sArr.map((v, i) => ({
+                    x: leftPad + ((xNumericVals[i] - xMin) / xSpan) * plotW,
+                    y: topPad + plotH - (Math.max(0, v) / yAxisMax) * plotH,
+                    v
+                }));
+                pts.forEach(p => {
+                    innerSvg += `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3.6" fill="${col}" opacity="0.88" />`;
+                    if (showLabels) {
+                        innerSvg += `<text x="${p.x.toFixed(1)}" y="${(p.y - 6).toFixed(1)}" font-size="8.5" text-anchor="middle" fill="#222">${p.v.toLocaleString()}</text>`;
+                    }
+                });
+                if (showTrendline) {
+                    innerSvg += drawLinearTrendlineSvg(pts, col);
+                }
+            });
+        } else if (chartType === "hbar") {
+            for (let t = 0; t <= 4; t++) {
+                const val = (primaryMax / 4) * t;
                 const x = leftPad + (plotW / 4) * t;
                 innerSvg += `<line x1="${x}" y1="${topPad}" x2="${x}" y2="${topPad + plotH}" stroke="#e0e0e0" />
-                             <text x="${x}" y="${h - 10}" font-size="9" text-anchor="middle" fill="#555">${Math.round(val).toLocaleString()}</text>`;
+                             <text x="${x}" y="${topPad + plotH + 13}" font-size="9" text-anchor="middle" fill="#555">${Math.round(val).toLocaleString()}</text>`;
             }
             const groupH = plotH / categories.length;
             const barH = Math.max(4, (groupH - 6) / seriesData.length);
@@ -9461,7 +10562,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 innerSvg += `<text x="${leftPad - 5}" y="${gy + groupH / 2 + 3}" font-size="10" text-anchor="end" fill="#222">${escapeSvgText(cat.slice(0, 8))}</text>`;
                 seriesData.forEach((sArr, sIdx) => {
                     const v = Math.max(0, sArr[i]);
-                    const bw = (v / axisMax) * plotW;
+                    const bw = (v / primaryMax) * plotW;
                     const by = gy + 3 + sIdx * barH;
                     innerSvg += `<rect x="${leftPad}" y="${by}" width="${bw}" height="${barH}" fill="${colors[sIdx % colors.length]}" />`;
                     if (showLabels) {
@@ -9471,26 +10572,33 @@ export default async function initSpreadsheetApp(content, options = {}) {
             });
             innerSvg += `<line x1="${leftPad}" y1="${topPad}" x2="${leftPad}" y2="${topPad + plotH}" stroke="#444" />`;
         } else {
-            // Y軸目盛り線＆数値（縦棒・折れ線共通）
+            // Y軸目盛り線＆数値（縦棒・積み上げ・折れ線・複合第2軸共通）
             for (let t = 0; t <= 4; t++) {
-                const val = (axisMax / 4) * t;
+                const val = (primaryMax / 4) * t;
                 const y = topPad + plotH - (plotH / 4) * t;
                 innerSvg += `<line x1="${leftPad}" y1="${y}" x2="${w - rightPad}" y2="${y}" stroke="${t === 0 ? "#444" : "#e2e5e9"}" />
                              <text x="${leftPad - 5}" y="${y + 3}" font-size="9" text-anchor="end" fill="#555">${Math.round(val).toLocaleString()}</text>`;
+                if (canUseSecondary) {
+                    const secVal = (secondaryMax / 4) * t;
+                    innerSvg += `<text x="${w - rightPad + 5}" y="${y + 3}" font-size="9" text-anchor="start" fill="${colors[(seriesData.length - 1) % colors.length]}">${Math.round(secVal).toLocaleString()}</text>`;
+                }
             }
             innerSvg += `<line x1="${leftPad}" y1="${topPad}" x2="${leftPad}" y2="${topPad + plotH}" stroke="#444" />`;
+            if (canUseSecondary) {
+                innerSvg += `<line x1="${w - rightPad}" y1="${topPad}" x2="${w - rightPad}" y2="${topPad + plotH}" stroke="${colors[(seriesData.length - 1) % colors.length]}" />`;
+            }
 
             if (chartType === "line") {
                 const stepX = categories.length > 1 ? plotW / (categories.length - 1) : plotW / 2;
                 categories.forEach((cat, i) => {
                     const x = leftPad + (categories.length > 1 ? i * stepX : plotW / 2);
-                    innerSvg += `<text x="${x}" y="${h - 10}" font-size="10" text-anchor="middle" fill="#222">${escapeSvgText(cat.slice(0, 6))}</text>`;
+                    innerSvg += `<text x="${x}" y="${topPad + plotH + 13}" font-size="10" text-anchor="middle" fill="#222">${escapeSvgText(cat.slice(0, 6))}</text>`;
                 });
-                seriesData.forEach((sArr, sIdx) => {
+                primarySeries.forEach((sArr, sIdx) => {
                     const col = colors[sIdx % colors.length];
                     const pts = sArr.map((v, i) => ({
                         x: leftPad + (categories.length > 1 ? i * stepX : plotW / 2),
-                        y: topPad + plotH - (Math.max(0, v) / axisMax) * plotH,
+                        y: topPad + plotH - (Math.max(0, v) / primaryMax) * plotH,
                         v
                     }));
                     innerSvg += `<polyline fill="none" stroke="${col}" stroke-width="2.2" points="${pts.map(p => `${p.x},${p.y}`).join(" ")}" />`;
@@ -9500,25 +10608,76 @@ export default async function initSpreadsheetApp(content, options = {}) {
                             innerSvg += `<text x="${p.x}" y="${p.y - 6}" font-size="9" text-anchor="middle" fill="#222">${p.v.toLocaleString()}</text>`;
                         }
                     });
+                    if (showTrendline) innerSvg += drawLinearTrendlineSvg(pts, col);
+                });
+            } else if (chartType === "stacked") {
+                const groupW = plotW / categories.length;
+                const barW = Math.max(8, groupW - 12);
+                categories.forEach((cat, i) => {
+                    const gx = leftPad + i * groupW;
+                    const bx = gx + (groupW - barW) / 2;
+                    innerSvg += `<text x="${gx + groupW / 2}" y="${topPad + plotH + 13}" font-size="10" text-anchor="middle" fill="#222">${escapeSvgText(cat.slice(0, 6))}</text>`;
+                    let accH = 0;
+                    let totalVal = 0;
+                    seriesData.forEach((sArr, sIdx) => {
+                        const v = Math.max(0, sArr[i]);
+                        totalVal += v;
+                        const bh = (v / primaryMax) * plotH;
+                        const by = topPad + plotH - accH - bh;
+                        accH += bh;
+                        innerSvg += `<rect x="${bx}" y="${by}" width="${barW}" height="${bh}" fill="${colors[sIdx % colors.length]}" />`;
+                    });
+                    if (showLabels) {
+                        innerSvg += `<text x="${gx + groupW / 2}" y="${topPad + plotH - accH - 3}" font-size="9" text-anchor="middle" fill="#222">${totalVal.toLocaleString()}</text>`;
+                    }
                 });
             } else {
                 // 縦棒グラフ（複数系列並列対応）
                 const groupW = plotW / categories.length;
-                const barW = Math.max(5, (groupW - 8) / seriesData.length);
+                const barW = Math.max(5, (groupW - 8) / primarySeries.length);
+                const trendPoints = primarySeries.map(() => []);
                 categories.forEach((cat, i) => {
                     const gx = leftPad + i * groupW;
-                    innerSvg += `<text x="${gx + groupW / 2}" y="${h - 10}" font-size="10" text-anchor="middle" fill="#222">${escapeSvgText(cat.slice(0, 6))}</text>`;
-                    seriesData.forEach((sArr, sIdx) => {
+                    innerSvg += `<text x="${gx + groupW / 2}" y="${topPad + plotH + 13}" font-size="10" text-anchor="middle" fill="#222">${escapeSvgText(cat.slice(0, 6))}</text>`;
+                    primarySeries.forEach((sArr, sIdx) => {
                         const v = Math.max(0, sArr[i]);
-                        const bh = (v / axisMax) * plotH;
+                        const bh = (v / primaryMax) * plotH;
                         const bx = gx + 4 + sIdx * barW;
                         const by = topPad + plotH - bh;
+                        trendPoints[sIdx].push({ x: bx + barW / 2, y: by });
                         innerSvg += `<rect x="${bx}" y="${by}" width="${barW}" height="${bh}" fill="${colors[sIdx % colors.length]}" />`;
                         if (showLabels) {
                             innerSvg += `<text x="${bx + barW / 2}" y="${by - 3}" font-size="9" text-anchor="middle" fill="#222">${v.toLocaleString()}</text>`;
                         }
                     });
                 });
+                if (showTrendline) {
+                    trendPoints.forEach((pts, sIdx) => {
+                        innerSvg += drawLinearTrendlineSvg(pts, colors[sIdx % colors.length]);
+                    });
+                }
+            }
+
+            // 第2軸（最終系列を右Y軸基準の折れ線として重ね描き＝Excel複合グラフ）
+            if (canUseSecondary && secondarySeries) {
+                const secCol = colors[(seriesData.length - 1) % colors.length];
+                const groupW = plotW / categories.length;
+                const stepX = categories.length > 1 ? plotW / (categories.length - 1) : plotW / 2;
+                const pts = secondarySeries.map((v, i) => ({
+                    x: chartType === "line"
+                        ? (leftPad + (categories.length > 1 ? i * stepX : plotW / 2))
+                        : (leftPad + i * groupW + groupW / 2),
+                    y: topPad + plotH - (Math.max(0, v) / secondaryMax) * plotH,
+                    v
+                }));
+                innerSvg += `<polyline fill="none" stroke="${secCol}" stroke-width="2.4" points="${pts.map(p => `${p.x},${p.y}`).join(" ")}" />`;
+                pts.forEach(p => {
+                    innerSvg += `<circle cx="${p.x}" cy="${p.y}" r="3.4" fill="#fff" stroke="${secCol}" stroke-width="2" />`;
+                    if (showLabels) {
+                        innerSvg += `<text x="${p.x}" y="${p.y - 7}" font-size="9" text-anchor="middle" fill="${secCol}">${p.v.toLocaleString()}</text>`;
+                    }
+                });
+                if (showTrendline) innerSvg += drawLinearTrendlineSvg(pts, secCol);
             }
         }
 
@@ -9533,16 +10692,32 @@ export default async function initSpreadsheetApp(content, options = {}) {
         const curTitle = chartBox.dataset.chartTitle || "";
         const curRange = chartBox.dataset.sourceRange || "";
         const curLabels = chartBox.dataset.showLabels === "1";
+        const curTrend = chartBox.dataset.trendline === "1";
+        const curSecAxis = chartBox.dataset.secondaryAxis === "1";
+        const curTheme = chartBox.dataset.colorTheme || "office";
+        const curXTitle = chartBox.dataset.xAxisTitle || "";
+        const curYTitle = chartBox.dataset.yAxisTitle || "";
 
         const bodyHtml = `
-            <div style="width:100%; display:flex; flex-direction:column; gap:8px; font-size:12px;">
+            <div style="width:100%; display:flex; flex-direction:column; gap:7px; font-size:12px;">
                 <div style="display:flex; align-items:center; gap:6px;">
                     <label style="width:88px;">グラフ種類:</label>
                     <select class="ss-ch-type border" style="flex:1; height:24px; background:#fff; color:#000;">
                         <option value="bar" ${curType === "bar" ? "selected" : ""}>縦棒グラフ</option>
+                        <option value="stacked" ${curType === "stacked" ? "selected" : ""}>積み上げ縦棒グラフ</option>
                         <option value="hbar" ${curType === "hbar" ? "selected" : ""}>横棒グラフ</option>
                         <option value="line" ${curType === "line" ? "selected" : ""}>折れ線グラフ</option>
                         <option value="pie" ${curType === "pie" ? "selected" : ""}>円グラフ</option>
+                        <option value="scatter" ${curType === "scatter" ? "selected" : ""}>散布図 (XY)</option>
+                    </select>
+                </div>
+                <div style="display:flex; align-items:center; gap:6px;">
+                    <label style="width:88px;">カラーテーマ:</label>
+                    <select class="ss-ch-theme border" style="flex:1; height:24px; background:#fff; color:#000;">
+                        <option value="office" ${curTheme === "office" ? "selected" : ""}>Office 標準</option>
+                        <option value="vivid" ${curTheme === "vivid" ? "selected" : ""}>ビビッド</option>
+                        <option value="warm" ${curTheme === "warm" ? "selected" : ""}>暖色系</option>
+                        <option value="mono" ${curTheme === "mono" ? "selected" : ""}>モノトーン</option>
                     </select>
                 </div>
                 <div style="display:flex; align-items:center; gap:6px;">
@@ -9553,13 +10728,24 @@ export default async function initSpreadsheetApp(content, options = {}) {
                     <label style="width:88px;">データ範囲:</label>
                     <input type="text" class="ss-ch-range border" value="${escapeSvgText(curRange)}" placeholder="例: A1:D6" style="flex:1; padding:3px 6px; background:#fff; color:#000;">
                 </div>
+                <div style="display:flex; align-items:center; gap:6px;">
+                    <label style="width:88px;">軸タイトル:</label>
+                    <input type="text" class="ss-ch-xtitle border" value="${escapeSvgText(curXTitle)}" placeholder="横軸 (X)" style="flex:1; padding:3px 5px; background:#fff; color:#000;">
+                    <input type="text" class="ss-ch-ytitle border" value="${escapeSvgText(curYTitle)}" placeholder="縦軸 (Y)" style="flex:1; padding:3px 5px; background:#fff; color:#000;">
+                </div>
                 <label style="display:inline-flex; align-items:center; gap:5px; cursor:pointer;">
                     <input type="checkbox" class="ss-ch-labels" ${curLabels ? "checked" : ""}> データラベル（数値）を表示する
+                </label>
+                <label style="display:inline-flex; align-items:center; gap:5px; cursor:pointer;">
+                    <input type="checkbox" class="ss-ch-trend" ${curTrend ? "checked" : ""}> 近似曲線（線形トレンドライン）を表示
+                </label>
+                <label style="display:inline-flex; align-items:center; gap:5px; cursor:pointer;">
+                    <input type="checkbox" class="ss-ch-secaxis" ${curSecAxis ? "checked" : ""}> 最終系列を第2軸（右Y軸・折れ線）で複合表示
                 </label>
             </div>
         `;
         const modalContent = openAppModal("グラフの設定", bodyHtml, {
-            width: 370,
+            width: 400,
             isHtml: true,
             parentWin: win,
             buttons: [
@@ -9567,16 +10753,26 @@ export default async function initSpreadsheetApp(content, options = {}) {
                     label: "適用",
                     onClick: () => {
                         const nextType = modalContent.querySelector(".ss-ch-type").value;
+                        const nextTheme = modalContent.querySelector(".ss-ch-theme").value;
                         const nextTitle = modalContent.querySelector(".ss-ch-title").value.trim();
                         const nextRange = modalContent.querySelector(".ss-ch-range").value.trim().toUpperCase();
+                        const nextXTitle = modalContent.querySelector(".ss-ch-xtitle").value.trim();
+                        const nextYTitle = modalContent.querySelector(".ss-ch-ytitle").value.trim();
                         const nextLabels = modalContent.querySelector(".ss-ch-labels").checked;
+                        const nextTrend = modalContent.querySelector(".ss-ch-trend").checked;
+                        const nextSecAxis = modalContent.querySelector(".ss-ch-secaxis").checked;
 
                         const prevType = chartBox.dataset.chartType;
                         const prevRange = chartBox.dataset.sourceRange;
                         chartBox.dataset.chartType = nextType;
+                        chartBox.dataset.colorTheme = nextTheme;
                         chartBox.dataset.chartTitle = nextTitle;
                         chartBox.dataset.sourceRange = nextRange;
+                        chartBox.dataset.xAxisTitle = nextXTitle;
+                        chartBox.dataset.yAxisTitle = nextYTitle;
                         chartBox.dataset.showLabels = nextLabels ? "1" : "0";
+                        chartBox.dataset.trendline = nextTrend ? "1" : "0";
+                        chartBox.dataset.secondaryAxis = nextSecAxis ? "1" : "0";
 
                         if (!renderChartBoxSVG(chartBox)) {
                             chartBox.dataset.chartType = prevType;
@@ -9615,7 +10811,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
         delBtn.addEventListener("mousedown", (e) => {
             e.stopPropagation();
             e.preventDefault();
-            chartBox.remove();
+            removeFloatingObject(chartBox); // ★ここを変更
             setDirtyState(true);
             debouncedSaveState();
         }, { signal });
@@ -9746,6 +10942,11 @@ export default async function initSpreadsheetApp(content, options = {}) {
             chartType: box.dataset.chartType || "bar",
             chartTitle: box.dataset.chartTitle || "",
             showLabels: box.dataset.showLabels === "1",
+            trendline: box.dataset.trendline === "1",
+            secondaryAxis: box.dataset.secondaryAxis === "1",
+            colorTheme: box.dataset.colorTheme || "office",
+            xAxisTitle: box.dataset.xAxisTitle || "",
+            yAxisTitle: box.dataset.yAxisTitle || "",
             sourceRange: box.dataset.sourceRange || "",
             textStyle: {
                 fontSize: box.style.fontSize || "",
@@ -9770,6 +10971,11 @@ export default async function initSpreadsheetApp(content, options = {}) {
             chartBox.dataset.chartType = snap.chartType || "bar";
             if (snap.chartTitle) chartBox.dataset.chartTitle = snap.chartTitle;
             if (snap.showLabels) chartBox.dataset.showLabels = "1";
+            if (snap.trendline) chartBox.dataset.trendline = "1";
+            if (snap.secondaryAxis) chartBox.dataset.secondaryAxis = "1";
+            if (snap.colorTheme) chartBox.dataset.colorTheme = snap.colorTheme;
+            if (snap.xAxisTitle) chartBox.dataset.xAxisTitle = snap.xAxisTitle;
+            if (snap.yAxisTitle) chartBox.dataset.yAxisTitle = snap.yAxisTitle;
             if (snap.rotation) chartBox.dataset.rotation = String(snap.rotation);
 
             let nextRange = snap.sourceRange || "";
@@ -9881,6 +11087,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 if (hasMergeMeta) entry.merge = merge;
                 if (cell.dataset.valueType) entry.vt = cell.dataset.valueType;
                 if (cell.dataset.dateValue) entry.dv = cell.dataset.dateValue;
+                if (cell.dataset.quotePrefix === "1") entry.qp = 1;
 
                 savedCells.push(entry);
             }
@@ -9908,6 +11115,11 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 chartType: box.dataset.chartType || "bar",
                 chartTitle: box.dataset.chartTitle || "",
                 showLabels: box.dataset.showLabels === "1",
+                trendline: box.dataset.trendline === "1",
+                secondaryAxis: box.dataset.secondaryAxis === "1",
+                colorTheme: box.dataset.colorTheme || "office",
+                xAxisTitle: box.dataset.xAxisTitle || "",
+                yAxisTitle: box.dataset.yAxisTitle || "",
                 sourceRange: box.dataset.sourceRange || "",
                 rotation: parseFloat(box.dataset.rotation || "0") || 0,
                 left: `${box.dataset.initialLeft || parseFloat(box.style.left) || 0}px`,
@@ -9934,6 +11146,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
 
         const target = sheets[activeSheetIndex];
         target.cells = savedCells;
+        backgroundSheetIndexCache.delete(target);
         target.rows = savedRows;
         target.columns = savedColumns;
         target.zoom = zoom;
@@ -10003,7 +11216,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
         Array.from(tbody.rows).forEach(tr => {
             tr.style.height = "";
         });
-        spreadsheetContent.querySelectorAll(".floating-textbox").forEach(b => b.remove());
+        spreadsheetContent.querySelectorAll(".floating-textbox").forEach(b => removeFloatingObject(b)); // ★ここを変更
         closeCellDropdownList();
         hideCellDropdownButton();
         clearAllAutoFilters();
@@ -10033,7 +11246,6 @@ export default async function initSpreadsheetApp(content, options = {}) {
             sheets[activeSheetIndex].tables = Array.isArray(sheetData.tables)
                 ? JSON.parse(JSON.stringify(sheetData.tables))
                 : [];
-            sheets[activeSheetIndex].tables.forEach(tbl => applyStructuredTableVisuals(tbl));
         }
 
         if (sheets[activeSheetIndex]) {
@@ -10074,6 +11286,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
             const cell = getCell(Number(item.r), Number(item.c));
             if (!cell) return;
 
+            if (item.qp) cell.dataset.quotePrefix = "1";
             if (item.nf) cell.dataset.numFormat = String(item.nf);
             if (item.dp !== undefined && item.dp !== "") cell.dataset.decimalPlaces = String(item.dp);
             if (item.dl) cell.dataset.dropdownList = String(item.dl);
@@ -10140,6 +11353,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
             }
         });
 
+        (sheets[activeSheetIndex]?.tables || []).forEach(tbl => applyStructuredTableVisuals(tbl));
         updateAllFormulas();
         applyConditionalFormats();
 
@@ -10152,6 +11366,11 @@ export default async function initSpreadsheetApp(content, options = {}) {
                     chartBox.dataset.chartType = tb.chartType || "bar";
                     if (tb.chartTitle) chartBox.dataset.chartTitle = tb.chartTitle;
                     if (tb.showLabels) chartBox.dataset.showLabels = "1";
+                    if (tb.trendline) chartBox.dataset.trendline = "1";
+                    if (tb.secondaryAxis) chartBox.dataset.secondaryAxis = "1";
+                    if (tb.colorTheme) chartBox.dataset.colorTheme = tb.colorTheme;
+                    if (tb.xAxisTitle) chartBox.dataset.xAxisTitle = tb.xAxisTitle;
+                    if (tb.yAxisTitle) chartBox.dataset.yAxisTitle = tb.yAxisTitle;
                     if (tb.sourceRange) chartBox.dataset.sourceRange = tb.sourceRange;
                     if (tb.rotation) chartBox.dataset.rotation = String(tb.rotation);
                     Object.assign(chartBox.style, {
@@ -10502,6 +11721,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
 
             currentFilePath = normalized;
             setDirtyState(false);
+            clearCrashRecoveryBackup();
             statusBarState.stateText = "保存しました";
             await updateStorageUsageDisplay();
             return true;
@@ -10694,7 +11914,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
             inp.addEventListener("keydown", (e) => {
                 if (e.key === "Enter") {
                     e.preventDefault();
-                    modalContent.querySelector(".button-container button")?.click();
+                    (modalContent.closest(".window") || modalContent).querySelector(".button-container button")?.click();
                 }
             });
         }
@@ -10743,7 +11963,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
             inp.addEventListener("keydown", (e) => {
                 if (e.key === "Enter") {
                     e.preventDefault();
-                    modalContent.querySelector(".button-container button")?.click();
+                    (modalContent.closest(".window") || modalContent).querySelector(".button-container button")?.click();
                 }
             });
         }
@@ -10768,18 +11988,25 @@ export default async function initSpreadsheetApp(content, options = {}) {
     // =========================================================
     const pageStyleId = `ss-page-style-${lockOwnerPid}`;
     const printStyleId = `ss-print-style-${lockOwnerPid}`;
+    let printOrientation = "portrait"; // "portrait" | "landscape"
+    let printFitToWidth = true;
+    let printShowGridlines = false;
 
-    function setPageSize(sizeVal, { silent = false } = {}) {
-        const nextSize = sizeVal || "A4";
-        const changed = currentPageSize !== nextSize;
-        currentPageSize = nextSize;
+    function updatePageStyleRule() {
         let styleTag = document.getElementById(pageStyleId);
         if (!styleTag) {
             styleTag = document.createElement("style");
             styleTag.id = pageStyleId;
             document.head.appendChild(styleTag);
         }
-        styleTag.textContent = `@page { size: ${currentPageSize}; margin: 1cm; }`;
+        styleTag.textContent = `@page { size: ${currentPageSize} ${printOrientation}; margin: 1cm; }`;
+    }
+
+    function setPageSize(sizeVal, { silent = false } = {}) {
+        const nextSize = sizeVal || "A4";
+        const changed = currentPageSize !== nextSize;
+        currentPageSize = nextSize;
+        updatePageStyleRule();
         renderWindowStatusBar();
         if (changed && !silent) {
             setDirtyState(true);
@@ -10836,6 +12063,21 @@ export default async function initSpreadsheetApp(content, options = {}) {
             }
         }
 
+        // 用紙の印刷可能幅に合わせて自動縮小率を計算
+        const pageWidthsPx = { A4: 718, A3: 1046, B5: 612, B4: 896 };
+        const pageHeightsPx = { A4: 1046, A3: 1510, B5: 896, B4: 1300 };
+        const printableW = printOrientation === "landscape"
+            ? (pageHeightsPx[currentPageSize] || 1046)
+            : (pageWidthsPx[currentPageSize] || 718);
+        let usedTableW = 0;
+        for (let c = 0; c <= maxDataC; c++) usedTableW += getColumnWidth(c);
+        const printScale = (printFitToWidth && usedTableW > printableW)
+            ? Math.max(0.25, printableW / usedTableW)
+            : 1;
+        const gridRule = printShowGridlines
+            ? ""
+            : `.ss-printing-active .ss-table td { border-color: transparent; }`;
+
         // 印刷時のみOSデスクトップ・ウィンドウ枠・リボン・スクロール制限を解除する専用スタイルを注入
         appRoot.classList.add("ss-printing-active");
         let printStyle = document.getElementById(printStyleId);
@@ -10847,6 +12089,8 @@ export default async function initSpreadsheetApp(content, options = {}) {
         printStyle.textContent = `
             @media print {
                 body * { visibility: hidden !important; }
+                .ss-printing-active .ss-spreadsheet-content { zoom: ${printScale} !important; }
+                ${gridRule}
                 .ss-printing-active, .ss-printing-active * { visibility: visible !important; }
                 .ss-printing-active {
                     position: fixed !important;
@@ -10875,6 +12119,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
                     height: auto !important;
                     width: 100% !important;
                     border: none !important;
+                    contain: none !important;
                 }
                 .ss-printing-active table {
                     width: auto !important;
@@ -11138,12 +12383,9 @@ export default async function initSpreadsheetApp(content, options = {}) {
         }
 
         const formula = `=SUM(${rangeRef})`;
-        target.dataset.originalText = target.dataset.rawValue ?? target.textContent;
-        if (target.dataset.formula) target.dataset.originalFormula = target.dataset.formula;
-        else delete target.dataset.originalFormula;
-        target.textContent = formula;
         formulaBarInput.value = formula;
         isFormulaBarDirty = true;
+        syncFormulaBarToCellEditor();
         lastPointRefRange = { start: 5, end: 5 + rangeRef.length };
         formulaBarInput.focus();
         formulaBarInput.setSelectionRange(5, 5 + rangeRef.length);
@@ -12870,11 +14112,13 @@ export default async function initSpreadsheetApp(content, options = {}) {
     // Excel 365準拠 オートフィルター機能
     // =========================================================
     let autoFilterState = null; // { headerRow, minCol, maxCol, maxRow, filters: Map<col, Set<string>> }
+    let activeFilterDropdownEl = null;
 
     function closeFilterDropdown() {
-        document.querySelectorAll(".ss-filter-dropdown").forEach(el => el.remove());
+        if (!activeFilterDropdownEl) return;
+        activeFilterDropdownEl.remove();
+        activeFilterDropdownEl = null;
     }
-
     function applyAutoFilterRows() {
         if (!autoFilterState) {
             Array.from(tbody.rows).forEach(tr => { tr.style.display = ""; });
@@ -12900,6 +14144,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
             arrow.classList.toggle("filtered", autoFilterState.filters.has(c));
         });
         refreshVisibleRows();
+        updateAllFormulas();
     }
 
     function openFilterDropdownMenu(colIdx, anchorEl) {
@@ -12955,6 +14200,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
             </div>
         `;
         document.body.appendChild(dropdown);
+        activeFilterDropdownEl = dropdown;
 
         const allChk = dropdown.querySelector(".ss-flt-all");
         const itemChks = Array.from(dropdown.querySelectorAll(".ss-flt-item input[type='checkbox']"));
@@ -13018,6 +14264,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
         Array.from(tbody.rows).forEach(tr => { tr.style.display = ""; });
         appRoot.querySelector(".ss-toggle-filter-btn")?.classList.remove("selected");
         refreshVisibleRows();
+        updateAllFormulas();
     }
 
     function toggleAutoFilter() {
@@ -13112,8 +14359,9 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 </div>
             `;
 
-            // parentWin を渡さないことで背面シートのクリック操作を維持しつつ window.js の窓として生成
+            // parentWin: null を明示して背面シートのクリック操作を維持しつつ window.js の窓として生成
             const modalContent = openAppModal("検索と置換", bodyHtml, {
+                parentWin: null,
                 width: 370,
                 isHtml: true,
                 allowDuplicate: true,
@@ -13123,7 +14371,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 onClose: () => {
                     findDialogOpen = false;
                     findWin = null;
-                    if (activeCell) activeCell.focus({ preventScroll: true });
+                    restoreMainWindowFocus();
                 }
             });
 
@@ -13158,7 +14406,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 if (findWin) {
                     findWin.style.visibility = "hidden";
                 }
-                if (activeCell) activeCell.focus({ preventScroll: true });
+                restoreMainWindowFocus();
             };
             if (findWin) findWin._closeDialog = closeDialog;
 
@@ -13498,12 +14746,88 @@ export default async function initSpreadsheetApp(content, options = {}) {
             case "insert-chart-bar":
                 insertFloatingChart("bar");
                 break;
+            case "insert-chart-stacked":
+                insertFloatingChart("stacked");
+                break;
             case "insert-chart-line":
                 insertFloatingChart("line");
                 break;
             case "insert-chart-pie":
                 insertFloatingChart("pie");
                 break;
+            case "insert-chart-scatter":
+                insertFloatingChart("scatter");
+                break;
+            case "custom-numfmt": {
+                const target = activeCell || tbody.querySelector("td.selected");
+                const curFmt = target?.dataset.numFormat?.startsWith("custom:") ? target.dataset.numFormat.slice(7) : '#,##0"円"';
+                const sampleRaw = target ? (target.dataset.formula ? evaluateFormula(target.dataset.formula) : (target.dataset.rawValue ?? target.textContent)) : "12345";
+                const sampleVal = String(sampleRaw ?? "").trim() !== "" ? sampleRaw : "12345";
+
+                const presets = [
+                    { fmt: '#,##0"円"', desc: '金額 (12,345円)' },
+                    { fmt: '"¥"#,##0;-"¥"#,##0;"¥"0', desc: '通貨・正負ゼロ指定' },
+                    { fmt: '#,##0"個"', desc: '数量 (12,345個)' },
+                    { fmt: '0.0%', desc: 'パーセント小数1桁' },
+                    { fmt: '"No."0000', desc: 'ゼロ埋め連番 (No.0001)' },
+                    { fmt: 'yyyy"年"m"月"d"日"(aaa)', desc: '曜日付き日付' }
+                ];
+
+                const bodyHtml = `
+                    <div style="width:100%; display:flex; flex-direction:column; gap:8px; font-size:12px;">
+                        <div>ユーザー定義の表示形式を入力または選択してください:</div>
+                        <input type="text" class="ss-cnfmt-input border" value="${escapeHtml(curFmt)}" style="width:100%; height:24px; padding:2px 6px; background:#fff; color:#000; font-family:monospace;">
+                        <div style="background:#f5f5f5; border:1px solid #999; padding:5px 8px;">
+                            プレビュー: <strong class="ss-cnfmt-preview">${escapeHtml(formatByCustomPattern(sampleVal, curFmt))}</strong>
+                        </div>
+                        <div style="font-size:11px; color:#333;">よく使う書式プリセット:</div>
+                        <select class="ss-cnfmt-preset border" size="6" style="width:100%; background:#fff; color:#000; font-size:12px;">
+                            ${presets.map(p => `<option value="${escapeHtml(p.fmt)}">${escapeHtml(p.fmt)} — ${p.desc}</option>`).join("")}
+                        </select>
+                    </div>
+                `;
+                const modalContent = openAppModal("セルの表示形式（ユーザー定義）", bodyHtml, {
+                    width: 420,
+                    isHtml: true,
+                    buttons: [
+                        {
+                            label: "OK",
+                            onClick: () => {
+                                const pat = modalContent.querySelector(".ss-cnfmt-input")?.value.trim();
+                                const targets = getTargetCells();
+                                targets.forEach(c => {
+                                    if (!pat) {
+                                        delete c.dataset.numFormat;
+                                    } else {
+                                        c.dataset.numFormat = `custom:${pat}`;
+                                        delete c.dataset.decimalPlaces;
+                                    }
+                                    const raw = c.dataset.formula ? evaluateFormula(c.dataset.formula) : (c.dataset.rawValue ?? c.textContent);
+                                    setCellFormattedValue(c, raw);
+                                });
+                                updateToolbarState();
+                                setDirtyState(true);
+                                debouncedSaveState();
+                            }
+                        },
+                        { label: "キャンセル" }
+                    ]
+                });
+                const inp = modalContent?.querySelector(".ss-cnfmt-input");
+                const prev = modalContent?.querySelector(".ss-cnfmt-preview");
+                const presetSel = modalContent?.querySelector(".ss-cnfmt-preset");
+                const updatePrev = () => {
+                    if (prev && inp) prev.textContent = formatByCustomPattern(sampleVal, inp.value.trim());
+                };
+                inp?.addEventListener("input", updatePrev);
+                presetSel?.addEventListener("change", () => {
+                    if (inp) {
+                        inp.value = presetSel.value;
+                        updatePrev();
+                    }
+                });
+                break;
+            }
             case "recalc-all":
                 updateAllFormulas();
                 statusBarState.stateText = "再計算完了";
@@ -13523,6 +14847,25 @@ export default async function initSpreadsheetApp(content, options = {}) {
                     const collapsed = shell.classList.toggle("collapsed");
                     if (btn) btn.textContent = collapsed ? "▼" : "▲";
                 }
+                break;
+            }
+            case "toggle-print-orientation": {
+                printOrientation = printOrientation === "portrait" ? "landscape" : "portrait";
+                const btn = appRoot.querySelector(".ss-print-orient-btn");
+                if (btn) btn.textContent = `向き: ${printOrientation === "landscape" ? "横" : "縦"}`;
+                updatePageStyleRule();
+                setDirtyState(true);
+                debouncedSaveState();
+                break;
+            }
+            case "toggle-print-fit": {
+                printFitToWidth = !printFitToWidth;
+                appRoot.querySelector(".ss-print-fit-btn")?.classList.toggle("selected", printFitToWidth);
+                break;
+            }
+            case "toggle-print-grid": {
+                printShowGridlines = !printShowGridlines;
+                appRoot.querySelector(".ss-print-grid-btn")?.classList.toggle("selected", printShowGridlines);
                 break;
             }
             case "print":
@@ -13771,10 +15114,13 @@ export default async function initSpreadsheetApp(content, options = {}) {
             return;
         }
 
-        // 枠線適用（結合セルの端座標も考慮）
+        // 枠線適用（線種・色・結合セルの端座標に対応）
         const borderBtn = e.target.closest("[data-border]");
         if (borderBtn) {
             const type = borderBtn.dataset.border;
+            const bStyleSpec = appRoot.querySelector(".ss-border-style-select")?.value || "2px solid";
+            const bColor = appRoot.querySelector(".ss-border-color-input")?.value || "#000000";
+            const borderCss = `${bStyleSpec} ${bColor}`;
             const selected = tbody.querySelectorAll("td.selected");
             if (selected.length) {
                 let minR = Infinity, maxR = -Infinity, minC = Infinity, maxC = -Infinity;
@@ -13793,22 +15139,23 @@ export default async function initSpreadsheetApp(content, options = {}) {
                     const c0 = +c.dataset.col;
                     const r1 = r0 + (+c.getAttribute("rowspan") || 1) - 1;
                     const c1 = c0 + (+c.getAttribute("colspan") || 1) - 1;
-                    if (type === "top" && r0 === minR) c.style.borderTop = "4px solid #000";
-                    if (type === "bottom" && r1 === maxR) c.style.borderBottom = "4px solid #000";
-                    if (type === "left" && c0 === minC) c.style.borderLeft = "4px solid #000";
-                    if (type === "right" && c1 === maxC) c.style.borderRight = "4px solid #000";
+                    if (type === "top" && r0 === minR) c.style.borderTop = borderCss;
+                    if (type === "bottom" && r1 === maxR) c.style.borderBottom = borderCss;
+                    if (type === "bottom-double" && r1 === maxR) c.style.borderBottom = `4px double ${bColor}`;
+                    if (type === "left" && c0 === minC) c.style.borderLeft = borderCss;
+                    if (type === "right" && c1 === maxC) c.style.borderRight = borderCss;
                     if (type === "outer" || type === "outer-bold") {
-                        const w = type === "outer-bold" ? "6px" : "4px";
-                        if (r0 === minR) c.style.borderTop = `${w} solid #000`;
-                        if (r1 === maxR) c.style.borderBottom = `${w} solid #000`;
-                        if (c0 === minC) c.style.borderLeft = `${w} solid #000`;
-                        if (c1 === maxC) c.style.borderRight = `${w} solid #000`;
+                        const outerCss = type === "outer-bold" ? `4px solid ${bColor}` : borderCss;
+                        if (r0 === minR) c.style.borderTop = outerCss;
+                        if (r1 === maxR) c.style.borderBottom = outerCss;
+                        if (c0 === minC) c.style.borderLeft = outerCss;
+                        if (c1 === maxC) c.style.borderRight = outerCss;
                     }
                     if (type === "cell") {
-                        c.style.borderTop = "4px solid #000";
-                        c.style.borderBottom = "4px solid #000";
-                        c.style.borderLeft = "4px solid #000";
-                        c.style.borderRight = "4px solid #000";
+                        c.style.borderTop = borderCss;
+                        c.style.borderBottom = borderCss;
+                        c.style.borderLeft = borderCss;
+                        c.style.borderRight = borderCss;
                     }
                     if (type === "none") {
                         c.style.borderTop = "";
@@ -13861,6 +15208,16 @@ export default async function initSpreadsheetApp(content, options = {}) {
         }
     };
 
+    appRoot.querySelector(".ss-font-family")?.addEventListener("change", (e) => {
+        getTargetCells().forEach(c => {
+            c.style.fontFamily = e.target.value;
+        });
+        updateToolbarState();
+        setDirtyState(true);
+        debouncedSaveState();
+        restoreCellFocusAfterToolbar();
+    }, { signal });
+
     appRoot.querySelector(".ss-font-size").addEventListener("change", (e) => {
         const affectedRows = new Set();
         getTargetCells().forEach(c => {
@@ -13892,10 +15249,49 @@ export default async function initSpreadsheetApp(content, options = {}) {
         debouncedSaveState();
     }, { signal });
 
-    appRoot.querySelector(".ss-toggle-underline").addEventListener("click", () => {
+    const toggleTextDecorationToken = (token) => {
         const targets = getTargetCells();
-        const allUnderlined = targets.length > 0 && targets.every(c => c.style.textDecoration === "underline");
-        targets.forEach(c => { c.style.textDecoration = allUnderlined ? "" : "underline"; });
+        const allHave = targets.length > 0 && targets.every(c => (c.style.textDecoration || "").includes(token));
+        targets.forEach(c => {
+            const parts = new Set((c.style.textDecoration || "").split(/\s+/).filter(t => t === "underline" || t === "line-through"));
+            if (allHave) parts.delete(token);
+            else parts.add(token);
+            c.style.textDecoration = Array.from(parts).join(" ");
+        });
+        updateToolbarState();
+        setDirtyState(true);
+        debouncedSaveState();
+    };
+
+    appRoot.querySelector(".ss-toggle-underline").addEventListener("click", () => {
+        toggleTextDecorationToken("underline");
+    }, { signal });
+
+    appRoot.querySelector(".ss-toggle-strike")?.addEventListener("click", () => {
+        toggleTextDecorationToken("line-through");
+    }, { signal });
+
+    appRoot.querySelector(".ss-toggle-vertical")?.addEventListener("click", () => {
+        const targets = getTargetCells();
+        const allVertical = targets.length > 0 && targets.every(c => c.style.writingMode === "vertical-rl");
+        const affectedRows = new Set();
+        targets.forEach(c => {
+            if (allVertical) {
+                c.style.writingMode = "";
+                c.style.textOrientation = "";
+            } else {
+                c.style.writingMode = "vertical-rl";
+                c.style.textOrientation = "upright";
+                const tr = c.closest("tr");
+                if (tr && (!tr.style.height || parseInt(tr.style.height, 10) < 90)) {
+                    tr.style.height = "90px";
+                }
+            }
+            const tr = c.closest("tr");
+            if (tr) affectedRows.add(tr);
+        });
+        if (allVertical) affectedRows.forEach(tr => autoFitRow(tr));
+        else if (freezeRows > 0) applyFreezePanes();
         updateToolbarState();
         setDirtyState(true);
         debouncedSaveState();
@@ -14706,10 +16102,13 @@ export default async function initSpreadsheetApp(content, options = {}) {
             return;
         }
 
-        if (!isSelecting && !isRowSelecting && !isColSelecting && !isFillDragging) {
+        if (!isScrollingNow && !isSelecting && !isRowSelecting && !isColSelecting && !isFillDragging) {
             const hoverCell = resolveCellFromPoint(e);
             if (hoverCell && tbody.contains(hoverCell)) {
-                hoverCell.style.cursor = isPointerOnSelectionEdge(e, hoverCell) ? "move" : "";
+                const nextCursor = isPointerOnSelectionEdge(e, hoverCell) ? "move" : "";
+                if (hoverCell.style.cursor !== nextCursor) {
+                    hoverCell.style.cursor = nextCursor;
+                }
             }
         }
 
@@ -14839,80 +16238,29 @@ export default async function initSpreadsheetApp(content, options = {}) {
         });
     }
 
-    // 数式バーイベント
-    formulaBarInput.addEventListener("click", () => {
-        const formulaText = formulaBarInput.value.trim();
-        if (formulaText && formulaText.startsWith("=")) highlightCalculationRange(formulaText);
-        else clearCalculationRangeHighlights();
-        if (activeCell) activeCell.style.outline = "solid 3.5px steelblue";
-    }, { signal });
-
-    formulaBarInput.addEventListener("focus", () => {
-        lastPointRefRange = null;
-        if (activeCell) {
-            activeCell.dataset.originalText = activeCell.dataset.rawValue ?? activeCell.textContent;
-            if (activeCell.dataset.formula) {
-                activeCell.dataset.originalFormula = activeCell.dataset.formula;
-                if (formulaBarInput.value !== activeCell.dataset.formula) {
-                    formulaBarInput.value = activeCell.dataset.formula;
-                }
-                highlightCalculationRange(activeCell.dataset.formula);
-            } else {
-                delete activeCell.dataset.originalFormula;
-                const nextText = activeCell.dataset.rawValue ?? activeCell.textContent;
-                if (formulaBarInput.value !== nextText) {
-                    formulaBarInput.value = nextText;
-                }
-            }
-            updateFillHandle();
-        }
-    }, { signal });
-
-    formulaBarInput.addEventListener("blur", () => {
-        isFormulaBarDirty = false;
-        clearCalculationRangeHighlights();
-        tbody.querySelectorAll("td.selected").forEach(c => { c.style.outline = ""; });
-        if (activeCell) activeCell.style.outline = "";
-    }, { signal });
-
     function commitValueToTargets(baseCell, targets, rawVal, applyToAll = false) {
-        if (!baseCell) return;
-        const trimmed = String(rawVal ?? "").trim();
+        if (!baseCell) return false;
+        const strVal = String(rawVal ?? "");
+        const trimmed = strVal.trim().startsWith("=") ? strVal.trim() : strVal;
         if (!applyToAll || targets.length <= 1) {
-            commitCellValue(baseCell, trimmed);
-            return;
+            return commitCellValue(baseCell, trimmed);
         }
         const baseR = parseInt(baseCell.dataset.row, 10);
         const baseC = parseInt(baseCell.dataset.col, 10);
+        let allOk = true;
         targets.forEach(cell => {
             if (cell === baseCell) {
-                commitCellValue(cell, trimmed);
+                if (!commitCellValue(cell, trimmed)) allOk = false;
             } else if (trimmed.startsWith("=")) {
                 const rOff = parseInt(cell.dataset.row, 10) - baseR;
                 const cOff = parseInt(cell.dataset.col, 10) - baseC;
-                commitCellValue(cell, adjustFormula(trimmed, rOff, cOff));
+                if (!commitCellValue(cell, adjustFormula(trimmed, rOff, cOff))) allOk = false;
             } else {
-                commitCellValue(cell, trimmed);
+                if (!commitCellValue(cell, trimmed)) allOk = false;
             }
         });
+        return allOk;
     }
-
-    formulaBarInput.addEventListener("input", () => {
-        isFormulaBarDirty = true;
-        const val = formulaBarInput.value;
-        const trimmed = val.trim();
-        if (trimmed && trimmed.startsWith("=")) highlightCalculationRange(trimmed);
-        else clearCalculationRangeHighlights();
-
-        if (trimmed === '{"mergecell"}') highlightMergedCells();
-        else removeMergedCellsHighlight();
-
-        if (activeCell) {
-            setCellTextPreservingControls(activeCell, val);
-            activeCell.style.outline = "solid 2px steelblue";
-        }
-        setDirtyState(true);
-    }, { signal });
 
     let justEndedComposition = false;
     function isImeActive(e) {
@@ -14924,66 +16272,6 @@ export default async function initSpreadsheetApp(content, options = {}) {
             e?.keyCode === 229
         );
     }
-
-    function toggleAbsoluteReferenceInInput(inputEl) {
-        const val = inputEl.value;
-        if (!val.trim().startsWith("=")) return false;
-        const pos = inputEl.selectionStart ?? val.length;
-        const before = val.slice(0, pos);
-        const after = val.slice(pos);
-        const leftMatch = before.match(/(\$?[A-Za-z]+\$?\d+)$/);
-        const rightMatch = !leftMatch ? after.match(/^(\$?[A-Za-z]+\$?\d+)/) : null;
-        if (!leftMatch && !rightMatch) return false;
-
-        const targetRef = leftMatch ? leftMatch[1] : rightMatch[1];
-        const startIdx = leftMatch ? pos - targetRef.length : pos;
-        const m = targetRef.match(/^(\$?)([A-Za-z]+)(\$?)(\d+)$/);
-        if (!m) return false;
-
-        const [, absC, col, absR, row] = m;
-        let nextRef;
-        if (!absC && !absR) nextRef = `$${col}$${row}`;
-        else if (absC && absR) nextRef = `${col}$${row}`;
-        else if (!absC && absR) nextRef = `$${col}${row}`;
-        else nextRef = `${col}${row}`;
-
-        inputEl.value = val.slice(0, startIdx) + nextRef + val.slice(startIdx + targetRef.length);
-        inputEl.setSelectionRange(startIdx, startIdx + nextRef.length);
-        inputEl.dispatchEvent(new Event("input", { bubbles: true }));
-        return true;
-    }
-
-    formulaBarInput.addEventListener("keydown", (e) => {
-        if (isImeActive(e)) return;
-        if (e.key === "F4") {
-            if (toggleAbsoluteReferenceInInput(formulaBarInput)) {
-                e.preventDefault();
-                return;
-            }
-        }
-        if (e.key === "Enter") {
-            e.preventDefault();
-            if (activeCell) {
-                const r = parseInt(activeCell.dataset.row, 10);
-                const c = parseInt(activeCell.dataset.col, 10);
-                const isBulk = e.ctrlKey || e.metaKey;
-                commitValueToTargets(activeCell, getTargetCells(), formulaBarInput.value, isBulk);
-                formulaBarInput.blur();
-                if (isBulk) {
-                    activeCell.focus({ preventScroll: true });
-                    updateSelectedCellsDisplay();
-                    updateFillHandle();
-                } else {
-                    navigateToCell(r + 1, c, e);
-                }
-            }
-        } else if (e.key === "Escape") {
-            e.preventDefault();
-            revertSelectedCellsText();
-            formulaBarInput.blur();
-            if (activeCell) activeCell.focus({ preventScroll: true });
-        }
-    }, { signal });
 
     // キーボードショートカット・IME直接入力対応
     document.addEventListener("compositionstart", (e) => {
@@ -15129,106 +16417,6 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 convertRangeToStructuredTable("blue");
                 return;
             }
-
-            if (e.key === ";" && activeCell) {
-                e.preventDefault();
-                commitCellValue(activeCell, formatDate(new Date()));
-                updateSelectedCellsDisplay();
-                return;
-            }
-
-            if ((key === "d" || key === "r") && activeCell && document.activeElement !== formulaBarInput) {
-                e.preventDefault();
-                const b = getSelectedRangeBounds();
-                if (!b) return;
-                if (key === "d") {
-                    const targetMaxR = b.maxRow > b.minRow ? b.maxRow : b.minRow + 1;
-                    const srcMinR = b.maxRow > b.minRow ? b.minRow : Math.max(1, b.minRow - 1);
-                    for (let c = b.minCol; c <= b.maxCol; c++) {
-                        const src = getVisibleCell(srcMinR, c);
-                        for (let r = srcMinR + 1; r <= targetMaxR; r++) {
-                            const dst = getVisibleCell(r, c);
-                            if (src && dst) cloneCellProperties(src, dst);
-                        }
-                    }
-                } else {
-                    const targetMaxC = b.maxCol > b.minCol ? b.maxCol : b.minCol + 1;
-                    const srcMinC = b.maxCol > b.minCol ? b.minCol : Math.max(0, b.minCol - 1);
-                    for (let r = b.minRow; r <= b.maxRow; r++) {
-                        const src = getVisibleCell(r, srcMinC);
-                        for (let c = srcMinC + 1; c <= targetMaxC; c++) {
-                            const dst = getVisibleCell(r, c);
-                            if (src && dst) cloneCellProperties(src, dst);
-                        }
-                    }
-                }
-                updateAllFormulas();
-                updateFillHandle();
-                setDirtyState(true);
-                debouncedSaveState();
-                return;
-            }
-
-            const ctrlArrows = {
-                ArrowUp: [-1, 0],
-                ArrowDown: [1, 0],
-                ArrowLeft: [0, -1],
-                ArrowRight: [0, 1]
-            };
-            if (ctrlArrows[e.key] && activeCell && document.activeElement !== formulaBarInput) {
-                e.preventDefault();
-                const [dR, dC] = ctrlArrows[e.key];
-                const basePos = (e.shiftKey && selectionEnd) ? selectionEnd : {
-                    row: parseInt(activeCell.dataset.row, 10),
-                    col: parseInt(activeCell.dataset.col, 10)
-                };
-                const isFilled = (r, c) => {
-                    const cell = getVisibleCell(r, c);
-                    return Boolean(cell && (cell.dataset.formula || (cell.dataset.rawValue ?? cell.textContent).trim() !== ""));
-                };
-                let r = basePos.row;
-                let c = basePos.col;
-                const maxR = rowCount - 1;
-                const maxC = currentColumns - 1;
-                const startAnchor = getVisibleCell(r, c);
-                while (r + dR >= 1 && r + dR <= maxR && c + dC >= 0 && c + dC <= maxC && getVisibleCell(r + dR, c + dC) === startAnchor) {
-                    r += dR;
-                    c += dC;
-                }
-                const startFilled = isFilled(r, c);
-                const nextFilled = isFilled(r + dR, c + dC);
-
-                if (startFilled && nextFilled) {
-                    while (r + dR >= 1 && r + dR <= maxR && c + dC >= 0 && c + dC <= maxC && isFilled(r + dR, c + dC)) {
-                        r += dR;
-                        c += dC;
-                    }
-                } else {
-                    while (r + dR >= 1 && r + dR <= maxR && c + dC >= 0 && c + dC <= maxC) {
-                        r += dR;
-                        c += dC;
-                        if (isFilled(r, c)) break;
-                    }
-                }
-
-                const landed = getVisibleCell(r, c);
-                if (landed) {
-                    if (e.shiftKey) {
-                        if (!selectionStart) {
-                            selectionStart = { row: parseInt(activeCell.dataset.row, 10), col: parseInt(activeCell.dataset.col, 10) };
-                        }
-                        selectionEnd = { row: parseInt(landed.dataset.row, 10), col: parseInt(landed.dataset.col, 10) };
-                        updateSelection();
-                        updateFillHandle();
-                        landed.scrollIntoView({ block: "nearest", inline: "nearest" });
-                    } else {
-                        selectionStart = { row: parseInt(landed.dataset.row, 10), col: parseInt(landed.dataset.col, 10) };
-                        selectionEnd = { ...selectionStart };
-                        navigateToCell(selectionStart.row, selectionStart.col, e);
-                    }
-                }
-                return;
-            }
             return;
         }
 
@@ -15289,16 +16477,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 setDirtyState(true);
                 return;
             }
-            targets.forEach(c => {
-                setCellTextPreservingControls(c, "");
-                delete c.dataset.formula;
-                delete c.dataset.rawValue;
-            });
-            formulaBarInput.value = "";
-            updateAllFormulas();
-            updateFillHandle();
-            setDirtyState(true);
-            debouncedSaveState();
+            clearTargetCellsContent();
             return;
         }
 
@@ -15420,9 +16599,6 @@ export default async function initSpreadsheetApp(content, options = {}) {
             };
 
             doMoveStep();
-            if (!appRoot._navInterval) {
-                appRoot._navInterval = setInterval(doMoveStep, 100);
-            }
             return;
         }
 
@@ -15443,30 +16619,24 @@ export default async function initSpreadsheetApp(content, options = {}) {
         }
     }, { signal });
 
-    const stopNavInterval = () => {
-        if (appRoot._navInterval) {
-            clearInterval(appRoot._navInterval);
-            appRoot._navInterval = null;
-        }
-    };
-    document.addEventListener("keyup", (e) => {
-        if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
-            stopNavInterval();
-        }
-    }, { signal });
-    window.addEventListener("blur", stopNavInterval, { signal });
-
     function clearTargetCellsContent() {
         const targets = getTargetCells();
         if (!targets.length) return;
         targets.forEach(c => {
-            setCellTextPreservingControls(c, "");
+            if (c.dataset.spillOrigin) return; // Excel準拠：スピル先単体のDeleteは無視（元セル消去で消える）
+            clearSpillCellsFromAnchor(parseInt(c.dataset.row, 10), parseInt(c.dataset.col, 10));
             delete c.dataset.formula;
-            delete c.dataset.rawValue;
+            delete c.dataset.quotePrefix;
+            delete c.dataset.valueType;
+            delete c.dataset.dateValue;
+            setCellFormattedValue(c, "");
         });
-        formulaBarInput.value = "";
+        if (activeCell) {
+            formulaBarInput.value = activeCell.dataset.formula || (activeCell.dataset.rawValue ?? activeCell.textContent);
+        }
         updateAllFormulas();
         applyConditionalFormats();
+        updateSelectedCellsDisplay();
         updateFillHandle();
         setDirtyState(true);
         debouncedSaveState();
@@ -15590,78 +16760,19 @@ export default async function initSpreadsheetApp(content, options = {}) {
     // スクロール時の動的行・列追加 ＋ 行/列の可視範囲最適化
     // =========================================================
     let rowObserver = null;
-    let visibleCols = [];
     let scrollPending = false;
     let isLoadingRows = false;
     let isLoadingCols = false;
+    let isScrollingNow = false;
+    let scrollIdleTimer = null;
 
     function computeVisibleColumns() {
-        const contRect = container.getBoundingClientRect();
-        const headerRow = table.querySelector("thead tr");
-        if (!headerRow) return;
-        const cells = headerRow.children;
-        const rowHeaderWidth = cells[0]?.offsetWidth || 54;
-        const effectiveLeft = contRect.left + rowHeaderWidth;
-        if (visibleCols.length !== cells.length) visibleCols = new Array(cells.length);
-        for (let i = 0; i < cells.length; i++) {
-            if (i === 0 || i <= freezeCols) {
-                visibleCols[i] = true;
-                continue;
-            }
-            const r = cells[i].getBoundingClientRect();
-            visibleCols[i] = !(r.right < effectiveLeft || r.left > contRect.right);
-        }
+        // GPU標準クリッピングに任せるため処理不要（互換維持）
     }
 
     function isWindowMinimizedOrHidden() {
         if (!win) return false;
         return win.dataset.minimized === "true" || win.style.visibility === "hidden" || win.hidden;
-    }
-
-    function hasVisibleMergedSpanInRow(row) {
-        const mergedCells = row.querySelectorAll("td.merged[rowspan]");
-        if (!mergedCells.length) return false;
-        const contRect = container.getBoundingClientRect();
-        for (const td of mergedCells) {
-            const rect = td.getBoundingClientRect();
-            if (rect.bottom >= contRect.top && rect.top <= contRect.bottom) return true;
-        }
-        return false;
-    }
-
-    function applyRowVisibility(row, vis) {
-        if (isWindowMinimizedOrHidden()) {
-            row.classList.remove("ss-row-offscreen");
-            const cells = row.children;
-            for (let i = 0; i < cells.length; i++) {
-                cells[i].classList.remove("ss-offscreen-hidden");
-            }
-            return;
-        }
-
-        const active = document.activeElement;
-        const v = vis || row.contains(active) || hasVisibleMergedSpanInRow(row);
-        row.classList.toggle("ss-row-offscreen", !v);
-
-        const cells = row.children;
-        for (let i = 0; i < cells.length; i++) {
-            const cell = cells[i];
-            let colVis = visibleCols[i] ?? true;
-            if (!colVis && i > 0 && cell.classList.contains("merged")) {
-                const colspan = parseInt(cell.getAttribute("colspan") || "1", 10);
-                if (colspan > 1) {
-                    const maxIdx = Math.min(visibleCols.length - 1, i + colspan - 1);
-                    for (let k = i + 1; k <= maxIdx; k++) {
-                        if (visibleCols[k]) {
-                            colVis = true;
-                            break;
-                        }
-                    }
-                }
-            }
-            const show = (colVis && v) || cell.contains(active);
-            cell.classList.toggle("ss-offscreen-hidden", !show);
-        }
     }
 
     function refreshVisibleFloatingObjects() {
@@ -15692,37 +16803,13 @@ export default async function initSpreadsheetApp(content, options = {}) {
         });
     }
 
-    function refreshVisibleRows() {
-        if (isWindowMinimizedOrHidden()) return;
-        computeVisibleColumns();
-        const contRect = container.getBoundingClientRect();
-        const active = document.activeElement;
-        for (const row of tbody.rows) {
-            const rowNum = Number(row.dataset.row);
-            const rect = row.getBoundingClientRect();
-            const vis = rowNum <= freezeRows || !(rect.bottom < contRect.top || rect.top > contRect.bottom) || row.contains(active);
-            row.dataset.visible = String(vis);
-            applyRowVisibility(row, vis);
-        }
-        refreshVisibleFloatingObjects();
+    function setupRowVisibilityObserver() {
+        // GPUスクロールへ一本化したため監視不要（互換維持）
     }
 
-    function setupRowVisibilityObserver() {
-        rowObserver?.disconnect();
-        rowObserver = new IntersectionObserver(entries => {
-            if (isWindowMinimizedOrHidden()) return;
-            computeVisibleColumns();
-            for (const e of entries) {
-                const r = e.target;
-                const rowNum = Number(r.dataset.row);
-                const v = rowNum <= freezeRows || e.isIntersecting || r.contains(document.activeElement);
-                if (r.dataset.visible !== String(v)) {
-                    r.dataset.visible = String(v);
-                    applyRowVisibility(r, v);
-                }
-            }
-        }, { root: container, threshold: 0 });
-        tbody.querySelectorAll("tr").forEach(tr => rowObserver.observe(tr));
+    function refreshVisibleRows() {
+        if (isWindowMinimizedOrHidden()) return;
+        refreshVisibleFloatingObjects();
     }
 
     // ウィンドウ最小化・復元とコンテンツエリアの表示・オーバーフロー隠蔽を連動
@@ -15737,12 +16824,6 @@ export default async function initSpreadsheetApp(content, options = {}) {
             appRoot.style.visibility = "hidden";
             container.style.overflowY = "hidden";
             container.style.overflowX = "hidden";
-            for (const row of tbody.rows) {
-                row.classList.remove("ss-row-offscreen");
-                for (let i = 0; i < row.children.length; i++) {
-                    row.children[i].classList.remove("ss-offscreen-hidden");
-                }
-            }
             spreadsheetContent.querySelectorAll(".floating-textbox").forEach(box => {
                 box.classList.remove("ss-obj-offscreen");
             });
@@ -15753,7 +16834,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
             appRoot.style.display = "flex";
             appRoot.style.visibility = "";
             container.style.overflowY = "auto";
-            container.style.overflowX = "scroll"; // 修正: "hidden" から "scroll" (または "auto")に変更
+            container.style.overflowX = "scroll";
             requestAnimationFrame(() => {
                 refreshVisibleRows();
             });
@@ -15789,27 +16870,31 @@ export default async function initSpreadsheetApp(content, options = {}) {
     });
 
     container.addEventListener("scroll", () => {
-        closeCellDropdownList();
-        closeFilterDropdown();
-        hideDataValidationTooltip();
+        isScrollingNow = true;
+        if (scrollIdleTimer) { clearTimeout(scrollIdleTimer); timers.delete(scrollIdleTimer); }
+        scrollIdleTimer = managedTimeout(() => { isScrollingNow = false; }, 120);
+
+        if (activeDropdownCleanup) closeCellDropdownList();
+        if (activeFilterDropdownEl) closeFilterDropdown();
+        if (dvTooltipEl) hideDataValidationTooltip();
+
         if (scrollPending || isWindowMinimizedOrHidden()) return;
         scrollPending = true;
         requestAnimationFrame(() => {
             scrollPending = false;
             if (isWindowMinimizedOrHidden()) return;
-            if (!isLoadingRows && container.scrollTop + container.clientHeight >= container.scrollHeight - 50) {
+            if (!isLoadingRows && container.scrollTop + container.clientHeight >= container.scrollHeight - 400) {
                 isLoadingRows = true;
                 loadRowsSync(ROW_BATCH);
-                setupRowVisibilityObserver();
                 isLoadingRows = false;
             }
-            if (!isLoadingCols && container.scrollLeft + container.clientWidth >= container.scrollWidth - 50) {
+            if (!isLoadingCols && container.scrollLeft + container.clientWidth >= container.scrollWidth - 400) {
                 isLoadingCols = true;
                 loadColumnsSync(COLUMN_BATCH);
                 isLoadingCols = false;
             }
-            refreshVisibleRows();
-            syncCellDropdownButtonPosition();
+            if (dropdownOwnerCell) syncCellDropdownButtonPosition();
+            refreshVisibleFloatingObjects();
         });
     }, { passive: true, signal });
 
@@ -15837,35 +16922,21 @@ export default async function initSpreadsheetApp(content, options = {}) {
 
     function applyHorizontalScrollDelta(deltaX) {
         if (!deltaX) return;
-        const prevLeft = container.scrollLeft;
-        container.scrollLeft = Math.max(0, prevLeft + deltaX);
-        if (!isLoadingCols && container.scrollLeft + container.clientWidth >= container.scrollWidth - 50) {
-            isLoadingCols = true;
-            loadColumnsSync(COLUMN_BATCH);
-            isLoadingCols = false;
-        }
-        refreshVisibleRows();
+        container.scrollLeft = Math.max(0, container.scrollLeft + deltaX);
     }
 
-    // トラックパッド2本指横スワイプ（deltaX）および Shift+ホイール横スクロール対応
+    // Ctrl+ホイール（ズーム）と Shift+縦ホイール（Windows用横スクロール）だけJS処理し、
+    // 通常の2本指横スワイプ（deltaX）はブラウザ標準のGPUスクロールに任せる
     appRoot.addEventListener("wheel", (e) => {
         if (e.ctrlKey || e.metaKey) {
             e.preventDefault();
             setZoom(zoomValue + (e.deltaY < 0 ? 5 : -5));
             return;
         }
-        if (e.target.closest(".pulldown_menu, .ss-sheet-tabs-scroll")) return;
-
-        let dx = e.deltaX || 0;
-        if (dx === 0 && e.shiftKey && e.deltaY !== 0) {
-            dx = e.deltaY;
+        if (e.shiftKey && e.deltaX === 0 && e.deltaY !== 0) {
+            if (e.target.closest(".pulldown_menu, .ss-sheet-tabs-scroll")) return;
             e.preventDefault();
-        }
-        if (dx !== 0) {
-            if (Math.abs(dx) > Math.abs(e.deltaY || 0)) {
-                e.preventDefault();
-            }
-            applyHorizontalScrollDelta(dx);
+            applyHorizontalScrollDelta(e.deltaY);
         }
     }, { passive: false, signal });
 
@@ -15996,6 +17067,14 @@ export default async function initSpreadsheetApp(content, options = {}) {
     if (targetNode && targetNode.type === "file") {
         await openFileFromFS(options.path);
     } else {
+        // saveState() で上書きされる前に、前回の未保存バックアップを先に読み出しておく
+        let rawRecovery = null;
+        try {
+            rawRecovery = localStorage.getItem(RECOVERY_STORAGE_KEY);
+        } catch {
+            rawRecovery = null;
+        }
+
         setDirtyState(false);
         saveState();
         await updateStorageUsageDisplay();
@@ -16006,6 +17085,42 @@ export default async function initSpreadsheetApp(content, options = {}) {
             updateSelectedCellsDisplay();
             updateFillHandle();
         }
+
+        // 前回の強制終了時の未保存バックアップがあれば復元を提案
+        try {
+            if (rawRecovery) {
+                const parsed = JSON.parse(rawRecovery);
+                const ageMs = Date.now() - (Number(parsed?.timestamp) || 0);
+                if (parsed?.snapshot && ageMs >= 0 && ageMs < 24 * 60 * 60 * 1000 && windowAPI?.confirmWindow) {
+                    const dtStr = new Date(parsed.timestamp).toLocaleString("ja-JP");
+                    const label = parsed.filePath ? basename(parsed.filePath) : "無題.nxs";
+                    windowAPI.confirmWindow(
+                        `前回の未保存データが見つかりました。\nファイル: ${label}\n自動保存日時: ${dtStr}\n\n復元しますか？`,
+                        async (ok) => {
+                            if (ok) {
+                                try {
+                                    await applyDeserializedPayload(parsed.snapshot, { isUndoRedo: false });
+                                    setDirtyState(true);
+                                    undoHistory = [];
+                                    redoHistory = [];
+                                    saveState();
+                                    statusBarState.stateText = "自動保存データから復元しました";
+                                    renderWindowStatusBar();
+                                } catch (err) {
+                                    showError(`復元に失敗しました:\n${err.message}`, "復元エラー");
+                                    clearCrashRecoveryBackup();
+                                }
+                            } else {
+                                clearCrashRecoveryBackup();
+                            }
+                        },
+                        { title: "ドキュメントの回復", parentWin: win }
+                    );
+                }
+            }
+        } catch {
+            clearCrashRecoveryBackup();
+        }
     }
 
     // =========================================================
@@ -16013,23 +17128,29 @@ export default async function initSpreadsheetApp(content, options = {}) {
     // =========================================================
     const closeBtn = win?.querySelector(".close-btn, .window-close");
     let bypassCloseConfirm = false;
+    let isCloseConfirmOpen = false;
     if (closeBtn && windowAPI?.showModalWindow) {
         closeBtn.addEventListener("click", (e) => {
             if (!isDirty || bypassCloseConfirm) return;
             e.preventDefault();
             e.stopImmediatePropagation();
+            if (isCloseConfirmOpen) return;
+            isCloseConfirmOpen = true;
 
             const fileName = currentFilePath ? basename(currentFilePath) : "無題.nxs";
-            windowAPI.showModalWindow(
+            openAppModal(
                 "Nexser スプレッドシート",
                 `${fileName} への変更内容を保存しますか？`,
                 {
                     width: 380,
-                    parentWin: win,
+                    onClose: () => {
+                        isCloseConfirmOpen = false;
+                    },
                     buttons: [
                         {
                             label: "保存する",
                             onClick: async () => {
+                                isCloseConfirmOpen = false;
                                 if (currentFilePath) {
                                     const ok = await writeToFSPath(currentFilePath);
                                     if (ok) {
@@ -16049,12 +17170,19 @@ export default async function initSpreadsheetApp(content, options = {}) {
                         {
                             label: "保存しない",
                             onClick: () => {
+                                isCloseConfirmOpen = false;
+                                clearCrashRecoveryBackup();
                                 isDirty = false;
                                 bypassCloseConfirm = true;
                                 closeBtn.click();
                             }
                         },
-                        { label: "キャンセル" }
+                        {
+                            label: "キャンセル",
+                            onClick: () => {
+                                isCloseConfirmOpen = false;
+                            }
+                        }
                     ]
                 }
             );
@@ -16089,9 +17217,11 @@ export default async function initSpreadsheetApp(content, options = {}) {
             closeAutocompletePopup();
             stopTouchInertia();
             if (findWin) {
-                if (windowAPI?.closeWindow) windowAPI.closeWindow(findWin);
-                else if (findWin.isConnected) findWin.remove();
+                if (windowAPI?.destroyWindow) windowAPI.destroyWindow(findWin);
+                else if (windowAPI?.closeWindow) windowAPI.closeWindow(findWin);
+                if (findWin.isConnected) findWin.remove();
                 findWin = null;
+                findDialogOpen = false;
             }
             document.getElementById(pageStyleId)?.remove();
             document.getElementById(printStyleId)?.remove();

@@ -11,6 +11,16 @@ const CHUNK_SIZE = 10 * 1024 * 1024;            // 10MBごとに分割
 
 let saveChain = Promise.resolve();
 
+function enqueueSave(task) {
+    const run = saveChain.then(task);
+    // 内部チェーンは常に resolved に保ち、1回の失敗で後続保存が永久停止するのを防ぐ
+    saveChain = run.catch(() => { });
+    return run.catch(async err => {
+        await handleCriticalSaveError(err);
+        throw err;
+    });
+}
+
 /* =========================
    Low level API
 ========================= */
@@ -242,7 +252,8 @@ export async function copyFileContent(oldPath, newPath) {
 export async function moveFileContent(oldPath, newPath) {
     if (oldPath === newPath) return;
 
-    const db = await openDB();
+    const srcMeta = await dbGet(oldPath, STORE_FILES);
+    if (srcMeta === undefined || srcMeta === null) return;
 
     try {
         await copyFileContent(oldPath, newPath);
@@ -251,8 +262,8 @@ export async function moveFileContent(oldPath, newPath) {
     }
 
     try {
-        const verifyMeta = await db.transaction(STORE_FILES, "readonly").objectStore(STORE_FILES).get(newPath);
-        if (verifyMeta !== undefined) {
+        const verifyMeta = await dbGet(newPath, STORE_FILES);
+        if (verifyMeta !== undefined && verifyMeta !== null) {
             await deleteFileContentRecursive(oldPath);
         } else {
             throw new Error("Copy verification failed. Aborting source deletion.");
@@ -289,7 +300,7 @@ export async function deleteFileContentRecursive(path) {
  * 【ピンポイント差分保存】変更・削除された階層レコードだけをアトミックにコミット
  */
 export async function saveNodeDiff(rootFS, dirtyPaths = [], deletedPaths = [], metaOnlyPaths = []) {
-    saveChain = saveChain.then(async () => {
+    return enqueueSave(async () => {
         if (dirtyPaths.length === 0 && deletedPaths.length === 0 && metaOnlyPaths.length === 0) return;
 
         if (navigator.storage && navigator.storage.estimate) {
@@ -401,19 +412,14 @@ export async function saveNodeDiff(rootFS, dirtyPaths = [], deletedPaths = [], m
                 reject(err || new Error("Unknown error during diff save"));
             }
         });
-    }).catch(async err => {
-        await handleCriticalSaveError(err);
-        throw err;
     });
-
-    return saveChain;
 }
 
 /**
  * 【全体同期保存】初回起動・システム修復・旧形式からのマイグレーション用
  */
 export async function saveFS(fs) {
-    saveChain = saveChain.then(async () => {
+    return enqueueSave(async () => {
         if (navigator.storage && navigator.storage.estimate) {
             const { usage, quota } = await navigator.storage.estimate();
             if (usage >= quota * 0.95) {
@@ -434,6 +440,55 @@ export async function saveFS(fs) {
             console.warn("[FS-DB] Failed to write journal log:", e);
         }
 
+        if (!fs?.["C:"]?.System) throw new Error("FS corruption detected.");
+
+        // 事前にメモリ上で全レコードを収集
+        const recordsMap = new Map();
+        const largeFiles = new Map();
+        for (const topKey of Object.keys(fs)) {
+            collectSubtreeRecords(fs[topKey], topKey, recordsMap, largeFiles);
+        }
+
+        // 1. 不要キーの掃除フェーズ（専用トランザクション）
+        await new Promise((resolve, reject) => {
+            const cleanTx = db.transaction([STORE_FILES, STORE_KV], "readwrite");
+            const cleanFileStore = cleanTx.objectStore(STORE_FILES);
+            const cleanKvStore = cleanTx.objectStore(STORE_KV);
+
+            cleanTx.oncomplete = () => resolve();
+            cleanTx.onerror = (event) => reject(cleanTx.error || event?.target?.error || new Error("Full sync clean transaction error"));
+            cleanTx.onabort = (event) => reject(cleanTx.error || event?.target?.error || new Error("Full sync clean transaction aborted"));
+
+            const kvCursor = cleanKvStore.openCursor(IDBKeyRange.bound(NODE_PREFIX, `${NODE_PREFIX}\uffff`));
+            kvCursor.onsuccess = (e) => {
+                const cursor = e.target.result;
+                if (cursor) {
+                    const nodePath = cursor.primaryKey.slice(NODE_PREFIX.length);
+                    if (!recordsMap.has(nodePath)) {
+                        cleanKvStore.delete(cursor.primaryKey);
+                    }
+                    cursor.continue();
+                }
+            };
+
+            const fileCursor = cleanFileStore.openCursor();
+            fileCursor.onsuccess = (e) => {
+                const cursor = e.target.result;
+                if (cursor) {
+                    const key = cursor.primaryKey;
+                    const chunkIndex = key.indexOf("/__chunk_");
+                    const basePath = chunkIndex !== -1 ? key.substring(0, chunkIndex) : key;
+                    const rec = recordsMap.get(basePath);
+
+                    if (!rec || rec.meta.content !== "__EXTERNAL_DATA__") {
+                        cleanFileStore.delete(key);
+                    }
+                    cursor.continue();
+                }
+            };
+        });
+
+        // 2. 書き込みフェーズ（同期的・アトミックにコミット）
         const tx = db.transaction([STORE_FILES, STORE_KV], "readwrite");
         const fileStore = tx.objectStore(STORE_FILES);
         const kvStore = tx.objectStore(STORE_KV);
@@ -449,78 +504,22 @@ export async function saveFS(fs) {
             tx.onerror = (event) => reject(tx.error || event?.target?.error || new Error("Save transaction error"));
             tx.onabort = (event) => reject(tx.error || event?.target?.error || new Error("Save transaction aborted"));
 
-            (async () => {
-                try {
-                    if (!fs?.["C:"]?.System) throw new Error("FS corruption detected.");
+            try {
+                writeLargeFilesToStore(fileStore, largeFiles);
 
-                    const recordsMap = new Map();
-                    const largeFiles = new Map();
+                recordsMap.forEach((record, nodePath) => {
+                    kvStore.put(record, `${NODE_PREFIX}${nodePath}`);
+                });
 
-                    for (const topKey of Object.keys(fs)) {
-                        collectSubtreeRecords(fs[topKey], topKey, recordsMap, largeFiles);
-                    }
-
-                    const cleanKvTask = new Promise((res, rej) => {
-                        const kvCursor = kvStore.openCursor(IDBKeyRange.bound(NODE_PREFIX, `${NODE_PREFIX}\uffff`));
-                        kvCursor.onsuccess = (e) => {
-                            const cursor = e.target.result;
-                            if (cursor) {
-                                const nodePath = cursor.primaryKey.slice(NODE_PREFIX.length);
-                                if (!recordsMap.has(nodePath)) {
-                                    kvStore.delete(cursor.primaryKey);
-                                }
-                                cursor.continue();
-                            } else {
-                                res();
-                            }
-                        };
-                        kvCursor.onerror = () => rej(kvCursor.error);
-                    });
-
-                    const cleanFileTask = new Promise((res, rej) => {
-                        const fileCursor = fileStore.openCursor();
-                        fileCursor.onsuccess = (e) => {
-                            const cursor = e.target.result;
-                            if (cursor) {
-                                const key = cursor.primaryKey;
-                                const chunkIndex = key.indexOf("/__chunk_");
-                                const basePath = chunkIndex !== -1 ? key.substring(0, chunkIndex) : key;
-                                const rec = recordsMap.get(basePath);
-
-                                if (!rec || rec.meta.content !== "__EXTERNAL_DATA__") {
-                                    fileStore.delete(key);
-                                }
-                                cursor.continue();
-                            } else {
-                                res();
-                            }
-                        };
-                        fileCursor.onerror = () => rej(fileCursor.error);
-                    });
-
-                    await Promise.all([cleanKvTask, cleanFileTask]);
-
-                    writeLargeFilesToStore(fileStore, largeFiles);
-
-                    recordsMap.forEach((record, nodePath) => {
-                        kvStore.put(record, `${NODE_PREFIX}${nodePath}`);
-                    });
-
-                    // 旧モノリシック形式のキーが存在すれば削除して移行完了
-                    kvStore.delete("fs_C:");
-                    kvStore.delete("fs");
-                } catch (err) {
-                    try { tx.abort(); } catch (_) { }
-                    reject(err || new Error("Unknown error during FS save"));
-                }
-            })();
+                // 旧モノリシック形式のキーが存在すれば削除して移行完了
+                kvStore.delete("fs_C:");
+                kvStore.delete("fs");
+            } catch (err) {
+                try { tx.abort(); } catch (_) { }
+                reject(err || new Error("Unknown error during FS save"));
+            }
         });
-    }).catch(async err => {
-        await handleCriticalSaveError(err);
-        throw err;
     });
-
-    return saveChain;
 }
 
 async function handleCriticalSaveError(err) {
@@ -648,7 +647,7 @@ export async function loadFS() {
         return null;
     } catch (err) {
         console.error("[FS-DB] Load failed:", err?.message || err);
-        return null;
+        throw err;
     }
 }
 
@@ -656,7 +655,7 @@ export async function loadFS() {
  * 単体ファイルの実データ保存（直列キュー統合版）
  */
 export async function saveSingleFile(path, data) {
-    saveChain = saveChain.then(async () => {
+    return enqueueSave(async () => {
         const db = await openDB();
         const tx = db.transaction([STORE_FILES], "readwrite");
         const fileStore = tx.objectStore(STORE_FILES);
@@ -669,12 +668,7 @@ export async function saveSingleFile(path, data) {
             tx.onerror = (e) => reject(e?.target?.error || new Error("Single file save error"));
             tx.onabort = (e) => reject(e?.target?.error || new Error("Single file save aborted"));
         });
-    }).catch(async err => {
-        await handleCriticalSaveError(err);
-        throw err;
     });
-
-    return saveChain;
 }
 
 export async function saveFolderNode(topKey, folderData) {
