@@ -1,8 +1,8 @@
 // startmenu.js
 import { FS } from "../fs.js";
 import { getRecent, addRecent, removeRecent } from "../recent.js";
-import { resolveFS, basename } from "../fs-utils.js";
-import { resolveAppByPath, getIcon } from "../file-associations.js";
+import { resolveFS, basename, isSystemMetaKey } from "../fs-utils.js";
+import { resolveAppByPath, getIcon, applyIconToElement } from "../file-associations.js";
 import { loadSetting } from "./settings.js";
 
 // グローバルな状態管理用 (スモールアイコン)
@@ -172,10 +172,10 @@ function createMenu(folder, basePath, menuRoot, visitedPaths = new Set()) {
     }
 
     for (const name in folder) {
-        if (name === "type" || name === "system" || name === "lastModified") continue;
+        if (isSystemMetaKey(name)) continue;
 
         const node = folder[name];
-        if (node.hidden) continue;
+        if (!node || typeof node !== "object" || node.hidden) continue;
 
         hasItems = true;
 
@@ -199,7 +199,7 @@ function createMenu(folder, basePath, menuRoot, visitedPaths = new Set()) {
             justifyContent: "center"
         });
 
-        iconSpan.textContent = getIcon(name, node);
+        applyIconToElement(iconSpan, getIcon(name, node));
         item.appendChild(iconSpan);
 
         const textSpan = document.createElement("span");

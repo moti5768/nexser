@@ -6,7 +6,19 @@ import { showBSOD } from "./bsod.js";
 import { showPromptScreen, resetSystemVerification } from "./boot.js";
 import { addRecent } from "./recent.js";
 import { installDynamicButtonEffect } from "./ui.js";
-import { resolveFS, basename, normalizePath, cloneFSNode, isChildNodeObject, readFileContent, writeFileContent } from "./fs-utils.js";
+import {
+    resolveFS,
+    basename,
+    normalizePath,
+    cloneFSNode,
+    isChildNodeObject,
+    readFileContent,
+    writeFileContent,
+    ensureDirectory,
+    listDirectory,
+    statFS,
+    deleteFSNode
+} from "./fs-utils.js";
 import {
     resolveAppByPath,
     registerFileAssociation,
@@ -222,6 +234,188 @@ async function safeImport(entry) {
 
     importLocks.set(entry, promise);
     return promise;
+}
+
+/* =========================
+   仮想FSパッケージ（フォルダ構造アプリ）ローダー & サンドボックス制御
+========================= */
+const SANDBOX_RESTRICTED_PREFIXES = [
+    "c:/system",
+    "c:/programs/applications",
+    "c:/programs/packages",
+    "c:/programs/controlpanel",
+    "c:/programs/accessories",
+    "c:/programs/settings"
+];
+
+/**
+ * 動的アプリからのFSアクセス可否を判定する
+ * - ユーザー領域 (C:/Desktop, C:/Programs/Documents, Music, Picture, Movie 等) は読み書き許可
+ * - 自身のパッケージルート配下は読み取り許可（書き込みは禁止）
+ * - システム領域・他アプリ領域はブロック
+ */
+function assertSandboxPathAccess(targetPath, mode = "read", packageRoot = null) {
+    const norm = normalizePath(targetPath).replace(/\/+$/, "") || "C:/";
+    const lowerNorm = norm.toLowerCase();
+
+    if (packageRoot) {
+        const normPkg = normalizePath(packageRoot).replace(/\/+$/, "").toLowerCase();
+        if (lowerNorm === normPkg || lowerNorm.startsWith(normPkg + "/")) {
+            if (mode === "read") return norm;
+            throw new Error(`[Security] パッケージ実行領域 '${norm}' への書き込み・削除は許可されていません。データ保存は C:/Programs/Documents 等または syscall.saveSetting を使用してください。`);
+        }
+    }
+
+    const isRestricted = SANDBOX_RESTRICTED_PREFIXES.some(
+        prefix => lowerNorm === prefix || lowerNorm.startsWith(prefix + "/")
+    );
+    if (isRestricted) {
+        throw new Error(`[Security] システム保護領域 '${norm}' へのアクセス (${mode}) は許可されていません。`);
+    }
+    return norm;
+}
+
+/**
+ * 動的コードの危険な直接参照を検査する
+ */
+function assertSafeDynamicCode(sourceCode, filePath) {
+    if (/\bimport\s*\(/.test(sourceCode)) {
+        throw new Error(`[Security] ${filePath}: ネイティブ動的 import() は禁止されています。代わりに await syscall.importModule("./file.js") を使用してください。`);
+    }
+    if (/\b(window|globalThis|self)\s*(\.\s*nexser|\[\s*['"]nexser['"]\s*\])/.test(sourceCode)) {
+        throw new Error(`[Security] ${filePath}: システムグローバル (nexser) への直接参照は禁止されています。syscall または windowAPI を使用してください。`);
+    }
+}
+
+/**
+ * パッケージ内の相対パスを packageRoot 内に限定して解決する
+ */
+function resolvePackageInternalPath(packageRoot, baseDir, relPath) {
+    const normRoot = normalizePath(packageRoot).replace(/\/+$/, "");
+    const cleanRel = String(relPath || "").replace(/\\/g, "/").trim();
+    if (!cleanRel) throw new Error("空のパスは指定できません。");
+
+    const candidateBase = cleanRel.startsWith("/")
+        ? `${normRoot}/${cleanRel.replace(/^\/+/, "")}`
+        : `${baseDir.replace(/\/+$/, "")}/${cleanRel}`;
+    const resolved = normalizePath(candidateBase).replace(/\/+$/, "");
+
+    const lowerRoot = normRoot.toLowerCase();
+    const lowerResolved = resolved.toLowerCase();
+    if (lowerResolved !== lowerRoot && !lowerResolved.startsWith(lowerRoot + "/")) {
+        throw new Error(`[Security] パッケージ外へのアクセスは禁止されています: ${relPath}`);
+    }
+    return resolved;
+}
+
+/**
+ * パッケージ内の仮想JSファイルを再帰的に解析し、Blob URLベースのESモジュールグラフを構築する
+ */
+async function compileVirtualPackageModule(packageRoot, targetFilePath, pid, resources, compiledCache = new Map(), resolvingStack = new Set()) {
+    const normRoot = normalizePath(packageRoot).replace(/\/+$/, "");
+
+    // 拡張子省略 (.js / /index.js) の自動補完
+    let resolvedPath = normalizePath(targetFilePath).replace(/\/+$/, "");
+    let fileNode = resolveFS(resolvedPath);
+    if (!fileNode || fileNode.type !== "file") {
+        if (resolveFS(`${resolvedPath}.js`)?.type === "file") {
+            resolvedPath = `${resolvedPath}.js`;
+            fileNode = resolveFS(resolvedPath);
+        } else if (resolveFS(`${resolvedPath}/index.js`)?.type === "file") {
+            resolvedPath = `${resolvedPath}/index.js`;
+            fileNode = resolveFS(resolvedPath);
+        }
+    }
+
+    const lowerRoot = normRoot.toLowerCase();
+    if (!resolvedPath.toLowerCase().startsWith(lowerRoot + "/")) {
+        throw new Error(`[Security] パッケージ外のモジュールは読み込めません: ${resolvedPath}`);
+    }
+    if (!fileNode || fileNode.type !== "file") {
+        throw new Error(`モジュールが見つかりません: ${resolvedPath}`);
+    }
+
+    if (compiledCache.has(resolvedPath)) {
+        return compiledCache.get(resolvedPath);
+    }
+    if (resolvingStack.has(resolvedPath)) {
+        throw new Error(`循環インポートが検出されました: ${resolvedPath}`);
+    }
+
+    resolvingStack.add(resolvedPath);
+
+    try {
+        const raw = await readFileContent(resolvedPath);
+        const sourceCode = typeof raw === "string" ? raw : "";
+        assertSafeDynamicCode(sourceCode, resolvedPath);
+
+        const currentDir = resolvedPath.slice(0, resolvedPath.lastIndexOf("/")) || normRoot;
+
+        // 静的 import / export ... from "..." および import "..." を抽出して書き換え
+        const specifierRegex = /(\b(?:import|export)\s+(?:[\s\S]*?\bfrom\s+)?)(['"])([^'"]+)\2/g;
+        const matches = Array.from(sourceCode.matchAll(specifierRegex));
+
+        let transformedCode = "";
+        let lastIndex = 0;
+
+        for (const match of matches) {
+            const fullMatch = match[0];
+            const prefix = match[1];
+            const quote = match[2];
+            const specifier = match[3];
+            const matchStart = match.index;
+
+            transformedCode += sourceCode.slice(lastIndex, matchStart);
+
+            if (!specifier.startsWith("./") && !specifier.startsWith("../")) {
+                throw new Error(`[Security] ${resolvedPath}: パッケージ外部モジュール '${specifier}' の直接 import は許可されていません。OS機能は syscall を使用してください。`);
+            }
+
+            const depPath = resolvePackageInternalPath(normRoot, currentDir, specifier);
+            const depBlobUrl = await compileVirtualPackageModule(
+                normRoot,
+                depPath,
+                pid,
+                resources,
+                compiledCache,
+                resolvingStack
+            );
+
+            transformedCode += `${prefix}${quote}${depBlobUrl}${quote}`;
+            lastIndex = matchStart + fullMatch.length;
+        }
+        transformedCode += sourceCode.slice(lastIndex);
+
+        // DevToolsおよびクラッシュ時PID逆引き用の sourceURL を付与
+        const finalCode = `${transformedCode}\n//# sourceURL=${resolvedPath}?pid=${pid}`;
+        const blob = new Blob([finalCode], { type: "text/javascript" });
+        const blobUrl = URL.createObjectURL(blob);
+
+        resources.blobUrls.add(blobUrl);
+        compiledCache.set(resolvedPath, blobUrl);
+        return blobUrl;
+    } finally {
+        resolvingStack.delete(resolvedPath);
+    }
+}
+
+/**
+ * パッケージ内の manifest.json を読み込み、最新のメタ情報を取得する
+ */
+async function loadPackageManifest(packageRoot) {
+    const normRoot = normalizePath(packageRoot).replace(/\/+$/, "");
+    const manifestPath = `${normRoot}/manifest.json`;
+    const manifestNode = resolveFS(manifestPath);
+    if (!manifestNode || manifestNode.type !== "file") return null;
+
+    try {
+        const raw = await readFileContent(manifestPath);
+        if (typeof raw !== "string" || !raw.trim()) return null;
+        return JSON.parse(raw);
+    } catch (e) {
+        console.warn(`[Kernel] Failed to parse manifest.json at ${manifestPath}:`, e);
+        return null;
+    }
 }
 
 /* ===== カーネル初期化 ===== */
@@ -851,23 +1045,87 @@ async function launchApp(item, path, options) {
     // ==========================================
     // 1. 変数とプロセス管理リソースコンテナの定義
     // ==========================================
-    const displayName = options?.path ? basename(options.path) : (options.showFullPath ? path : item.name || basename(path));
-    const isFrameless = Boolean(item.frameless || options.frameless);
+    const isPackageApp = Boolean(item.packageRoot);
+    if (!isPackageApp && !item.entry) {
+        throw new Error("単一ファイル形式のアプリは廃止されました。パッケージフォルダ形式で再インストールしてください。");
+    }
+
+    const packageRoot = isPackageApp ? normalizePath(item.packageRoot).replace(/\/+$/, "") : null;
+    const pkgManifest = isPackageApp ? await loadPackageManifest(packageRoot) : null;
+
+    const mergedWindowOptions = {
+        ...(item.windowOptions || {}),
+        ...(pkgManifest?.windowOptions || {})
+    };
+    const appDisplayLabel = pkgManifest?.name || item.name || basename(path);
+    const displayName = (options?.path && options.path !== path)
+        ? basename(options.path)
+        : (options.showFullPath ? path : appDisplayLabel);
+    const isFrameless = Boolean(item.frameless || pkgManifest?.frameless || options.frameless);
     const isShell = Boolean(item.shell || options.shell);
     const processPath = (isExplorer && options.path) ? normalizePath(options.path) : path;
     const key = uniqueKey ?? `app:${processPath}:${Date.now()}`;
     const pid = pidCounter++;
+    const appSettingNamespace = basename(processPath).replace(/\.app$/i, "").toLowerCase();
 
     const resources = {
         timeouts: new Set(),
         intervals: new Set(),
-        listeners: []
+        listeners: [],
+        blobUrls: new Set(),
+        styles: new Set(),
+        compiledModules: new Map()
+    };
+
+    const rawWindowAPI = getWindowAPI();
+    const safeWindowAPI = rawWindowAPI ? Object.freeze({
+        createWindow: (...args) => rawWindowAPI.createWindow?.(...args),
+        destroyWindow: (...args) => rawWindowAPI.destroyWindow?.(...args),
+        alertWindow: (...args) => rawWindowAPI.alertWindow?.(...args),
+        confirmWindow: (...args) => rawWindowAPI.confirmWindow?.(...args),
+        errorWindow: (...args) => rawWindowAPI.errorWindow?.(...args),
+        progressWindow: (...args) => rawWindowAPI.progressWindow?.(...args),
+        showModalWindow: (...args) => rawWindowAPI.showModalWindow?.(...args),
+        updateWindowTitle: (...args) => rawWindowAPI.updateWindowTitle?.(...args),
+        bringToFront: (...args) => rawWindowAPI.bringToFront?.(...args)
+    }) : null;
+
+    const injectStyleElement = (cssText, sourceTag = "inline") => {
+        const styleEl = document.createElement("style");
+        styleEl.dataset.nexserAppPid = String(pid);
+        styleEl.dataset.nexserStyleSource = sourceTag;
+        styleEl.textContent = String(cssText || "");
+        document.head.appendChild(styleEl);
+        resources.styles.add(styleEl);
+        return styleEl;
+    };
+
+    const resolveDynamicPath = (targetPath, mode = "read") => {
+        const rawTarget = String(targetPath || "");
+        const baseCwd = (isPackageApp && (rawTarget.startsWith("./") || rawTarget.startsWith("../")))
+            ? packageRoot
+            : "C:/";
+        const norm = normalizePath(rawTarget, baseCwd);
+        if (isPackageApp) {
+            return assertSandboxPathAccess(norm, mode, packageRoot);
+        }
+        return norm;
     };
 
     const baseSyscall = {
         pid,
         path: processPath,
+        packageInfo: isPackageApp ? Object.freeze({
+            name: appDisplayLabel,
+            version: pkgManifest?.version || item.version || "1.0.0",
+            root: packageRoot,
+            main: pkgManifest?.main || item.main || "main.js"
+        }) : null,
+        windowAPI: safeWindowAPI,
         exit: () => killProcess(key),
+        launch: async (targetPath, launchOpts = {}) => {
+            return await launch(targetPath, launchOpts);
+        },
         postMessage: (targetPid, message) => sendProcessMessage(pid, targetPid, message),
         onMessage: null,
         heartbeat: () => {
@@ -906,39 +1164,128 @@ async function launchApp(item, path, options) {
             );
         },
         lockFile: async (targetPath, mode = "exclusive") => {
+            const norm = resolveDynamicPath(targetPath, "write");
             const { lockFile } = await import("./fs.js");
-            return lockFile(normalizePath(targetPath), mode, String(pid));
+            return lockFile(norm, mode, String(pid));
         },
         unlockFile: async (targetPath) => {
+            const norm = resolveDynamicPath(targetPath, "write");
             const { unlockFile } = await import("./fs.js");
-            return unlockFile(normalizePath(targetPath), String(pid));
+            return unlockFile(norm, String(pid));
         },
         readFile: async (targetPath) => {
-            const norm = normalizePath(targetPath);
-            const lowerNorm = norm.toLowerCase();
-            if (item.code && (lowerNorm.startsWith("c:/system") || lowerNorm.startsWith("c:/programs"))) {
-                throw new Error(`[Security] システム領域 '${norm}' の読み取りは許可されていません。`);
-            }
+            const norm = resolveDynamicPath(targetPath, "read");
             return await readFileContent(norm);
         },
         writeFile: async (targetPath, data) => {
-            const norm = normalizePath(targetPath);
-            const lowerNorm = norm.toLowerCase();
-            if (item.code && (lowerNorm.startsWith("c:/system") || lowerNorm.startsWith("c:/programs"))) {
-                throw new Error(`[Security] システム領域 '${norm}' への書き込みは許可されていません。`);
-            }
+            const norm = resolveDynamicPath(targetPath, "write");
             const ok = writeFileContent(norm, data);
             const { waitForSaveCompletion } = await import("./fs.js");
             await waitForSaveCompletion();
+            window.dispatchEvent(new Event("fs-updated"));
             return ok;
         },
+        listDir: async (targetPath = "C:/Programs/Documents") => {
+            const norm = resolveDynamicPath(targetPath, "read");
+            return listDirectory(norm);
+        },
+        mkdir: async (targetPath) => {
+            const norm = resolveDynamicPath(targetPath, "write");
+            ensureDirectory(norm);
+            const { waitForSaveCompletion } = await import("./fs.js");
+            await waitForSaveCompletion();
+            window.dispatchEvent(new Event("fs-updated"));
+            return true;
+        },
+        deleteFile: async (targetPath) => {
+            const norm = resolveDynamicPath(targetPath, "write");
+            const ok = await deleteFSNode(norm);
+            const { forceSave } = await import("./fs.js");
+            await forceSave();
+            window.dispatchEvent(new Event("fs-updated"));
+            return ok;
+        },
+        exists: (targetPath) => {
+            try {
+                const norm = resolveDynamicPath(targetPath, "read");
+                return resolveFS(norm) !== null;
+            } catch {
+                return false;
+            }
+        },
+        stat: (targetPath) => {
+            const norm = resolveDynamicPath(targetPath, "read");
+            return statFS(norm);
+        },
+        // ★ パッケージ内のアセット（JSON/テキスト/画像/音声等）を読み込む
+        readAsset: async (relPath) => {
+            if (!isPackageApp) throw new Error("readAsset はパッケージ型アプリでのみ使用できます。");
+            const assetPath = resolvePackageInternalPath(packageRoot, packageRoot, relPath);
+            return await readFileContent(assetPath);
+        },
+        // ★ パッケージ内のアセットを ObjectURL / DataURL として取得（終了時に自動解放）
+        getAssetURL: async (relPath, mimeType = "") => {
+            if (!isPackageApp) throw new Error("getAssetURL はパッケージ型アプリでのみ使用できます。");
+            const assetPath = resolvePackageInternalPath(packageRoot, packageRoot, relPath);
+            const content = await readFileContent(assetPath);
+            if (content === null || content === undefined) return null;
+            if (typeof content === "string" && content.startsWith("data:")) {
+                return content;
+            }
+            const blob = content instanceof Blob
+                ? content
+                : new Blob([content], { type: mimeType || "application/octet-stream" });
+            const url = URL.createObjectURL(blob);
+            resources.blobUrls.add(url);
+            return url;
+        },
+        // ★ パッケージ内CSSファイルを読み込んで適用（プロセス終了時に自動除去）
+        loadStyle: async (relPath) => {
+            if (!isPackageApp) throw new Error("loadStyle はパッケージ型アプリでのみ使用できます。");
+            const cssPath = resolvePackageInternalPath(packageRoot, packageRoot, relPath);
+            const cssText = await readFileContent(cssPath);
+            if (typeof cssText !== "string") throw new Error(`CSSファイルが見つかりません: ${relPath}`);
+            return injectStyleElement(cssText, cssPath);
+        },
+        // ★ インラインCSSを安全に適用（プロセス終了時に自動除去）
+        injectStyle: (cssText) => {
+            return injectStyleElement(cssText, "inline");
+        },
+        // ★ パッケージ内JSモジュールの安全な動的インポート
+        importModule: async (relPath) => {
+            if (!isPackageApp) throw new Error("importModule はパッケージ型アプリでのみ使用できます。");
+            const modPath = resolvePackageInternalPath(packageRoot, packageRoot, relPath);
+            const blobUrl = await compileVirtualPackageModule(
+                packageRoot,
+                modPath,
+                pid,
+                resources,
+                resources.compiledModules
+            );
+            return await import(blobUrl);
+        },
+        // ★ アプリ固有の永続設定ストレージ（IndexedDB kv ストア）
+        loadSetting: async (settingKey, defaultValue = null) => {
+            const fullKey = `app_setting:${appSettingNamespace}:${String(settingKey)}`;
+            const val = await dbGet(fullKey, "kv");
+            return val === undefined ? defaultValue : val;
+        },
+        saveSetting: async (settingKey, value) => {
+            const fullKey = `app_setting:${appSettingNamespace}:${String(settingKey)}`;
+            await dbSet(fullKey, value, "kv");
+            return true;
+        },
+        // ★ カーネルのイベントログへ記録
+        log: (level = "Information", message = "") => {
+            const validLevels = new Set(["Information", "Warning", "Error"]);
+            const safeLevel = validLevels.has(level) ? level : "Information";
+            return logSystemEvent("Application", safeLevel, basename(processPath), 1100, "App Log", String(message));
+        },
         // ★ 外部サンドボックスから安全に拡張子・アイコンを登録＆永続化するAPI
-        registerFileAssociation: async (ext, icon = null, options = {}) => {
-            // サンドボックスアプリからは原則として「自分自身のアプリパス」のみ関連付け可能
-            const targetApp = item.code ? processPath : (options.appPath || processPath);
-            registerFileAssociation(ext, targetApp, icon, { allowOverride: Boolean(options.allowOverride) });
+        registerFileAssociation: async (ext, icon = null, assocOptions = {}) => {
+            const targetApp = isPackageApp ? processPath : (assocOptions.appPath || processPath);
+            registerFileAssociation(ext, targetApp, icon, { allowOverride: Boolean(assocOptions.allowOverride) });
 
-            // C:/System/FileAssociations.json へ自動永続化
             const { FS, forceSave } = await import("./fs.js");
             if (FS["C:"]?.System) {
                 const serialized = JSON.stringify(exportCustomAssociations(), null, 2);
@@ -954,11 +1301,10 @@ async function launchApp(item, path, options) {
         // ★ 自身のアプリ、またはユーザー領域のファイル/フォルダに個別アイコン（node.icon）を設定するAPI
         setCustomIcon: async (targetPath, icon) => {
             const norm = normalizePath(targetPath);
-            const lowerNorm = norm.toLowerCase();
             const isSelfApp = norm.toLowerCase() === processPath.toLowerCase();
 
-            if (item.code && !isSelfApp && (lowerNorm.startsWith("c:/system") || lowerNorm.startsWith("c:/programs"))) {
-                throw new Error(`[Security] システム領域 '${norm}' のアイコンは変更できません。`);
+            if (isPackageApp && !isSelfApp) {
+                assertSandboxPathAccess(norm, "write", packageRoot);
             }
 
             const targetNode = resolveFS(norm);
@@ -976,7 +1322,7 @@ async function launchApp(item, path, options) {
     };
 
     // ==========================================
-    // 2. サードパーティー（動的コード）用の制限されたサンドボックス Syscall
+    // 2. 外部パッケージ用の制限されたサンドボックス Syscall
     // ==========================================
     const sandboxSyscall = Object.seal({
         ...baseSyscall
@@ -984,75 +1330,37 @@ async function launchApp(item, path, options) {
 
     let appModule;
 
-    if (item.code) {
+    if (isPackageApp) {
         try {
-            // 動的 import() やグローバル名前空間への直接アクセスによるサンドボックス回避を防止
-            if (/\bimport\s*\(/.test(item.code) || /\b(window|globalThis|self)\s*(\.\s*nexser|\[\s*['"]nexser['"]\s*\])/.test(item.code)) {
-                throw new Error("[Security] 動的 import() またはシステムグローバルへの直接参照は許可されていません。");
-            }
-            const cleanCode = item.code.replace(/import\s+[\s\S]*?from\s+['"][^'"]+['"];?/g, '');
-            const executableCode = cleanCode
-                .replace(/export\s+default\s+async\s+function\s*(\w*)/, 'async function $1')
-                .replace(/export\s+default\s+function\s*(\w*)/, 'function $1');
-
-            const { FS, forceSave } = await import("./fs.js");
-            const windowAPI = window.nexser?.windowAPI;
-
-            const RESTRICTED_DIRS = new Set(["System", "Programs"]);
-
-            function createSecureFS(rootFS) {
-                const cDriveProxy = rootFS["C:"];
-                const wrapSecure = (node, isUnderCDrive = false) => {
-                    if (!node || typeof node !== "object") return node;
-                    if (node instanceof Blob || node instanceof ArrayBuffer || ArrayBuffer.isView(node)) {
-                        return node;
-                    }
-                    return new Proxy(node, {
-                        get(target, prop, receiver) {
-                            if (isUnderCDrive && typeof prop === "string" && RESTRICTED_DIRS.has(prop)) {
-                                throw new Error(`[Security] システム領域 'C:/${prop}' の読み取りは許可されていません。`);
-                            }
-                            const res = Reflect.get(target, prop, receiver);
-                            return wrapSecure(res, target === cDriveProxy || prop === "C:");
-                        },
-                        set(target, prop, value) {
-                            if (target === rootFS) {
-                                throw new Error("[Security] ルートドライブ構成を直接変更することはできません。");
-                            }
-                            if (isUnderCDrive && typeof prop === "string" && RESTRICTED_DIRS.has(prop)) {
-                                throw new Error(`[Security] 許可されていない操作です: システム領域 'C:/${prop}' を書き換えることはできません。`);
-                            }
-                            return Reflect.set(target, prop, value);
-                        },
-                        deleteProperty(target, prop) {
-                            if (target === rootFS) {
-                                throw new Error("[Security] ルートドライブを削除することはできません。");
-                            }
-                            if (isUnderCDrive && typeof prop === "string" && RESTRICTED_DIRS.has(prop)) {
-                                throw new Error(`[Security] 許可されていない操作です: システム領域 'C:/${prop}' を削除することはできません。`);
-                            }
-                            return Reflect.deleteProperty(target, prop);
-                        }
-                    });
-                };
-                return wrapSecure(rootFS, false);
+            const pkgNode = resolveFS(packageRoot);
+            if (!pkgNode || pkgNode.type !== "folder") {
+                throw new Error(`パッケージフォルダが見つかりません: ${packageRoot}`);
             }
 
-            const safeFS = createSecureFS(FS);
-            const safeResolveFS = (p, cwd = "C:/") => resolveFS(p, cwd, safeFS);
-            const safeGetFileContent = async (p) => await sandboxSyscall.readFile(p);
+            // マニフェストまたはノード定義のスタイルシートを自動注入
+            const styleList = Array.isArray(pkgManifest?.styles)
+                ? pkgManifest.styles
+                : (Array.isArray(item.styles) ? item.styles : (typeof item.styles === "string" ? [item.styles] : []));
+            for (const styleRel of styleList) {
+                await sandboxSyscall.loadStyle(styleRel);
+            }
 
-            const runScript = new Function(
-                'FS', 'forceSave', 'resolveFS', 'windowAPI', 'getFileContent', 'syscall',
-                `return (${executableCode});\n//# sourceURL=${processPath}?pid=${pid}`
+            const mainRel = pkgManifest?.main || item.main || "main.js";
+            const entryPath = resolvePackageInternalPath(packageRoot, packageRoot, mainRel);
+            const entryBlobUrl = await compileVirtualPackageModule(
+                packageRoot,
+                entryPath,
+                pid,
+                resources,
+                resources.compiledModules
             );
-
-            appModule = {
-                default: runScript(safeFS, forceSave, safeResolveFS, windowAPI, safeGetFileContent, sandboxSyscall)
-            };
+            appModule = await import(entryBlobUrl);
         } catch (e) {
-            console.error("Dynamic code evaluation failed:", e);
-            throw new Error(`動的コードの解析に失敗しました: ${e.message}`);
+            // 起動前失敗時も生成済みリソース（Blob URL / Style）を即座に回収
+            resources.blobUrls.forEach(url => { try { URL.revokeObjectURL(url); } catch (_) { } });
+            resources.styles.forEach(el => { try { el.remove(); } catch (_) { } });
+            console.error("Package app load failed:", e);
+            throw new Error(`パッケージの読み込みに失敗しました: ${e.message}`);
         }
     } else {
         const sep = item.entry.includes("?") ? "&" : "?";
@@ -1060,37 +1368,46 @@ async function launchApp(item, path, options) {
         appModule = await safeImport(importEntry);
     }
 
-    if (!appModule?.default) throw new Error("アプリが正しくエクスポートされていません");
+    if (!appModule?.default) {
+        resources.blobUrls.forEach(url => { try { URL.revokeObjectURL(url); } catch (_) { } });
+        resources.styles.forEach(el => { try { el.remove(); } catch (_) { } });
+        throw new Error("アプリが正しくエクスポートされていません");
+    }
 
     // ==========================================
     // 3. ウィンドウ生成とシステムコールの割り当て
     // ==========================================
     const content = getWindowAPI()?.createWindow(displayName, {
+        ...mergedWindowOptions,
         node: options.originalNode || item,
         frameless: isFrameless,
         hideRibbon: isFrameless,
         hideStatus: isFrameless
     });
     const win = content?.closest(".window");
-    if (!win) throw new Error("Window creation failed");
+    if (!win) {
+        resources.blobUrls.forEach(url => { try { URL.revokeObjectURL(url); } catch (_) { } });
+        resources.styles.forEach(el => { try { el.remove(); } catch (_) { } });
+        throw new Error("Window creation failed");
+    }
 
     let appHandle = null;
 
-    const syscall = item.code ? sandboxSyscall : {
+    const syscall = isPackageApp ? sandboxSyscall : {
         ...baseSyscall,
         restart: () => restartProcess(key)
     };
 
     // 起動中の例外時もリソース回収できるよう先に仮登録
     registerProcess(win, key, processPath, null, isShell, options, pid, {
-        entry: item.entry || "",
-        singleton: Boolean(item.singleton),
+        entry: item.entry || (packageRoot ? `${packageRoot}/${pkgManifest?.main || item.main || "main.js"}` : ""),
+        singleton: Boolean(item.singleton || pkgManifest?.singleton),
         syscall,
         resources
     });
 
     try {
-        appHandle = await appModule.default(content, { ...options, syscall });
+        appHandle = await appModule.default(content, { ...options, syscall, windowAPI: safeWindowAPI });
         const proc = processes.get(key);
         if (proc) proc.handle = appHandle;
 
@@ -1253,16 +1570,25 @@ export function killProcess(key) {
     processes.delete(key);
 
     try {
-        // 1. プロセスが保持していたタイマー・イベントリスナーを強制回収
+        // 1. プロセスが保持していたタイマー・イベントリスナー・Blob URL・CSSを強制回収
         if (resources) {
             resources.timeouts?.forEach(id => clearTimeout(id));
             resources.intervals?.forEach(id => clearInterval(id));
             resources.listeners?.forEach(({ type, listener, opts }) => {
                 try { window.removeEventListener(type, listener, opts); } catch (_) { }
             });
+            resources.blobUrls?.forEach(url => {
+                try { URL.revokeObjectURL(url); } catch (_) { }
+            });
+            resources.styles?.forEach(styleEl => {
+                try { styleEl.remove(); } catch (_) { }
+            });
             resources.timeouts?.clear();
             resources.intervals?.clear();
             resources.listeners.length = 0;
+            resources.blobUrls?.clear();
+            resources.styles?.clear();
+            resources.compiledModules?.clear();
         }
 
         // 2. PID単位でファイルロックを即座に自動解放（他プロセスのロック誤解除を防止）

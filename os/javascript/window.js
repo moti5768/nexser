@@ -5,7 +5,7 @@ import { attachContextMenu } from "./context-menu.js";
 import { setupRibbon } from "./ribbon.js";
 import { killProcess } from "./kernel.js";
 import { playSystemEventSound } from './sounds.js';
-import { getIcon } from "./file-associations.js";
+import { getIcon, applyIconToElement } from "./file-associations.js";
 
 export const taskbarButtons = []; // 作られたボタンを全部保存
 let resizeCursor = "";
@@ -184,8 +184,9 @@ ${!options.hideStatus ? `
 `;
     }
 
+    w._currentIcon = initialIcon;
     const iconEl = w.querySelector(".window-icon");
-    if (iconEl) iconEl.textContent = initialIcon;
+    if (iconEl) applyIconToElement(iconEl, initialIcon);
 
     const titleTextEl = w.querySelector(".title-text");
     if (titleTextEl) titleTextEl.textContent = title;
@@ -195,11 +196,12 @@ ${!options.hideStatus ? `
         const resolvedIcon = (newTitle || newNode)
             ? getIcon(newTitle || w.dataset.title || title, newNode || options.node || { type: "file" })
             : finalIcon;
+        w._currentIcon = resolvedIcon;
         const iconEl = w.querySelector(".window-icon");
-        if (iconEl) iconEl.textContent = resolvedIcon;
+        if (iconEl) applyIconToElement(iconEl, resolvedIcon);
         if (w._taskbarBtn && w._taskbarBtn.isConnected) {
             const tbIcon = w._taskbarBtn.querySelector(".taskbar-icon");
-            if (tbIcon) tbIcon.textContent = resolvedIcon;
+            if (tbIcon) applyIconToElement(tbIcon, resolvedIcon);
         }
     };
 
@@ -415,7 +417,7 @@ ${!options.hideStatus ? `
         if (!tb || isFrameless) return null;
 
         const currentTitle = w.dataset.title || title;
-        const currentIcon = w.querySelector(".window-icon")?.textContent || initialIcon;
+        const currentIcon = w._currentIcon || w.querySelector(".window-icon")?.dataset?.iconValue || initialIcon;
 
         const btn = document.createElement("button");
         btn.className = "taskbar-window-btn button";
@@ -425,7 +427,7 @@ ${!options.hideStatus ? `
 
         const tbIconSpan = document.createElement("span");
         tbIconSpan.className = "taskbar-icon";
-        tbIconSpan.textContent = currentIcon;
+        applyIconToElement(tbIconSpan, currentIcon);
 
         const tbTextSpan = document.createElement("span");
         tbTextSpan.className = "taskbar-text";

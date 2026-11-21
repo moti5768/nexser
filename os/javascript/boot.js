@@ -530,184 +530,392 @@ const commands = {
 
     // --- インストール・エディタ系 ---
 
-    add: {
-        desc: 'Install one or more .nexser or .js packages (Usage: add Programs)',
-        async run(args) {
-            if (args[0] !== "Programs") {
-                return print("Usage: add Programs");
-            }
+    install: {
+        desc: 'Install an app package folder (Usage: install)',
+        async run() {
+            const resolvePackageIcon = (rawIcon, fileMap, sanitizeIconFn) => {
+                if (typeof rawIcon !== "string" || !rawIcon.trim()) return null;
+                const trimmed = rawIcon.trim();
+
+                const normalizedRel = trimmed.replace(/\\/g, "/").replace(/^\.\//, "").replace(/^\/+/, "");
+                const matchedContent = fileMap.get(normalizedRel.toLowerCase());
+                if (typeof matchedContent === "string") {
+                    if (matchedContent.startsWith("data:image/")) {
+                        const cleanImg = sanitizeIconFn(matchedContent);
+                        if (!cleanImg) {
+                            print(`  [Warn] Icon image '${trimmed}' exceeds 512KB or uses an unsupported format.`);
+                        }
+                        return cleanImg;
+                    }
+                    if (normalizedRel.toLowerCase().endsWith(".svg") && matchedContent.trim().startsWith("<")) {
+                        try {
+                            const bytes = new TextEncoder().encode(matchedContent);
+                            let binary = "";
+                            bytes.forEach(b => { binary += String.fromCharCode(b); });
+                            return sanitizeIconFn(`data:image/svg+xml;base64,${btoa(binary)}`);
+                        } catch (_) {
+                            return null;
+                        }
+                    }
+                }
+                return sanitizeIconFn(trimmed);
+            };
+
+            const registerPackageMetadata = async (appName, meta, appIcon, fileMap) => {
+                const { registerFileAssociation, sanitizeIcon, exportCustomAssociations } = await import('./file-associations.js');
+                const appNodeName = `${appName}.app`;
+                const installedAppPath = `C:/Programs/Applications/${appNodeName}`;
+
+                if (meta.fileAssociations && typeof meta.fileAssociations === "object") {
+                    for (const [ext, extIconRaw] of Object.entries(meta.fileAssociations)) {
+                        try {
+                            const resolvedExtIcon = typeof extIconRaw === "string"
+                                ? (resolvePackageIcon(extIconRaw, fileMap, sanitizeIcon) || appIcon)
+                                : appIcon;
+                            registerFileAssociation(ext, installedAppPath, resolvedExtIcon);
+                            print(`  [Assoc] ${ext} -> ${appNodeName}`);
+                        } catch (assocErr) {
+                            print(`  [Warn] Skipped association ${ext}: ${assocErr.message}`);
+                        }
+                    }
+                    const systemFolder = resolveFS("System");
+                    if (systemFolder) {
+                        const serialized = JSON.stringify(exportCustomAssociations(), null, 2);
+                        if (!systemFolder["FileAssociations.json"]) {
+                            systemFolder["FileAssociations.json"] = { type: "file", system: true, content: serialized };
+                        } else {
+                            systemFolder["FileAssociations.json"].content = serialized;
+                        }
+                    }
+                }
+
+                if (meta.desktopShortcut === true) {
+                    const desktopFolder = resolveFS("Desktop");
+                    if (desktopFolder && !desktopFolder[appNodeName]) {
+                        desktopFolder[appNodeName] = {
+                            type: "link",
+                            target: installedAppPath,
+                            ...(appIcon ? { icon: appIcon } : {}),
+                            lastModified: Date.now()
+                        };
+                        print(`  [Shortcut] Desktop/${appNodeName}`);
+                    }
+                }
+
+                if (meta.settings && typeof meta.settings === "object") {
+                    const systemFolder = resolveFS("System");
+                    if (systemFolder) {
+                        if (!systemFolder["Config.json"]) {
+                            systemFolder["Config.json"] = { type: "file", content: "{}" };
+                        }
+                        const currentConfig = JSON.parse(systemFolder["Config.json"].content || "{}");
+                        systemFolder["Config.json"].content = JSON.stringify({ ...currentConfig, ...meta.settings }, null, 2);
+                        print("  [System] Global settings updated.");
+                    }
+                }
+            };
+
+            print("フォルダ選択ダイアログを開いています...");
 
             return new Promise((resolve) => {
                 const input = document.createElement("input");
                 input.type = "file";
-                input.multiple = true; // ★ 複数ファイルの選択を有効化
-                // 1. スマホでカスタム拡張子がグレーアウトするのを防ぎ、あらゆるファイルを許容
-                input.accept = ".nexser,.js,.json,text/plain,application/json,*/*";
-
-                // 2. iOS Safari対策: 一度DOMに非表示で追加する
-                input.style.display = 'none';
+                input.webkitdirectory = true;
+                input.directory = true;
+                input.multiple = true;
+                input.style.display = "none";
                 document.body.appendChild(input);
 
-                let isResolved = false;
+                let isFinished = false;
+                let isHandlingChange = false;
+                let fallbackCancelTimer = null;
+                const supportsNativeCancel = "oncancel" in input;
+
                 const cleanup = () => {
+                    if (fallbackCancelTimer) {
+                        clearTimeout(fallbackCancelTimer);
+                        fallbackCancelTimer = null;
+                    }
+                    window.removeEventListener("focus", handleLegacyFocus);
                     if (input.parentNode) {
                         input.parentNode.removeChild(input);
                     }
-                    window.removeEventListener('focus', handleFocus);
                 };
 
                 const finish = () => {
-                    if (!isResolved) {
-                        isResolved = true;
-                        cleanup();
-                        resolve();
-                    }
+                    if (isFinished) return;
+                    isFinished = true;
+                    cleanup();
+                    resolve();
                 };
 
-                // 3. スマホでキャンセルした際、onchangeが発火しない対策（フォーカス復帰時に未選択なら終了）
-                const handleFocus = () => {
-                    setTimeout(() => {
-                        if (!input.files || input.files.length === 0) {
-                            print("Installation cancelled.");
+                // モダンブラウザはネイティブ cancel イベントで正確にキャンセル検知（誤爆ゼロ）
+                input.addEventListener("cancel", () => {
+                    if (isHandlingChange || isFinished) return;
+                    print("インストールをキャンセルしました。");
+                    finish();
+                });
+
+                // cancel イベント非対応ブラウザ専用フォールバック
+                const handleLegacyFocus = () => {
+                    if (supportsNativeCancel || isHandlingChange || isFinished) return;
+                    if (fallbackCancelTimer) clearTimeout(fallbackCancelTimer);
+                    fallbackCancelTimer = setTimeout(() => {
+                        if (!isHandlingChange && !isFinished && (!input.files || input.files.length === 0)) {
+                            print("インストールをキャンセルしました。");
                             finish();
                         }
-                    }, 300);
+                    }, 1500);
                 };
-                window.addEventListener('focus', handleFocus);
+                if (!supportsNativeCancel) {
+                    window.addEventListener("focus", handleLegacyFocus);
+                }
 
-                input.onchange = async (e) => {
-                    const files = Array.from(e.target.files);
+                input.addEventListener("change", async (e) => {
+                    if (isFinished || isHandlingChange) return;
+                    isHandlingChange = true;
+                    if (fallbackCancelTimer) {
+                        clearTimeout(fallbackCancelTimer);
+                        fallbackCancelTimer = null;
+                    }
+
+                    const files = Array.from(e.target.files || []);
                     if (files.length === 0) {
-                        print("Installation cancelled.");
+                        print("インストールをキャンセルしました。");
                         finish();
                         return;
                     }
 
-                    print(`Starting installation of ${files.length} file(s)...`);
-                    let successCount = 0;
+                    const { setBulkUpdating, forceSave } = await import('./fs.js');
+                    const { ensureDirectory, writeFileContent, deleteFSNode, validateName, importFileSmart } = await import('./fs-utils.js');
+                    const { sanitizeIcon } = await import('./file-associations.js');
 
-                    // ★ 選択されたファイルを1つずつ順番に処理
-                    for (const file of files) {
-                        try {
-                            print(`Reading package: ${file.name}...`);
+                    let installedAppLabel = "";
 
-                            // FileReaderをPromiseでラップして同期的に処理
-                            const textContent = await new Promise((res, rej) => {
-                                const reader = new FileReader();
-                                reader.onload = (ev) => res(ev.target.result);
-                                reader.onerror = (err) => rej(err);
-                                reader.readAsText(file);
-                            });
+                    setBulkUpdating(true);
+                    try {
+                        // --- [1/4] パッケージ読み込み ---
+                        print(`[1/4] パッケージを読み込み中... (${files.length} ファイル)`);
+                        const firstRel = (files[0].webkitRelativePath || files[0].name).replace(/\\/g, "/");
+                        const rootFolderName = firstRel.includes("/") ? firstRel.split("/")[0] : "CustomApp";
 
-                            let nexserData;
-                            if (file.name.endsWith('.js') || !textContent.trim().startsWith('{')) {
-                                nexserData = {
-                                    type: "app",
-                                    name: file.name.replace(/\.[^/.]+$/, ""),
-                                    windowOptions: { width: "300px", height: "400px" },
-                                    code: textContent
-                                };
-                            } else {
-                                const sanitizedText = textContent.replace(/"(?:[^"\\]|\\.)*"/g, (match) => {
-                                    return match
-                                        .replace(/\r?\n/g, "\\n")
-                                        .replace(/\t/g, "\\t");
-                                });
-                                nexserData = JSON.parse(sanitizedText);
-                            }
+                        let manifestData = {};
+                        const fileEntries = [];
 
-                            if (nexserData.type === "app" && nexserData.name && nexserData.code) {
-                                const appNodeName = `${nexserData.name}.app`;
-                                let codeContent = nexserData.code;
+                        for (const file of files) {
+                            const rawRel = (file.webkitRelativePath || file.name).replace(/\\/g, "/");
+                            const relPath = rawRel.startsWith(rootFolderName + "/")
+                                ? rawRel.slice(rootFolderName.length + 1)
+                                : rawRel;
+                            if (!relPath) continue;
 
-                                codeContent = codeContent.replace(
-                                    /from\s+['"](\.\.?\/[^'"]+)['"]/g,
-                                    (match, p1) => {
-                                        const cleanPath = p1.replace(/^(\.\.\/)+/, '');
-                                        return `from "/${cleanPath}"`;
-                                    }
-                                );
+                            const content = await importFileSmart(file);
+                            fileEntries.push({ relPath, content });
 
-                                const targetFolder = resolveFS("Programs/Applications");
-                                if (!targetFolder) throw new Error("Programs/Applications folder not found");
-
-                                const { registerFileAssociation, sanitizeIcon, exportCustomAssociations } = await import('./file-associations.js');
-                                const appIcon = nexserData.icon ? sanitizeIcon(nexserData.icon) : null;
-
-                                targetFolder[appNodeName] = {
-                                    type: "app",
-                                    code: codeContent,
-                                    ...(appIcon ? { icon: appIcon } : {}),
-                                    windowOptions: nexserData.windowOptions || {}
-                                };
-
-                                // パッケージに拡張子定義があれば関連付けとアイコンを自動登録
-                                if (nexserData.fileAssociations && typeof nexserData.fileAssociations === "object") {
-                                    const installedAppPath = `C:/Programs/Applications/${appNodeName}`;
-                                    for (const [ext, extIcon] of Object.entries(nexserData.fileAssociations)) {
-                                        try {
-                                            registerFileAssociation(ext, installedAppPath, typeof extIcon === "string" ? extIcon : appIcon);
-                                            print(`  [Assoc] Registered ${ext} -> ${appNodeName}`);
-                                        } catch (assocErr) {
-                                            print(`  [Warn] Skipped association ${ext}: ${assocErr.message}`);
-                                        }
-                                    }
-                                    const systemFolder = resolveFS("System");
-                                    if (systemFolder) {
-                                        const serialized = JSON.stringify(exportCustomAssociations(), null, 2);
-                                        if (!systemFolder["FileAssociations.json"]) {
-                                            systemFolder["FileAssociations.json"] = {
-                                                type: "file",
-                                                system: true,
-                                                content: serialized
-                                            };
-                                        } else {
-                                            systemFolder["FileAssociations.json"].content = serialized;
-                                        }
-                                    }
-                                }
-
-                                print(`  [App] Installed: ${appNodeName}`);
-                                successCount++;
-                            }
-
-                            if (nexserData.settings) {
-                                const systemFolder = resolveFS("System");
-                                if (systemFolder) {
-                                    if (!systemFolder["Config.json"]) {
-                                        systemFolder["Config.json"] = { type: "file", content: "{}" };
-                                    }
-                                    const currentConfig = JSON.parse(systemFolder["Config.json"].content || "{}");
-                                    const mergedConfig = { ...currentConfig, ...nexserData.settings };
-                                    systemFolder["Config.json"].content = JSON.stringify(mergedConfig, null, 2);
-                                    print(`  [System] Global settings updated from ${file.name}.`);
+                            if (relPath.toLowerCase() === "manifest.json" && typeof content === "string") {
+                                try {
+                                    manifestData = JSON.parse(content);
+                                } catch (jsonErr) {
+                                    throw new Error(`manifest.json の構文エラー: ${jsonErr.message}`);
                                 }
                             }
-
-                        } catch (err) {
-                            print(`  [Error] Failed to install ${file.name} (${err.message})`);
                         }
+
+                        const safeAppName = String(manifestData.name || rootFolderName).trim().replace(/\.app$/i, "");
+                        const nameErr = validateName(safeAppName);
+                        if (nameErr) throw new Error(`無効なアプリ名 '${safeAppName}': ${nameErr}`);
+
+                        const targetFolder = resolveFS("Programs/Applications");
+                        if (!targetFolder) throw new Error("C:/Programs/Applications が見つかりません。");
+
+                        // --- [2/4] 仮想FSへの展開 ---
+                        ensureDirectory("C:/Programs/Packages");
+                        const packageRoot = `C:/Programs/Packages/${safeAppName}`;
+                        print(`[2/4] ファイルを展開中: ${packageRoot}`);
+
+                        if (resolveFS(packageRoot)) {
+                            await deleteFSNode(packageRoot);
+                        }
+                        ensureDirectory(packageRoot);
+
+                        let mainEntry = manifestData.main || "";
+                        const detectedJsFiles = [];
+                        const fileMap = new Map();
+
+                        for (const entry of fileEntries) {
+                            const relPath = String(entry.relPath || "").replace(/\\/g, "/").replace(/^\/+/, "");
+                            if (!relPath || relPath.split("/").some(seg => seg === ".." || seg === ".")) {
+                                throw new Error(`不正な相対パスが含まれています: ${relPath}`);
+                            }
+                            const fullFilePath = `${packageRoot}/${relPath}`;
+                            const parentDir = fullFilePath.slice(0, fullFilePath.lastIndexOf("/"));
+                            ensureDirectory(parentDir);
+
+                            writeFileContent(fullFilePath, entry.content);
+                            fileMap.set(relPath.toLowerCase(), entry.content);
+                            if (relPath.toLowerCase().endsWith(".js")) {
+                                detectedJsFiles.push(relPath);
+                            }
+                            print(`  + ${relPath}`);
+                        }
+
+                        if (!mainEntry) {
+                            mainEntry =
+                                detectedJsFiles.find(p => p.toLowerCase() === "main.js") ||
+                                detectedJsFiles.find(p => p.toLowerCase() === "index.js") ||
+                                detectedJsFiles[0] ||
+                                "";
+                        }
+                        if (!mainEntry || !resolveFS(`${packageRoot}/${mainEntry.replace(/^\/+/, "")}`)) {
+                            throw new Error(`エントリポイント '${mainEntry || "main.js"}' が見つかりません。`);
+                        }
+
+                        if (!resolveFS(`${packageRoot}/manifest.json`)) {
+                            const generatedManifest = {
+                                name: safeAppName,
+                                version: manifestData.version || "1.0.0",
+                                main: mainEntry,
+                                ...(manifestData.styles ? { styles: Array.isArray(manifestData.styles) ? manifestData.styles : [manifestData.styles] } : {}),
+                                ...(manifestData.icon ? { icon: manifestData.icon } : {}),
+                                windowOptions: manifestData.windowOptions || {}
+                            };
+                            writeFileContent(`${packageRoot}/manifest.json`, JSON.stringify(generatedManifest, null, 2));
+                        }
+
+                        // --- [3/4] ランチャー・アイコン・関連付け登録 ---
+                        print(`[3/4] アプリを登録中: ${safeAppName}.app`);
+                        let iconCandidate = manifestData.icon || "";
+                        if (!iconCandidate) {
+                            const autoIconNames = ["icon.png", "icon.svg", "icon.webp", "icon.ico", "assets/icon.png", "assets/icon.svg"];
+                            iconCandidate = autoIconNames.find(name => fileMap.has(name)) || "";
+                        }
+
+                        const appNodeName = `${safeAppName}.app`;
+                        const appIcon = iconCandidate ? resolvePackageIcon(iconCandidate, fileMap, sanitizeIcon) : null;
+                        const stylesList = Array.isArray(manifestData.styles)
+                            ? manifestData.styles
+                            : (typeof manifestData.styles === "string" ? [manifestData.styles] : []);
+
+                        targetFolder[appNodeName] = {
+                            type: "app",
+                            name: safeAppName,
+                            version: manifestData.version || "1.0.0",
+                            packageRoot,
+                            main: mainEntry,
+                            ...(stylesList.length > 0 ? { styles: stylesList } : {}),
+                            ...(appIcon ? { icon: appIcon } : {}),
+                            ...(manifestData.singleton ? { singleton: true } : {}),
+                            ...(manifestData.frameless ? { frameless: true } : {}),
+                            windowOptions: manifestData.windowOptions || {},
+                            lastModified: Date.now()
+                        };
+
+                        await registerPackageMetadata(safeAppName, manifestData, appIcon, fileMap);
+                        installedAppLabel = `${appNodeName} (v${manifestData.version || "1.0.0"})`;
+                    } catch (fatalErr) {
+                        print(`[Error] インストールに失敗しました: ${fatalErr.message}`);
+                    } finally {
+                        setBulkUpdating(false);
                     }
 
-                    // 全ファイルのループ終了後にまとめて保存とイベント発火を行う
-                    if (successCount > 0) {
+                    // --- [4/4] IndexedDB へ保存 ---
+                    if (installedAppLabel) {
+                        print("[4/4] データベースへ保存中...");
                         window.dispatchEvent(new Event("fs-updated"));
                         try {
-                            const { forceSave } = await import('./fs.js');
                             await forceSave();
-                            print(`\nInstallation complete. Successfully installed ${successCount}/${files.length} file(s). You can now launch them from the Start Menu or Explorer.`);
-                        } catch (e) {
-                            console.warn("Failed to auto-save after multi-install:", e);
+                            print(`完了: ${installedAppLabel} をインストールしました。'boot' で起動して利用できます。`);
+                        } catch (saveErr) {
+                            print(`[Error] 保存に失敗しました: ${saveErr.message}`);
                         }
-                    } else {
-                        print("\nInstallation finished with no files successfully installed.");
                     }
 
                     finish();
-                };
+                });
 
                 input.click();
             });
+        }
+    },
+
+    apps: {
+        desc: 'List installed package apps (Usage: apps)',
+        run() {
+            const appsFolder = resolveFS("Programs/Applications");
+            if (!appsFolder) return print("Programs/Applications not found.");
+
+            const pkgs = Object.entries(appsFolder).filter(
+                ([, val]) => val && typeof val === "object" && val.type === "app" && val.packageRoot
+            );
+
+            if (pkgs.length === 0) {
+                return print("インストール済みのパッケージアプリはありません。('install' で追加できます)");
+            }
+
+            print(`Installed Packages (${pkgs.length}):`);
+            pkgs.forEach(([name, node]) => {
+                const ver = node.version || "1.0.0";
+                print(`  ${name.padEnd(24)} v${ver.padEnd(8)} ${node.packageRoot}`);
+            });
+        }
+    },
+
+    uninstall: {
+        desc: 'Uninstall a package app (Usage: uninstall <AppName>)',
+        async run(args) {
+            const rawName = args.join(" ").trim();
+            if (!rawName) return print("Usage: uninstall <AppName>");
+
+            const baseName = rawName.replace(/\.app$/i, "");
+            const appNodeName = `${baseName}.app`;
+            const appsFolder = resolveFS("Programs/Applications");
+            const appNode = appsFolder?.[appNodeName];
+
+            if (!appNode || appNode.type !== "app") {
+                return print(`アプリ '${appNodeName}' が見つかりません。'apps' で名前を確認してください。`);
+            }
+            if (appNode.system === true) {
+                return print(`'${appNodeName}' はシステム標準アプリのためアンインストールできません。`);
+            }
+
+            const { setBulkUpdating, forceSave } = await import('./fs.js');
+            const { deleteFSNode } = await import('./fs-utils.js');
+            const packageRoot = appNode.packageRoot;
+
+            setBulkUpdating(true);
+            try {
+                print(`[1/3] ランチャーを削除中: C:/Programs/Applications/${appNodeName}`);
+                delete appsFolder[appNodeName];
+
+                if (packageRoot && resolveFS(packageRoot)) {
+                    print(`[2/3] パッケージフォルダを削除中: ${packageRoot}`);
+                    await deleteFSNode(packageRoot);
+                }
+
+                const desktop = resolveFS("Desktop");
+                if (desktop?.[appNodeName]?.type === "link") {
+                    delete desktop[appNodeName];
+                    print(`  - デスクトップショートカットを削除しました: ${appNodeName}`);
+                }
+            } finally {
+                setBulkUpdating(false);
+            }
+
+            print("[3/3] データベースへ保存中...");
+            await forceSave();
+            window.dispatchEvent(new Event("fs-updated"));
+            print(`完了: '${appNodeName}' をアンインストールしました。`);
+        }
+    },
+
+    add: {
+        desc: 'Alias for install (Usage: add Programs)',
+        async run(args) {
+            const target = (args[0] || "").toLowerCase();
+            if (target && target !== "programs") {
+                return print("Usage: install  (または add Programs)");
+            }
+            return await commands.install.run();
         }
     },
 
@@ -953,9 +1161,20 @@ const commands = {
                             repairLogs.push(`[Repaired] Missing DB key for external app: ${itemPath}`);
                         }
                     }
-                    if (!item.code && !item.entry) {
+                    if (item.packageRoot) {
+                        const pkgNode = resolveFS(item.packageRoot.replace(/^C:\//, ""));
+                        const mainRel = (item.main || "main.js").replace(/^\/+/, "");
+                        const mainNode = pkgNode ? resolveFS(`${item.packageRoot.replace(/^C:\//, "")}/${mainRel}`) : null;
+                        if (!pkgNode || pkgNode.type !== "folder") {
+                            errorCount++;
+                            repairLogs.push(`[Error] Missing package folder for app: ${itemPath} -> ${item.packageRoot}`);
+                        } else if (!mainNode || mainNode.type !== "file") {
+                            errorCount++;
+                            repairLogs.push(`[Error] Missing package main file: ${item.packageRoot}/${mainRel}`);
+                        }
+                    } else if (!item.entry) {
                         errorCount++;
-                        repairLogs.push(`[Error] Missing entry/code in app: ${itemPath}`);
+                        repairLogs.push(`[Error] Deprecated single-file app or missing packageRoot/entry: ${itemPath}`);
                     }
                 } else if (item.type === "link") {
                     stats.links++;

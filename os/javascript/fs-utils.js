@@ -1,6 +1,6 @@
 // fs-utils.js
 import { FS } from "./fs.js";
-import { getFileContent } from "./fs-db.js";
+import { getFileContent, deleteFileContentRecursive } from "./fs-db.js";
 
 /**
  * パスを指定してファイルの実データ（文字列 / Blob / ArrayBuffer）を透過的に取得する
@@ -64,6 +64,110 @@ export function writeFileContent(path, data, cwd = "C:/") {
         size: byteSize,
         lastModified: Date.now()
     };
+    return true;
+}
+
+/**
+ * 指定パスのディレクトリを再帰的に作成する（mkdir -p 相当）
+ */
+export function ensureDirectory(path, cwd = "C:/") {
+    const normalized = normalizePath(path, cwd).replace(/\/+$/, "");
+    const parts = normalized.split("/").filter(Boolean);
+    if (parts.length === 0) return null;
+
+    let cur = FS;
+    for (let i = 0; i < parts.length; i++) {
+        const part = parts[i];
+        if (i === 0) {
+            if (!cur[part]) throw new Error(`ドライブが見つかりません: ${part}`);
+            cur = cur[part];
+            continue;
+        }
+        if (!cur[part]) {
+            const nameError = validateName(part);
+            if (nameError) throw new Error(`無効なフォルダ名です (${part}): ${nameError}`);
+            cur[part] = { type: "folder", lastModified: Date.now() };
+        } else if (cur[part].type !== "folder") {
+            throw new Error(`ファイルと同名のフォルダは作成できません: ${part}`);
+        }
+        cur = cur[part];
+    }
+    return cur;
+}
+
+/**
+ * 指定ディレクトリ内の子要素一覧（メタデータ除外済み）を取得する
+ */
+export function listDirectory(path, cwd = "C:/") {
+    const normalized = normalizePath(path, cwd).replace(/\/+$/, "") || "C:/";
+    const node = resolveFS(normalized);
+    if (!node || node.type !== "folder") {
+        throw new Error(`フォルダが見つかりません: ${normalized}`);
+    }
+
+    const base = normalized === "C:/" ? "C:" : normalized;
+    const entries = [];
+    for (const key of Object.keys(node)) {
+        if (isSystemMetaKey(key)) continue;
+        const child = node[key];
+        if (!isChildNodeObject(child)) continue;
+        entries.push({
+            name: key,
+            path: `${base}/${key}`,
+            type: child.type,
+            size: typeof child.size === "number" ? child.size : (typeof child.content === "string" && child.content !== "__EXTERNAL_DATA__" ? child.content.length : 0),
+            lastModified: child.lastModified || 0,
+            hidden: Boolean(child.hidden)
+        });
+    }
+    return entries;
+}
+
+/**
+ * パスのメタ情報（存在確認・種類・サイズ・更新日時）を取得する
+ */
+export function statFS(path, cwd = "C:/") {
+    const normalized = normalizePath(path, cwd).replace(/\/+$/, "") || "C:/";
+    const node = resolveFS(normalized);
+    if (!node) return null;
+
+    return {
+        path: normalized,
+        name: basename(normalized) || "C:",
+        type: node.type,
+        size: typeof node.size === "number" ? node.size : (typeof node.content === "string" && node.content !== "__EXTERNAL_DATA__" ? node.content.length : 0),
+        lastModified: node.lastModified || 0,
+        hidden: Boolean(node.hidden),
+        system: Boolean(node.system),
+        isPackage: node.type === "app" && Boolean(node.packageRoot)
+    };
+}
+
+/**
+ * パスを指定してノードおよび配下の外部実データを削除する（システム保護ノードは拒否）
+ */
+export async function deleteFSNode(path, cwd = "C:/") {
+    const normalized = normalizePath(path, cwd).replace(/\/+$/, "");
+    if (!normalized || normalized === "C:") {
+        throw new Error("ルートドライブは削除できません。");
+    }
+    const lastSlash = normalized.lastIndexOf("/");
+    if (lastSlash === -1) throw new Error(`無効なパスです: ${normalized}`);
+
+    const parentPath = normalized.slice(0, lastSlash) || "C:/";
+    const targetName = normalized.slice(lastSlash + 1);
+    const parentNode = resolveFS(parentPath);
+    if (!parentNode || !parentNode[targetName]) return false;
+
+    if (parentNode[targetName].system === true) {
+        throw new Error(`システム保護されているため削除できません: ${normalized}`);
+    }
+
+    const deleted = delete parentNode[targetName];
+    if (!deleted) {
+        throw new Error(`削除が拒否されました（ロック中または保護対象）: ${normalized}`);
+    }
+    await deleteFileContentRecursive(normalized);
     return true;
 }
 
@@ -295,7 +399,19 @@ const META_KEYS = new Set([
     "hidden",
     "icon",
     "name",
-    "size"
+    "size",
+    "packageRoot",
+    "main",
+    "styles",
+    "windowOptions",
+    "permissions",
+    "version",
+    "entry",
+    "singleton",
+    "shell",
+    "frameless",
+    "target",
+    "content"
 ]);
 
 /**

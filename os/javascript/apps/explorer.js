@@ -20,7 +20,7 @@ import {
 import { FS, forceSave, markDefaultDeleted, unmarkDefaultDeleted, setBulkUpdating } from "../fs.js";
 import { copyFileContent, moveFileContent, deleteFileContentRecursive } from "../fs-db.js";
 import { attachContextMenu } from "../context-menu.js";
-import { resolveAppByPath, getIcon, getDisplayFileName } from "../file-associations.js";
+import { resolveAppByPath, getIcon, getDisplayFileName, renderIconHTML, applyIconToElement } from "../file-associations.js";
 import { addRecent } from "../recent.js";
 import { setupRibbon } from "../ribbon.js";
 import { saveSetting, loadSetting } from "./settings.js";
@@ -1627,6 +1627,7 @@ export default async function Explorer(root, options = {}) {
             }
 
             const iconChar = getIcon(name, itemData, childPath, currentPath);
+            const iconHtml = renderIconHTML(iconChar);
             const isFolder = itemData && itemData.type === "folder";
             const displayName = isFolder ? name : getDisplayFileName(name, showFileExtensions);
 
@@ -1653,7 +1654,7 @@ export default async function Explorer(root, options = {}) {
                 }
 
                 const newHTML = `
-                    <div class="item-icon-large">${iconChar}</div>
+                    <div class="item-icon-large">${iconHtml}</div>
                     <div class="item-name-label">${displayName}</div>
                 `;
                 if (item.innerHTML !== newHTML) {
@@ -1685,7 +1686,7 @@ export default async function Explorer(root, options = {}) {
 
                 const newHTML = `
                     <div style="flex: 1 1 auto; min-width: 0; padding: 0 4px 0 8px; display: flex; align-items: center; gap: 6px; overflow: hidden;">
-                        <span class="item-icon-small" style="flex-shrink: 0; display: flex; align-items: center; justify-content: center;">${iconChar}</span>
+                        <span class="item-icon-small" style="flex-shrink: 0; display: flex; align-items: center; justify-content: center;">${iconHtml}</span>
                         <span class="item-name-text">${displayName}</span>
                     </div>
                     <span class="item-type-text" style="flex: 0 0 130px; padding-left: 8px;">${typeLabel}</span>
@@ -1700,7 +1701,7 @@ export default async function Explorer(root, options = {}) {
                 item.style.left = "";
                 item.style.top = "";
                 const newHTML = `
-                    <span class="item-icon-small">${iconChar}</span>
+                    <span class="item-icon-small">${iconHtml}</span>
                     <span class="item-name-text">${displayName}</span>
                 `;
                 if (item.innerHTML !== newHTML) {
@@ -2375,8 +2376,8 @@ export default async function Explorer(root, options = {}) {
         item.onmouseout = () => { if (currentPath !== targetPath) item.style.background = "transparent"; };
 
         const iconSpan = document.createElement("span");
-        iconSpan.textContent = icon;
         iconSpan.style.fontSize = "14px";
+        applyIconToElement(iconSpan, icon);
 
         const textSpan = document.createElement("span");
         textSpan.textContent = label;
@@ -2446,9 +2447,9 @@ export default async function Explorer(root, options = {}) {
                 }
 
                 const iconSpan = document.createElement("span");
-                iconSpan.textContent = getIcon(name, child, fullPath, currentPath);
                 iconSpan.style.fontSize = "14px";
                 iconSpan.style.flexShrink = "0";
+                applyIconToElement(iconSpan, getIcon(name, child, fullPath, currentPath));
 
                 const textSpan = document.createElement("span");
                 textSpan.textContent = name;
@@ -2566,11 +2567,12 @@ export default async function Explorer(root, options = {}) {
             }
 
             const iconChar = getIcon(res.name, res.node, res.path, currentPath);
+            const iconHtml = renderIconHTML(iconChar);
             const isFolder = res.node && res.node.type === "folder";
             const displayName = isFolder ? res.name : getDisplayFileName(res.name, showFileExtensions);
 
             item.innerHTML = `
-                <span class="item-icon-small">${iconChar}</span>
+                <span class="item-icon-small">${iconHtml}</span>
                 <span class="item-name-text">${displayName}</span>
                 <span style="color:#888; font-size:10px; margin-left:8px;">(${res.path})</span>
             `;
@@ -2838,9 +2840,11 @@ export default async function Explorer(root, options = {}) {
                                 const itemNode = resolveFS(currentPath)?.[name];
                                 const realTargetPath = itemNode && itemNode.type === "link" ? itemNode.target : fullTargetPath;
 
+                                const inheritedIcon = itemNode?.icon || resolveFS(realTargetPath)?.icon || null;
                                 folderNode[uniqueName] = {
                                     type: "link",
                                     target: realTargetPath,
+                                    ...(inheritedIcon ? { icon: inheritedIcon } : {}),
                                     lastModified: Date.now()
                                 };
                             });
@@ -3103,16 +3107,17 @@ export default async function Explorer(root, options = {}) {
 
         if (titleEl) titleEl.textContent = name;
 
+        win._currentIcon = iconChar;
         const windowIcon = win.querySelector(".window-icon");
         if (windowIcon) {
-            windowIcon.textContent = iconChar;
+            applyIconToElement(windowIcon, iconChar);
         }
 
         if (taskBtn) {
             const iconSpan = taskBtn.querySelector(".taskbar-icon");
             const textSpan = taskBtn.querySelector(".taskbar-text");
 
-            if (iconSpan) iconSpan.textContent = iconChar;
+            if (iconSpan) applyIconToElement(iconSpan, iconChar);
             if (textSpan) textSpan.textContent = name;
             taskBtn.dataset.title = name;
         }
@@ -3293,7 +3298,7 @@ function getAllApps() {
         visited.add(node);
 
         for (const name in node) {
-            if (name === "type") continue;
+            if (isSystemMetaKey(name)) continue;
             const child = node[name];
             if (!child || typeof child !== "object") continue;
 
@@ -3341,8 +3346,8 @@ export function openWithDialog(filePath, fileNode) {
         btn.style.cssText = "display: flex; align-items: center; gap: 8px; width: 100%; margin: 4px 0; padding: 6px 10px; text-align: left; cursor: pointer;";
 
         const iconSpan = document.createElement("span");
-        iconSpan.textContent = appIcon;
-        iconSpan.style.cssText = "font-size: 16px; flex-shrink: 0;";
+        iconSpan.style.cssText = "font-size: 16px; flex-shrink: 0; display: inline-flex; align-items: center;";
+        applyIconToElement(iconSpan, appIcon);
 
         const nameSpan = document.createElement("span");
         nameSpan.textContent = app.name.replace(/\.app$/i, "");
@@ -3403,6 +3408,7 @@ export async function showProperties(name, node, path) {
     const formattedSize = formatSize(size);
     const parentPath = path.split("/").slice(0, -1).join("/") || "(root)";
     const iconChar = getIcon(name, node, path);
+    const iconHtml = renderIconHTML(iconChar);
 
     const isUrl = name.toLowerCase().endsWith(".url") && node.type === "file";
     let urlValue = "";
@@ -3421,7 +3427,7 @@ export async function showProperties(name, node, path) {
     const msg = `
         <div style="padding:15px; font-size:12px; line-height:1.8; user-select:none; font-family: 'Segoe UI', Tahoma, sans-serif;">
             <div style="display:flex; align-items:center; gap:15px; padding-bottom:15px;">
-                <span style="font-size:36px;">${iconChar}</span>
+                <span style="font-size:36px; display:inline-flex; align-items:center; justify-content:center;">${iconHtml}</span>
                 <input type="text" value="${name}" class="border" style="flex:1; padding:3px; font-size:12px;" readonly>
             </div>
             <hr style="border:0; border-top:1px solid #dfdfdf; margin: 0 0 10px 0;">

@@ -19,7 +19,7 @@ import {
     isPathCutInClipboard
 } from "./fs-utils.js";
 import { attachContextMenu } from "./context-menu.js";
-import { resolveAppByPath, getIcon, getDisplayFileName } from "./file-associations.js";
+import { resolveAppByPath, getIcon, getDisplayFileName, applyIconToElement } from "./file-associations.js";
 import { openWithDialog as explorerOpenWithDialog, showProperties, emptyTrash } from "./apps/explorer.js";
 import { moveFileContent, copyFileContent, deleteFileContentRecursive } from "./fs-db.js";
 import { applyDesktopBackground, loadSetting, saveSetting } from "./apps/settings.js";
@@ -253,8 +253,8 @@ export function buildDesktop() {
         const iconGraphic = item.querySelector(".icon-graphic");
         const iconLabel = item.querySelector(".icon-label");
         const expectedIcon = getIcon(name, node);
-        if (iconGraphic && iconGraphic.textContent !== expectedIcon) {
-            iconGraphic.textContent = expectedIcon;
+        if (iconGraphic) {
+            applyIconToElement(iconGraphic, expectedIcon);
         }
         const isFolder = node && node.type === "folder";
         const expectedLabel = isFolder ? name : getDisplayFileName(name, showFileExtensions);
@@ -407,10 +407,12 @@ export function buildDesktop() {
                             const baseName = `${name} のショートカット`;
                             const uniqueName = getUniqueName(FS["C:"].Desktop, baseName);
                             const realTargetPath = currentNode.type === "link" ? currentNode.target : fullPath;
+                            const inheritedIcon = currentNode.icon || resolveFS(realTargetPath)?.icon || null;
 
                             FS["C:"].Desktop[uniqueName] = {
                                 type: "link",
                                 target: realTargetPath,
+                                ...(inheritedIcon ? { icon: inheritedIcon } : {}),
                                 lastModified: Date.now()
                             };
                             window.dispatchEvent(new Event("fs-updated"));

@@ -14,7 +14,20 @@ let deletedDefaults = new Set();
 let isSaving = false;
 let isInitializing = false;
 const DEBUG_FS = false;
-const PROTECTED_KEYS = new Set(["type", "entry", "singleton", "shell", "system", "lastModified"]);
+const PROTECTED_KEYS = new Set([
+    "type",
+    "entry",
+    "singleton",
+    "shell",
+    "system",
+    "lastModified",
+    "packageRoot",
+    "main",
+    "styles",
+    "windowOptions",
+    "version",
+    "permissions"
+]);
 
 export let isBulkUpdating = false;
 export function setBulkUpdating(flag) {
@@ -144,32 +157,36 @@ const baseFS = {
         Programs: {
             type: "folder",
             system: true,
+            Packages: {
+                type: "folder",
+                system: true
+            },
             Applications: {
                 type: "folder",
                 system: true,
-                "Calc.app": { type: "app", entry: "./apps/calc.js", system: true, singleton: true },
-                "TextEditor.app": { type: "app", entry: "./apps/texteditor.js", system: true },
-                "CodeEditor.app": { type: "app", entry: "./apps/codeeditor.js", system: true },
-                "ImageViewer.app": { type: "app", entry: "./apps/imageviewer.js", system: true },
-                "VideoPlayer.app": { type: "app", entry: "./apps/videoplayer.js", system: true },
-                "Clock.app": { type: "app", entry: "./apps/clock.js", system: true, singleton: true },
-                "Terminal.app": { type: "app", entry: "./apps/terminal.js", system: true, singleton: true },
-                "TaskManager.app": { type: "app", name: "Task Manager", entry: "./apps/taskmanager.js", system: true, singleton: true },
-                "Settings.app": { type: "app", entry: "./apps/settings.js", system: true, singleton: true },
-                "Explorer.app": { type: "app", entry: "./apps/explorer.js", system: true, hidden: true },
-                "Soundsplayer.app": { type: "app", entry: "./apps/soundplayer.js", system: true },
-                "AudioPlayer.app": { type: "app", entry: "./apps/audioplayer.js", system: true },
-                "Paint.app": { type: "app", entry: "./apps/paint.js", system: true },
-                "RegistryEditor.app": { type: "app", entry: "./apps/registryeditor.js", system: true },
-                "SystemProperties.app": { type: "app", entry: "./apps/systemproperties.js", system: true },
-                "TaskbarProperties.app": { type: "app", entry: "./apps/taskbarproperties.js", system: true },
-                "PDFViewer.app": { type: "app", entry: "./apps/pdfviewer.js", system: true },
-                "Browser.app": { type: "app", entry: "./apps/Browser.js", system: true },
-                "Networkmonitor.app": { type: "app", entry: "./apps/network_monitor.js", system: true },
-                "Eventlog.app": { type: "app", entry: "./apps/eventlog.js", system: true },
-                "Spreadsheet.app": { type: "app", name: "Spreadsheet", entry: "./apps/spreadsheet.js", system: true },
-                "Toolbar.app": { type: "app", entry: "./apps/toolbar.js", system: true, frameless: true, singleton: true, shell: true },
-                "Startmenu.app": { type: "app", entry: "./apps/startmenu.js", system: true, frameless: true, singleton: true, shell: true }
+                "Calc.app": { type: "app", entry: "./apps/calc.js", icon: "./icons/calc.png", system: true, singleton: true },
+                "TextEditor.app": { type: "app", entry: "./apps/texteditor.js", icon: "./icons/texteditor.png", system: true },
+                "CodeEditor.app": { type: "app", entry: "./apps/codeeditor.js", icon: "./icons/codeeditor.png", system: true },
+                "ImageViewer.app": { type: "app", entry: "./apps/imageviewer.js", icon: "./icons/imageviewer.png", system: true },
+                "VideoPlayer.app": { type: "app", entry: "./apps/videoplayer.js", icon: "./icons/videoplayer.png", system: true },
+                "Clock.app": { type: "app", entry: "./apps/clock.js", icon: "./icons/clock.png", system: true, singleton: true },
+                "Terminal.app": { type: "app", entry: "./apps/terminal.js", icon: "./icons/terminal.png", system: true, singleton: true },
+                "TaskManager.app": { type: "app", name: "Task Manager", entry: "./apps/taskmanager.js", icon: "./icons/taskmanager.png", system: true, singleton: true },
+                "Settings.app": { type: "app", entry: "./apps/settings.js", icon: "./icons/settings.png", system: true, singleton: true },
+                "Explorer.app": { type: "app", entry: "./apps/explorer.js", icon: "./icons/explorer.png", system: true, hidden: true },
+                "Soundsplayer.app": { type: "app", entry: "./apps/soundplayer.js", icon: "./icons/soundplayer.png", system: true },
+                "AudioPlayer.app": { type: "app", entry: "./apps/audioplayer.js", icon: "./icons/audioplayer.png", system: true },
+                "Paint.app": { type: "app", entry: "./apps/paint.js", icon: "./icons/paint.png", system: true },
+                "RegistryEditor.app": { type: "app", entry: "./apps/registryeditor.js", icon: "./icons/registryeditor.png", system: true },
+                "SystemProperties.app": { type: "app", entry: "./apps/systemproperties.js", icon: "./icons/systemproperties.png", system: true },
+                "TaskbarProperties.app": { type: "app", entry: "./apps/taskbarproperties.js", icon: "./icons/taskbarproperties.png", system: true },
+                "PDFViewer.app": { type: "app", entry: "./apps/pdfviewer.js", icon: "./icons/pdfviewer.png", system: true },
+                "Browser.app": { type: "app", entry: "./apps/Browser.js", icon: "./icons/browser.png", system: true },
+                "Networkmonitor.app": { type: "app", entry: "./apps/network_monitor.js", icon: "./icons/network_monitor.png", system: true },
+                "Eventlog.app": { type: "app", entry: "./apps/eventlog.js", icon: "./icons/eventlog.png", system: true },
+                "Spreadsheet.app": { type: "app", name: "Spreadsheet", entry: "./apps/spreadsheet.js", icon: "./icons/spreadsheet.png", system: true },
+                "Toolbar.app": { type: "app", entry: "./apps/toolbar.js", icon: "./icons/toolbar.png", system: true, frameless: true, singleton: true, shell: true },
+                "Startmenu.app": { type: "app", entry: "./apps/startmenu.js", icon: "./icons/startmenu.png", system: true, frameless: true, singleton: true, shell: true }
             },
             ControlPanel: {
                 type: "folder",
@@ -186,8 +203,8 @@ const baseFS = {
                 Games: {
                     type: "folder",
                     system: true,
-                    "Tetris.app": { type: "app", entry: "./apps/games/tetris.js", system: true },
-                    "Minesweeper.app": { type: "app", entry: "./apps/games/minesweeper.js", system: true }
+                    "Tetris.app": { type: "app", entry: "./apps/games/tetris.js", icon: "./icons/tetris.png", system: true },
+                    "Minesweeper.app": { type: "app", entry: "./apps/games/minesweeper.js", icon: "./icons/minesweeper.png", system: true }
                 },
                 Multimedia: {
                     type: "folder",
@@ -549,12 +566,16 @@ function deepSync(currentProxy, savedNode, defaultNode, path = "", visited = new
                 }
 
                 for (const subKey in savedValue) {
-                    if (PROTECTED_KEYS.has(subKey) || subKey === "hidden" || subKey === "originalPath") {
+                    if (PROTECTED_KEYS.has(subKey) || subKey === "hidden" || subKey === "originalPath" || subKey === "icon") {
                         if (currentProxy[key][subKey] !== savedValue[subKey]) {
                             currentProxy[key][subKey] = savedValue[subKey];
                             hasChanges = true;
                         }
                     }
+                }
+                if (defaultValue?.icon !== undefined && currentProxy[key].icon !== defaultValue.icon) {
+                    currentProxy[key].icon = defaultValue.icon;
+                    hasChanges = true;
                 }
 
                 if (deepSync(currentProxy[key], savedValue, defaultValue, currentPath, visited)) {
@@ -591,28 +612,40 @@ function deepSync(currentProxy, savedNode, defaultNode, path = "", visited = new
                             savedValue && typeof savedValue.target === "string"
                                 ? savedValue.target
                                 : defaultValue.target;
+                        const nextIcon = defaultValue.icon !== undefined ? defaultValue.icon : savedValue?.icon;
                         const isSame =
                             existing &&
                             existing.type === "link" &&
-                            existing.target === nextTarget;
+                            existing.target === nextTarget &&
+                            existing.icon === nextIcon &&
+                            savedValue?.icon === nextIcon;
 
                         if (!isSame) {
                             currentProxy[key] = {
                                 ...structuredClone(defaultValue),
-                                target: nextTarget
+                                target: nextTarget,
+                                ...(nextIcon ? { icon: nextIcon } : {})
                             };
                             hasChanges = true;
                         }
                     } else {
+                        const nextIcon = defaultValue.icon !== undefined ? defaultValue.icon : savedValue?.icon;
                         const isSame =
                             existing &&
                             existing.type === defaultValue.type &&
                             existing.entry === defaultValue.entry &&
+                            existing.name === defaultValue.name &&
+                            existing.icon === nextIcon &&
                             Boolean(existing.shell) === Boolean(defaultValue.shell) &&
-                            Boolean(existing.frameless) === Boolean(defaultValue.frameless);
+                            Boolean(existing.frameless) === Boolean(defaultValue.frameless) &&
+                            Boolean(existing.singleton) === Boolean(defaultValue.singleton) &&
+                            savedValue?.icon === nextIcon;
 
                         if (!isSame) {
-                            currentProxy[key] = structuredClone(defaultValue);
+                            currentProxy[key] = {
+                                ...structuredClone(defaultValue),
+                                ...(nextIcon ? { icon: nextIcon } : {})
+                            };
                             hasChanges = true;
                         }
                     }

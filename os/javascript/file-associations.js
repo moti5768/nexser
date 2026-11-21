@@ -1,4 +1,5 @@
 // file-associations.js
+import { resolveFS } from "./fs-utils.js";
 
 // 現在開いているファイルのパスを保持するSet
 export const openedFilePaths = new Set();
@@ -97,25 +98,107 @@ const APP_KEYWORDS = [
     { key: "clock", icon: "🕒" }
 ];
 
+const LOCAL_IMAGE_PATH_REGEX = /^(\.\/|\/)?[a-zA-Z0-9_\-./]+\.(png|jpe?g|gif|webp|svg|ico)(\?[a-zA-Z0-9_=&.-]+)?$/i;
+
 /**
- * アイコン文字列のサニタイズ（絵文字 または 安全な画像DataURLのみ許可）
+ * アイコン文字列のサニタイズ（絵文字 / 画像DataURL / 組み込みアプリ用ローカル画像パスを許可）
  */
 export function sanitizeIcon(icon) {
     if (typeof icon !== "string") return null;
     const trimmed = icon.trim();
     if (!trimmed) return null;
 
-    // 1. 安全な画像DataURL（PNG/JPEG/GIF/WebP/SVG）
-    if (/^data:image\/(png|jpeg|jpg|gif|webp|svg\+xml);base64,[a-zA-Z0-9+/=]+$/i.test(trimmed)) {
-        return trimmed.length <= 131072 ? trimmed : null; // 最大128KB制限
+    // 1. 安全な画像DataURL（PNG/JPEG/GIF/WebP/SVG/ICO）
+    if (/^data:image\/(png|jpeg|jpg|gif|webp|svg\+xml|x-icon|vnd\.microsoft\.icon)(?:;charset=utf-8)?;base64,[a-zA-Z0-9+/=\r\n]+$/i.test(trimmed)) {
+        const compact = trimmed.replace(/[\r\n]+/g, "");
+        return compact.length <= 524288 ? compact : null; // 最大512KB制限
     }
 
-    // 2. 絵文字・テキストアイコン（HTMLタグやスクリプト文字を除外し16文字以内）
+    // 2. 組み込みアプリ用ローカル画像パス（例: ./icons/calc.png, /assets/icons/calc.svg）
+    //    ディレクトリトラバーサル(..)・プロトコル相対(//)・外部スキーム(:)を遮断
+    if (
+        trimmed.length <= 256 &&
+        !trimmed.includes("..") &&
+        !trimmed.startsWith("//") &&
+        !trimmed.includes(":") &&
+        LOCAL_IMAGE_PATH_REGEX.test(trimmed)
+    ) {
+        return trimmed;
+    }
+
+    // 3. 絵文字・テキストアイコン（HTMLタグやスクリプト文字を除外し16文字以内）
     if (trimmed.length <= 16 && !/[<>'"`]/.test(trimmed) && !/^javascript:/i.test(trimmed)) {
         return trimmed;
     }
 
     return null;
+}
+
+/**
+ * アイコン値が画像（DataURL または ローカル画像パス）かどうかを判定
+ */
+export function isImageIcon(icon) {
+    if (typeof icon !== "string") return false;
+    return icon.startsWith("data:image/") || LOCAL_IMAGE_PATH_REGEX.test(icon);
+}
+
+function getSafeFallbackEmoji(fallback, defaultEmoji = "📄") {
+    if (typeof fallback === "string") {
+        const clean = sanitizeIcon(fallback);
+        if (clean && !isImageIcon(clean)) return clean;
+    }
+    return defaultEmoji;
+}
+
+/**
+ * テンプレートHTML内でアイコンを安全に描画するためのHTML文字列を返す
+ * 画像読み込み失敗時は fallback 絵文字へ自動切替
+ */
+export function renderIconHTML(icon, size = "1em", fallback = "⚙️") {
+    const safeFallback = getSafeFallbackEmoji(fallback, "📄");
+    const safe = sanitizeIcon(icon) || safeFallback;
+    if (isImageIcon(safe)) {
+        return `<img class="nexser-custom-icon" src="${safe}" alt="" draggable="false" onerror="this.replaceWith(document.createTextNode('${safeFallback}'))" style="width:${size}; height:${size}; object-fit:contain; display:inline-block; vertical-align:middle; pointer-events:none; user-select:none;">`;
+    }
+    return safe;
+}
+
+/**
+ * 任意のDOM要素へアイコン（絵文字または画像）を差分更新で適用する
+ */
+export function applyIconToElement(el, icon, size = "1em", fallback = "⚙️") {
+    if (!el) return;
+    const safeFallback = getSafeFallbackEmoji(fallback, "📄");
+    const safe = sanitizeIcon(icon) || safeFallback;
+    if (el.dataset.iconValue === safe) return;
+    el.dataset.iconValue = safe;
+
+    if (isImageIcon(safe)) {
+        el.textContent = "";
+        const img = el.ownerDocument.createElement("img");
+        img.className = "nexser-custom-icon";
+        img.src = safe;
+        img.alt = "";
+        img.draggable = false;
+        Object.assign(img.style, {
+            width: size,
+            height: size,
+            objectFit: "contain",
+            display: "inline-block",
+            verticalAlign: "middle",
+            pointerEvents: "none",
+            userSelect: "none"
+        });
+        img.onerror = () => {
+            if (img.parentNode === el) {
+                el.dataset.iconValue = safeFallback;
+                el.textContent = safeFallback;
+            }
+        };
+        el.appendChild(img);
+    } else {
+        el.textContent = safe;
+    }
 }
 
 /**
@@ -254,6 +337,14 @@ export function getIcon(name, node, fullPath = "", currentPath = "") {
         if (targetLower.includes("trash")) {
             return "🗑️"; // ゴミ箱へのショートカット
         }
+        // リンク先にカスタムアイコンが定義されていれば自動継承（デスクトップ・スタートメニュー対応）
+        try {
+            const targetNode = resolveFS(node.target);
+            if (targetNode && typeof targetNode.icon === "string") {
+                const targetIcon = sanitizeIcon(targetNode.icon);
+                if (targetIcon) return targetIcon;
+            }
+        } catch (_) { }
         return "🔗"; // 一般的なショートカット
     }
 
