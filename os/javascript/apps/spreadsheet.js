@@ -897,17 +897,21 @@ const SCOPED_CSS = `
     --sel-r: inset -2px 0 0 0 #005a9e;
 }
 
-/* セル範囲移動時のドロップ先プレビュー枠 */
-.nexser-spreadsheet-app .ss-table td.move-target-preview {
-    outline: 2px dashed #107c41 !important;
-    outline-offset: -2px;
-    background-color: rgba(16, 124, 65, 0.08) !important;
+/* セル範囲移動時のドロップ先プレビュー枠（範囲全体を囲む1枚の外周枠） */
+.nexser-spreadsheet-app .ss-move-preview-box {
+    position: absolute;
+    display: none;
+    pointer-events: none;
+    z-index: 26;
+    border: 2.5px solid #107c41;
+    background-color: rgba(16, 124, 65, 0.10);
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.75) inset;
+    box-sizing: border-box;
 }
 
-.nexser-spreadsheet-app .ss-table td.move-target-invalid {
-    outline: 2px dashed #d13438 !important;
-    outline-offset: -2px;
-    background-color: rgba(209, 52, 56, 0.12) !important;
+.nexser-spreadsheet-app .ss-move-preview-box.invalid {
+    border: 2.5px dashed #d13438;
+    background-color: rgba(209, 52, 56, 0.14);
 }
 
 .nexser-spreadsheet-app .ss-cell-editor {
@@ -1485,21 +1489,42 @@ const SCOPED_CSS = `
 }
 
 @media print {
+    html, body {
+        height: auto !important;
+        overflow: visible !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
     body * {
         visibility: hidden !important;
+    }
+    .nexser-spreadsheet-app,
+    .nexser-spreadsheet-app .ss-spreadsheet-container,
+    .nexser-spreadsheet-app .ss-spreadsheet-content {
+        position: static !important;
+        overflow: visible !important;
+        height: auto !important;
+        max-height: none !important;
+        contain: none !important;
+        border: none !important;
+    }
+    .nexser-spreadsheet-app .ss-ribbon-shell,
+    .nexser-spreadsheet-app .ss-formula-bar-container,
+    .nexser-spreadsheet-app .ss-bottom-bar {
+        display: none !important;
     }
     .nexser-spreadsheet-app .ss-spreadsheet-content,
     .nexser-spreadsheet-app .ss-spreadsheet-content * {
         visibility: visible !important;
     }
     .nexser-spreadsheet-app .ss-spreadsheet-content {
-        position: fixed !important;
-        left: 0 !important;
-        top: 0 !important;
-        z-index: 999999 !important;
         background: #fff !important;
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
+    }
+    .nexser-spreadsheet-app .ss-table tr {
+        break-inside: avoid;
+        page-break-inside: avoid;
     }
     .nexser-spreadsheet-app .row_number,
     .nexser-spreadsheet-app .ss-table thead,
@@ -1553,6 +1578,18 @@ function excelEquals(a, b) {
     if (typeof va === "number" && typeof vb === "number") return va === vb;
     if (typeof va === "boolean" || typeof vb === "boolean") return Boolean(va) === Boolean(vb);
     return String(va).toLowerCase() === String(vb).toLowerCase();
+}
+
+function excelOpEquals(a, b) {
+    const aBlank = Boolean(a && typeof a === "object" && a.isBlank);
+    const bBlank = Boolean(b && typeof b === "object" && b.isBlank);
+    if (aBlank && bBlank) return true;
+    if (aBlank) return b === "" || b === 0 || b === false;
+    if (bBlank) return a === "" || a === 0 || a === false;
+    if (typeof a === "number" && typeof b === "number") return a === b;
+    if (typeof a === "boolean" && typeof b === "boolean") return a === b;
+    if (typeof a === "string" && typeof b === "string") return a.toLowerCase() === b.toLowerCase();
+    return false;
 }
 
 function parseExcelDate(input) {
@@ -1691,6 +1728,46 @@ function collectNumericValues(args) {
     }
     return { error: null, nums };
 }
+function collectLogicalValues(args) {
+    const vals = [];
+    for (let i = 0; i < args.length; i++) {
+        const arg = args[i];
+        if (Array.isArray(arg)) {
+            const flat = flattenArray(arg);
+            for (let j = 0; j < flat.length; j++) {
+                const v = unwrapBlank(flat[j]);
+                if (typeof v === "string" && EXCEL_ERROR_RE.test(v.trim())) {
+                    return { error: v.trim(), vals: [] };
+                }
+                // Excel仕様: 範囲内の空白・文字列は無視
+                if (v === "" || v == null || typeof v === "string") continue;
+                if (typeof v === "boolean") vals.push(v);
+                else if (typeof v === "number" && Number.isFinite(v)) vals.push(v !== 0);
+            }
+        } else {
+            const v = unwrapBlank(arg);
+            if (typeof v === "string" && EXCEL_ERROR_RE.test(v.trim())) {
+                return { error: v.trim(), vals: [] };
+            }
+            if (v === "" || v == null) {
+                if (arg && arg.isBlank) vals.push(false);
+                else return { error: "#VALUE!", vals: [] };
+            } else if (typeof v === "boolean") {
+                vals.push(v);
+            } else if (typeof v === "number" && Number.isFinite(v)) {
+                vals.push(v !== 0);
+            } else if (typeof v === "string") {
+                const up = v.trim().toUpperCase();
+                if (up === "TRUE") vals.push(true);
+                else if (up === "FALSE") vals.push(false);
+                else if (!isNaN(Number(up))) vals.push(Number(up) !== 0);
+                else return { error: "#VALUE!", vals: [] };
+            }
+        }
+    }
+    if (!vals.length) return { error: "#VALUE!", vals: [] };
+    return { error: null, vals };
+}
 const FORMULA_FUNCTIONS = {
     SUM(...args) {
         const { error, nums } = collectNumericValues(args);
@@ -1742,7 +1819,13 @@ const FORMULA_FUNCTIONS = {
     DIVIDE(a, b) { return Number(b) !== 0 ? Number(a) / Number(b) : "#DIV/0!"; },
     POWER(a, b) { return Math.pow(Number(a), Number(b)); },
     SQRT(a) { return Math.sqrt(Number(a)); },
-    MOD(a, b) { return Number(a) % Number(b); },
+    MOD(a, b) {
+        const n = Number(unwrapBlank(a));
+        const d = Number(unwrapBlank(b));
+        if (!Number.isFinite(n) || !Number.isFinite(d)) return "#VALUE!";
+        if (d === 0) return "#DIV/0!";
+        return n - d * Math.floor(n / d);
+    },
     ABS(a) { return Math.abs(Number(a)); },
     ROUND(num, digits = 0) {
         const n = Number(unwrapBlank(num)), d = Math.trunc(Number(unwrapBlank(digits)));
@@ -1751,17 +1834,18 @@ const FORMULA_FUNCTIONS = {
         return Math.sign(n) * Math.round((Math.abs(n) + Number.EPSILON) * factor) / factor;
     },
     ROUNDUP(num, digits = 0) {
-        const n = Number(num), d = Math.trunc(Number(digits));
+        const n = Number(unwrapBlank(num)), d = Math.trunc(Number(unwrapBlank(digits)));
         if (!isFinite(n) || isNaN(d)) return "#VALUE!";
         const factor = Math.pow(10, d);
-        const shifted = n * factor;
+        const shifted = Number((n * factor).toPrecision(15));
         return (n >= 0 ? Math.ceil(shifted) : Math.floor(shifted)) / factor;
     },
     ROUNDDOWN(num, digits = 0) {
-        const n = Number(num), d = Math.trunc(Number(digits));
+        const n = Number(unwrapBlank(num)), d = Math.trunc(Number(unwrapBlank(digits)));
         if (!isFinite(n) || isNaN(d)) return "#VALUE!";
         const factor = Math.pow(10, d);
-        return Math.trunc(n * factor) / factor;
+        const shifted = Number((n * factor).toPrecision(15));
+        return Math.trunc(shifted) / factor;
     },
 
     SUMIF(range, condition, sumRange = null) {
@@ -1805,7 +1889,11 @@ const FORMULA_FUNCTIONS = {
     },
     UPPER(text) { return String(text).toUpperCase(); },
     LOWER(text) { return String(text).toLowerCase(); },
-    LEFT(text, count) { return String(text).substring(0, Number(count)); },
+    LEFT(text, count = 1) {
+        const cnt = Math.trunc(Number(unwrapBlank(count)));
+        if (isNaN(cnt) || cnt < 0) return "#VALUE!";
+        return String(unwrapBlank(text) ?? "").substring(0, cnt);
+    },
     RIGHT(text, count = 1) {
         const cnt = Math.trunc(Number(unwrapBlank(count)));
         if (isNaN(cnt) || cnt < 0) return "#VALUE!";
@@ -1850,9 +1938,21 @@ const FORMULA_FUNCTIONS = {
         }
         return value;
     },
-    AND(...args) { return args.every(v => Boolean(unwrapBlank(v))); },
-    OR(...args) { return args.some(v => Boolean(unwrapBlank(v))); },
-    NOT(value) { return !Boolean(unwrapBlank(value)); },
+    AND(...args) {
+        const { error, vals } = collectLogicalValues(args);
+        if (error) return error;
+        return vals.every(Boolean);
+    },
+    OR(...args) {
+        const { error, vals } = collectLogicalValues(args);
+        if (error) return error;
+        return vals.some(Boolean);
+    },
+    NOT(value) {
+        const { error, vals } = collectLogicalValues([value]);
+        if (error) return error;
+        return !vals[0];
+    },
 
     INDEX(array, row = 0, col = 0) {
         if (!Array.isArray(array)) return array;
@@ -1877,18 +1977,50 @@ const FORMULA_FUNCTIONS = {
         if (rNum > array.length) return "#REF!";
         return isBlankVal(array[rNum - 1]) ? 0 : array[rNum - 1];
     },
-    MATCH(lookupValue, array, matchType = 0) {
+    MATCH(lookupValue, array, matchType = 1) {
         const flat = flattenArray(array);
-        if (matchType === 0) {
-            return flat.findIndex(v => excelEquals(v, lookupValue)) + 1 || "#N/A";
-        } else if (matchType === 1) {
+        const lv = unwrapBlank(lookupValue);
+        const mt = Math.trunc(Number(unwrapBlank(matchType)));
+        if (isNaN(mt)) return "#VALUE!";
+
+        if (mt === 0) {
+            const wc = typeof lv === "string" && /[*?]/.test(lv) ? buildWildcardRegex(lv) : null;
+            const found = flat.findIndex(raw => {
+                const v = unwrapBlank(raw);
+                if (v === "" || v == null) return false;
+                return wc ? wc.test(String(v)) : excelEquals(v, lv);
+            });
+            return found !== -1 ? found + 1 : "#N/A";
+        }
+
+        const cmpVal = (a, b) => {
+            if (typeof a === "number" && typeof b === "number") return a - b;
+            if (typeof a === "string" && typeof b === "string") {
+                const la = a.toLowerCase(), lb = b.toLowerCase();
+                return la < lb ? -1 : (la > lb ? 1 : 0);
+            }
+            return null;
+        };
+
+        if (mt === 1) {
             let idx = -1;
-            flat.forEach((v, i) => { if (!isBlankVal(v) && v <= lookupValue) idx = i; });
-            return idx + 1 || "#N/A";
-        } else if (matchType === -1) {
+            for (let i = 0; i < flat.length; i++) {
+                const v = unwrapBlank(flat[i]);
+                if (v === "" || v == null) continue;
+                const c = cmpVal(v, lv);
+                if (c !== null && c <= 0) idx = i;
+            }
+            return idx !== -1 ? idx + 1 : "#N/A";
+        }
+        if (mt === -1) {
             let idx = -1;
-            flat.forEach((v, i) => { if (!isBlankVal(v) && v >= lookupValue && idx === -1) idx = i; });
-            return idx + 1 || "#N/A";
+            for (let i = 0; i < flat.length; i++) {
+                const v = unwrapBlank(flat[i]);
+                if (v === "" || v == null) continue;
+                const c = cmpVal(v, lv);
+                if (c !== null && c >= 0) idx = i;
+            }
+            return idx !== -1 ? idx + 1 : "#N/A";
         }
         return "#N/A";
     },
@@ -2022,9 +2154,13 @@ const FORMULA_FUNCTIONS = {
     },
     EDATE(dateInput, months) {
         const d = parseExcelDate(dateInput);
-        if (!d) return "#VALUE!";
-        const res = new Date(d.getFullYear(), d.getMonth() + Number(months), d.getDate());
-        return res;
+        const m = Math.trunc(Number(unwrapBlank(months)));
+        if (!d || isNaN(m)) return "#VALUE!";
+        const totalMonths = d.getFullYear() * 12 + d.getMonth() + m;
+        const targetYear = Math.floor(totalMonths / 12);
+        const targetMonth = ((totalMonths % 12) + 12) % 12;
+        const lastDayOfTarget = new Date(targetYear, targetMonth + 1, 0).getDate();
+        return new Date(targetYear, targetMonth, Math.min(d.getDate(), lastDayOfTarget));
     },
     EOMONTH(startDate, months) {
         const d = parseExcelDate(startDate);
@@ -2099,7 +2235,9 @@ const FORMULA_FUNCTIONS = {
         return args.length % 2 === 1 ? args[args.length - 1] : "#N/A";
     },
     XOR(...args) {
-        return args.filter(v => Boolean(unwrapBlank(v))).length % 2 === 1;
+        const { error, vals } = collectLogicalValues(args);
+        if (error) return error;
+        return vals.filter(Boolean).length % 2 === 1;
     },
     TEXTJOIN(delimiter, ignoreEmpty, ...texts) {
         const flat = flattenArray(texts).map(v => String(v ?? ""));
@@ -2112,30 +2250,48 @@ const FORMULA_FUNCTIONS = {
     CLEAN(text) {
         return String(text ?? "").replace(/[\x00-\x1F\x7F]/g, "");
     },
-    NETWORKDAYS(startDate, endDate) {
-        const s = typeof startDate === "number" ? new Date(Date.UTC(1899, 11, 30) + startDate * 86400000) : new Date(startDate);
-        const e = typeof endDate === "number" ? new Date(Date.UTC(1899, 11, 30) + endDate * 86400000) : new Date(endDate);
-        if (isNaN(s) || isNaN(e)) return "#VALUE!";
-        const step = s <= e ? 1 : -1;
-        let count = 0;
+    NETWORKDAYS(startDate, endDate, holidays = null) {
+        const s = parseExcelDate(startDate);
+        const e = parseExcelDate(endDate);
+        if (!s || !e) return "#VALUE!";
+        const holidaySet = new Set();
+        if (holidays != null) {
+            flattenArray([holidays]).forEach(h => {
+                const hd = parseExcelDate(h);
+                if (hd) holidaySet.add(`${hd.getFullYear()}-${hd.getMonth()}-${hd.getDate()}`);
+            });
+        }
         const cur = new Date(s.getFullYear(), s.getMonth(), s.getDate());
         const end = new Date(e.getFullYear(), e.getMonth(), e.getDate());
+        const step = cur <= end ? 1 : -1;
+        let count = 0;
         while ((step > 0 && cur <= end) || (step < 0 && cur >= end)) {
             const day = cur.getDay();
-            if (day !== 0 && day !== 6) count += step;
+            const key = `${cur.getFullYear()}-${cur.getMonth()}-${cur.getDate()}`;
+            if (day !== 0 && day !== 6 && !holidaySet.has(key)) count += step;
             cur.setDate(cur.getDate() + step);
         }
         return count;
     },
-    WORKDAY(startDate, days) {
-        const base = typeof startDate === "number" ? new Date(Date.UTC(1899, 11, 30) + startDate * 86400000) : new Date(startDate);
-        if (isNaN(base)) return "#VALUE!";
+    WORKDAY(startDate, days, holidays = null) {
+        const base = parseExcelDate(startDate);
+        const remNum = Math.trunc(Number(unwrapBlank(days)));
+        if (!base || isNaN(remNum)) return "#VALUE!";
+        const holidaySet = new Set();
+        if (holidays != null) {
+            flattenArray([holidays]).forEach(h => {
+                const hd = parseExcelDate(h);
+                if (hd) holidaySet.add(`${hd.getFullYear()}-${hd.getMonth()}-${hd.getDate()}`);
+            });
+        }
         const d = new Date(base.getFullYear(), base.getMonth(), base.getDate());
-        let rem = Math.trunc(Number(days) || 0);
+        let rem = remNum;
         const step = rem >= 0 ? 1 : -1;
         while (rem !== 0) {
             d.setDate(d.getDate() + step);
-            if (d.getDay() !== 0 && d.getDay() !== 6) rem -= step;
+            const day = d.getDay();
+            const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+            if (day !== 0 && day !== 6 && !holidaySet.has(key)) rem -= step;
         }
         return d;
     },
@@ -2538,9 +2694,18 @@ const FORMULA_FUNCTIONS = {
             ? String(unwrapBlank(friendlyName))
             : url;
         return label;
+    },
+    IFNA(value, valueIfNa = "") {
+        const raw = unwrapBlank(value);
+        return String(raw ?? "").trim() === "#N/A" ? valueIfNa : value;
+    },
+    STDEV_S(...args) {
+        return FORMULA_FUNCTIONS.STDEV(...args);
+    },
+    RANK_EQ(num, ref, order = 0) {
+        return FORMULA_FUNCTIONS.RANK(num, ref, order);
     }
 };
-
 const FORMULA_FN_NAMES = Object.keys(FORMULA_FUNCTIONS);
 const FORMULA_FN_VALUES = Object.values(FORMULA_FUNCTIONS);
 
@@ -3919,7 +4084,17 @@ export default async function initSpreadsheetApp(content, options = {}) {
     });
     document.body.appendChild(resizeTooltip);
     signal.addEventListener("abort", () => {
+        if (overflowUpdateRaf) {
+            cancelAnimationFrame(overflowUpdateRaf);
+            overflowUpdateRaf = 0;
+        }
+        if (saveStateTimeout) {
+            clearTimeout(saveStateTimeout);
+            saveStateTimeout = null;
+        }
         resizeTooltip.remove();
+        inlineMiniToolbar?.remove?.();
+        document.querySelectorAll(".ss-filter-dropdown").forEach(el => el.remove());
         closeCellDropdownList();
         closeAutocompletePopup();
         hideDataValidationTooltip();
@@ -4440,7 +4615,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
             e.preventDefault();
             const isWholeColSelected = (c) =>
                 tbody.rows.length > 0 &&
-                tbody.querySelectorAll(`td.selected[data-col="${c}"]`).length >= Math.min(tbody.rows.length, 10);
+                tbody.querySelectorAll(`td.selected[data-col="${c}"]`).length >= tbody.rows.length;
 
             if (isWholeColSelected(colIndex)) {
                 const targetCols = new Set([colIndex]);
@@ -4467,7 +4642,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
             const rowNum = Number(tr.dataset.row);
             const isWholeRowSelected = (r) =>
                 currentColumns > 0 &&
-                tbody.querySelectorAll(`td.selected[data-row="${r}"]`).length >= Math.min(currentColumns, 10);
+                tbody.querySelectorAll(`td.selected[data-row="${r}"]`).length >= currentColumns;
 
             if (isWholeRowSelected(rowNum)) {
                 const targetRows = new Set([rowNum]);
@@ -4545,7 +4720,13 @@ export default async function initSpreadsheetApp(content, options = {}) {
         }
         currentColumns = end;
         cachedRowTemplate = null;
-        syncTableWidth();
+        if (cachedTableWidth > 0) {
+            cachedTableWidth += count * 120;
+            table.style.width = `${cachedTableWidth}px`;
+            spreadsheetContent.style.width = `${cachedTableWidth}px`;
+        } else {
+            syncTableWidth();
+        }
         if (freezeRows > 0) {
             const theadHeight = theadRow.offsetHeight || 30;
             let accTop = theadHeight;
@@ -4868,6 +5049,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
 
     function setCellTextPreservingControls(cell, text) {
         const filterBtn = cell.querySelector(".ss-filter-arrow");
+        const fillHandleEl = cell.querySelector(":scope > .fill-handle");
         const strText = String(text ?? "");
         const isJustify = cell.style.textAlign === "justify" && strText !== "";
 
@@ -4932,6 +5114,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
                     }
                     cell.appendChild(frag);
                     if (filterBtn) cell.appendChild(filterBtn);
+                    if (fillHandleEl) cell.appendChild(fillHandleEl);
                     return;
                 }
             } catch { /* ignore */ }
@@ -4960,11 +5143,13 @@ export default async function initSpreadsheetApp(content, options = {}) {
             }
             cell.appendChild(frag);
             if (filterBtn) cell.appendChild(filterBtn);
+            if (fillHandleEl) cell.appendChild(fillHandleEl);
             return;
         }
 
         cell.textContent = strText;
         if (filterBtn) cell.appendChild(filterBtn);
+        if (fillHandleEl) cell.appendChild(fillHandleEl);
     }
 
     function syncCellHyperlinkVisual(cell) {
@@ -5009,10 +5194,17 @@ export default async function initSpreadsheetApp(content, options = {}) {
         syncCellHyperlinkVisual(cell);
     }
 
-    function toJSValueLiteral(val, blankAsZero = false) {
-        if (isBlankVal(val)) return blankAsZero ? "EXCEL_BLANK_CELL" : '""';
+    function toJSValueLiteral(val, blankAsZero = false, stringLiterals = null) {
+        const pushStr = (quotedStr) => {
+            if (!stringLiterals) return quotedStr;
+            const token = `__STR_LIT_${stringLiterals.length}__`;
+            stringLiterals.push(quotedStr);
+            return token;
+        };
+        if (isBlankVal(val)) return blankAsZero ? "EXCEL_BLANK_CELL" : pushStr('""');
+        if (typeof val === "boolean") return val ? "true" : "false";
         if (typeof val === "number") return isFinite(val) ? String(val) : "0";
-        return JSON.stringify(String(val));
+        return pushStr(JSON.stringify(String(val)));
     }
 
     const EXCEL_EPOCH_MS = Date.UTC(1899, 11, 30);
@@ -5066,9 +5258,9 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 if (visited.has(cellKey)) return "#CIRCULAR!";
                 visited.add(cellKey);
                 try {
-                    const evaluated = evaluateFormula(cell.dataset.formula, visited, sheetIdx);
+                    const evaluated = evaluateFormula(cell.dataset.formula, visited, sheetIdx, { row, col });
                     if (evaluated === "#CIRCULAR!") return "#CIRCULAR!";
-                    if (Array.isArray(evaluated)) {
+                    if (Array.isArray(evaluated) || typeof evaluated === "boolean") {
                         if (isBatchRecalculating) formulaEvalCache.set(cellKey, evaluated);
                         return evaluated;
                     }
@@ -5085,6 +5277,9 @@ export default async function initSpreadsheetApp(content, options = {}) {
             const contentStr = (cell.dataset.rawValue ?? cell.textContent).trim();
             if (contentStr === "") return "";
             if (cell.dataset.quotePrefix === "1") return cell.dataset.rawValue ?? cell.textContent;
+            const upperStr = contentStr.toUpperCase();
+            if (upperStr === "TRUE") return true;
+            if (upperStr === "FALSE") return false;
             const dateSerial = tryParseDateToSerial(contentStr);
             if (dateSerial !== null) return dateSerial;
             const num = Number(contentStr.replace(/,/g, ""));
@@ -5098,9 +5293,9 @@ export default async function initSpreadsheetApp(content, options = {}) {
             if (visited.has(cellKey)) return "#CIRCULAR!";
             visited.add(cellKey);
             try {
-                const evaluated = evaluateFormula(entry.f, visited, sheetIdx);
+                const evaluated = evaluateFormula(entry.f, visited, sheetIdx, { row, col });
                 if (evaluated === "#CIRCULAR!") return "#CIRCULAR!";
-                if (Array.isArray(evaluated)) {
+                if (Array.isArray(evaluated) || typeof evaluated === "boolean") {
                     if (isBatchRecalculating) formulaEvalCache.set(cellKey, evaluated);
                     return evaluated;
                 }
@@ -5116,6 +5311,10 @@ export default async function initSpreadsheetApp(content, options = {}) {
         }
         const raw = String(entry.v ?? "").trim();
         if (raw === "") return "";
+        if (entry.qp) return String(entry.v ?? "");
+        const upperRaw = raw.toUpperCase();
+        if (upperRaw === "TRUE") return true;
+        if (upperRaw === "FALSE") return false;
         const dateSerial = tryParseDateToSerial(raw);
         if (dateSerial !== null) return dateSerial;
         const num = Number(raw.replace(/,/g, ""));
@@ -5127,7 +5326,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
         return getSheetCellValue(activeSheetIndex, parseInt(cell.dataset.row, 10), parseInt(cell.dataset.col, 10), visited);
     }
 
-    function buildRange2DLiteral(sheetIdx, startRef, endRef, visited, excludeHiddenRows = false) {
+    function buildRange2DLiteral(sheetIdx, startRef, endRef, visited, excludeHiddenRows = false, stringLiterals = null) {
         const startMatch = startRef?.match(/^\$?([A-Za-z]+)\$?(\d+)$/);
         const endMatch = endRef?.match(/^\$?([A-Za-z]+)\$?(\d+)$/);
         if (!startMatch || !endMatch) return "[]";
@@ -5160,7 +5359,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
             const rowVals = [];
             for (let c = cStart; c <= cEnd; c++) {
                 const val = getSheetCellValue(sheetIdx, r, c, visited);
-                rowVals.push(toJSValueLiteral(val, false));
+                rowVals.push(toJSValueLiteral(val, false, stringLiterals));
             }
             matrix.push(`[${rowVals.join(",")}]`);
         }
@@ -5170,7 +5369,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
     const CROSS_SHEET_RANGE_REGEX = /(?:'([^']+)'|([A-Za-z0-9_\u3040-\u30FF\u4E00-\u9FAF]+))!(\$?[A-Za-z]+\$?\d+):(\$?[A-Za-z]+\$?\d+)/g;
     const CROSS_SHEET_CELL_REGEX = /(?:'([^']+)'|([A-Za-z0-9_\u3040-\u30FF\u4E00-\u9FAF]+))!(\$?[A-Za-z]+\$?\d+)/g;
 
-    function evaluateFormula(formula, visited = new Set(), contextSheetIdx = activeSheetIndex) {
+    function evaluateFormula(formula, visited = new Set(), contextSheetIdx = activeSheetIndex, evalCoord = null) {
         if (!formula) return formula;
         if (formula === "=") return "=";
         if (formula[0] !== "=") return formula;
@@ -5191,7 +5390,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
 
             expr = resolveStructuredReferences(expr, contextSheetIdx);
 
-            // Excelの演算子優先順位（比較 < & < 四則）と任意階層の括弧・関数引数に対応した結合変換
+            // Excelの演算子優先順位（比較 < & < 四則）と等価比較（__XL_EQ）への変換
             const convertExcelConcat = (src) => {
                 // 1. まず括弧 (...) 内部を再帰変換（関数引数のカンマ境界を破壊しない）
                 let resolved = "";
@@ -5273,37 +5472,76 @@ export default async function initSpreadsheetApp(content, options = {}) {
                     return parts.length > 1 ? `CONCAT(${parts.join(", ")})` : exprPart;
                 };
 
+                if (cmpSegments.length === 2) {
+                    const op = cmpSegments[0].op;
+                    const lhs = convertAmp(cmpSegments[0].text).trim();
+                    const rhs = convertAmp(cmpSegments[1].text).trim();
+                    if (lhs !== "" && rhs !== "") {
+                        if (op === "=" || op === "==") return `__XL_EQ(${lhs}, ${rhs})`;
+                        if (op === "<>" || op === "!=") return `(!__XL_EQ(${lhs}, ${rhs}))`;
+                    }
+                }
+
                 return cmpSegments.map(s => convertAmp(s.text) + s.op).join("");
             };
 
+            // 列全体参照 ($A:$C)・行全体参照 ($1:$5) をシート使用範囲へ展開する補助関数
+            const expandWholeAxisRefs = (src) => {
+                const maxUsedRow = Math.max(1, tbody.rows.length);
+                const maxUsedCol = Math.max(0, currentColumns - 1);
+                const maxColName = getColumnName(maxUsedCol);
+                // 列全体参照（例: A:C, $B:$B）
+                let out = src.replace(/(?<![A-Za-z0-9_:])(\$?[A-Za-z]+):(\$?[A-Za-z]+)(?![A-Za-z0-9_(])/g, (_, c1, c2) => {
+                    return `${c1}1:${c2}${maxUsedRow}`;
+                });
+                // 行全体参照（例: 1:3, $2:$2）
+                out = out.replace(/(?<![A-Za-z0-9_:])(\$?\d+):(\$?\d+)(?![A-Za-z0-9_])/g, (_, r1, r2) => {
+                    return `A${r1}:${maxColName}${r2}`;
+                });
+                return out;
+            };
+
+            // Excel仕様: 単項マイナスはべき乗(^)より高優先 (-2^2 === 4)
+            const normalizeExcelPower = (src) => {
+                return src
+                    .replace(/(^|[(\[,+\-*/=<>!&])\s*(-\s*(?:\d+(?:\.\d+)?|\$?[A-Za-z]+\$?\d+|\([^()]+\)))\s*\^/g, "$1($2)**")
+                    .replace(/\^/g, "**");
+            };
+
             // Excel演算子・リテラル・関数名の大文字正規化
-            // NOTE: "<>" は "!==" ではなく "!=" にすることで EXCEL_BLANK_CELL != 0 が正しく false になる
-            expr = convertExcelConcat(expr)
-                .replace(/\^/g, "**")
+            expr = expandWholeAxisRefs(convertExcelConcat(expr));
+            expr = normalizeExcelPower(expr)
                 .replace(/<>/g, "!=")
                 .replace(/(?<![<>!=])=(?!=)/g, "==")
-                .replace(/(\d+(?:\.\d+)?)%/g, "($1/100)")
+                .replace(/(\d+(?:\.\d+)?|\$?[A-Za-z]+\$?\d+|\([^()]+\))%/g, "($1/100)")
                 .replace(/\bTRUE\b/gi, "true")
                 .replace(/\bFALSE\b/gi, "false")
-                .replace(/\b([A-Za-z_][A-Za-z0-9_]*)\s*(?=\()/g, (_, fn) => fn.toUpperCase());
+                .replace(/\b([A-Za-z_][A-Za-z0-9_.]*)\s*(?=\()/g, (_, fn) => fn.toUpperCase().replace(/\./g, "_"));
+
+            // ROW() / COLUMN() の座標解決（セル参照の値展開より先に処理）
+            expr = expr
+                .replace(/\bROW\s*\(\s*\)/g, () => String(evalCoord?.row ?? 1))
+                .replace(/\bCOLUMN\s*\(\s*\)/g, () => String((evalCoord?.col ?? 0) + 1))
+                .replace(/\bROW\s*\(\s*(?:(?:'[^']+'|[A-Za-z0-9_\u3040-\u30FF\u4E00-\u9FAF]+)!)?\$?[A-Za-z]+\$?(\d+)(?::\$?[A-Za-z]+\$?\d+)?\s*\)/g, (_, r) => String(parseInt(r, 10)))
+                .replace(/\bCOLUMN\s*\(\s*(?:(?:'[^']+'|[A-Za-z0-9_\u3040-\u30FF\u4E00-\u9FAF]+)!)?\$?([A-Za-z]+)\$?\d+(?::\$?[A-Za-z]+\$?\d+)?\s*\)/g, (_, colL) => String(columnLettersToIndex(colL) + 1));
 
             // 他シート範囲参照（例: Sheet2!A1:C5 / '売上表'!A1:C5）
             expr = expr.replace(CROSS_SHEET_RANGE_REGEX, (_, qName, plainName, sRef, eRef) => {
                 const sName = qName ?? plainName;
                 const sIdx = sheets.findIndex(s => s.name === sName);
-                if (sIdx === -1) return '[["#REF!"]]';
-                return buildRange2DLiteral(sIdx, sRef, eRef, visited);
+                if (sIdx === -1) return `[[${toJSValueLiteral("#REF!", false, stringLiterals)}]]`;
+                return buildRange2DLiteral(sIdx, sRef, eRef, visited, false, stringLiterals);
             });
 
             // 他シート単一セル参照（例: Sheet2!B3）
             expr = expr.replace(CROSS_SHEET_CELL_REGEX, (_, qName, plainName, cellRef) => {
                 const sName = qName ?? plainName;
                 const sIdx = sheets.findIndex(s => s.name === sName);
-                if (sIdx === -1) return '"#REF!"';
+                if (sIdx === -1) return toJSValueLiteral("#REF!", false, stringLiterals);
                 const m = cellRef.match(/^\$?([A-Za-z]+)\$?(\d+)$/);
-                if (!m) return '"#REF!"';
+                if (!m) return toJSValueLiteral("#REF!", false, stringLiterals);
                 const val = getSheetCellValue(sIdx, parseInt(m[2], 10), columnLettersToIndex(m[1]), visited);
-                return toJSValueLiteral(val, true);
+                return toJSValueLiteral(val, true, stringLiterals);
             });
 
             // 自シート範囲参照：SUBTOTAL/AGGREGATEの引数内にある範囲のみ非表示行を除外
@@ -5325,7 +5563,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
             expr = expr.replace(RANGE_REF_REGEX, (match, _g1, offset, fullStr) => {
                 const [startRef, endRef] = match.split(":");
                 const excludeHidden = isInsideSubtotalCall(fullStr, offset);
-                return buildRange2DLiteral(contextSheetIdx, startRef, endRef, visited, excludeHidden);
+                return buildRange2DLiteral(contextSheetIdx, startRef, endRef, visited, excludeHidden, stringLiterals);
             });
 
             // 自シート単一セル参照
@@ -5333,15 +5571,110 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 const colIndex = columnLettersToIndex(colLetters);
                 const rowNumber = parseInt(rowStr, 10);
                 const val = getSheetCellValue(contextSheetIdx, rowNumber, colIndex, visited);
-                return toJSValueLiteral(val, true);
+                return toJSValueLiteral(val, true, stringLiterals);
             });
 
+            // LET / LAMBDA を安全なネスト式へ展開（Excel準拠：変数名の大文字小文字非区別）
+            const BUILTIN_FN_SET = new Set(FORMULA_FN_NAMES);
+            const splitTopLevelArgs = (inner) => {
+                const args = [];
+                let buf = "";
+                let depth = 0;
+                let sqDepth = 0;
+                for (let k = 0; k < inner.length; k++) {
+                    const ch = inner[k];
+                    if (ch === "(") depth++;
+                    else if (ch === ")") depth = Math.max(0, depth - 1);
+                    else if (ch === "[") sqDepth++;
+                    else if (ch === "]") sqDepth = Math.max(0, sqDepth - 1);
+                    if (ch === "," && depth === 0 && sqDepth === 0) {
+                        args.push(buf.trim());
+                        buf = "";
+                    } else {
+                        buf += ch;
+                    }
+                }
+                args.push(buf.trim());
+                return args;
+            };
+
+            const replaceLocalVar = (code, rawName, safeName) => {
+                const escaped = rawName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+                const re = new RegExp(`(?<![A-Za-z0-9_$.])${escaped}(?![A-Za-z0-9_])`, "gi");
+                return code.replace(re, (m, offset, full) => {
+                    const after = full.slice(offset + m.length).trimStart();
+                    if (after.startsWith("(") && BUILTIN_FN_SET.has(m.toUpperCase())) {
+                        return m;
+                    }
+                    return safeName;
+                });
+            };
+
+            const transformLetAndLambda = (src) => {
+                let out = "";
+                let i = 0;
+                while (i < src.length) {
+                    const rest = src.slice(i);
+                    const fnMatch = rest.match(/^(LET|LAMBDA)\s*\(/);
+                    if (fnMatch && (i === 0 || !/[A-Za-z0-9_$]/.test(src[i - 1]))) {
+                        const fnName = fnMatch[1];
+                        let pos = i + fnMatch[0].length;
+                        let depth = 1;
+                        while (pos < src.length && depth > 0) {
+                            if (src[pos] === "(") depth++;
+                            else if (src[pos] === ")") depth--;
+                            pos++;
+                        }
+                        if (depth !== 0) return src;
+                        const inner = src.slice(i + fnMatch[0].length, pos - 1);
+                        const rawArgs = splitTopLevelArgs(inner);
+
+                        if (fnName === "LET") {
+                            if (rawArgs.length < 3 || rawArgs.length % 2 === 0) return '"#VALUE!"';
+                            const pairs = [];
+                            for (let p = 0; p < rawArgs.length - 1; p += 2) {
+                                const varName = rawArgs[p].trim();
+                                if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(varName)) return '"#NAME?"';
+                                pairs.push({ name: varName, safe: `__LV_${varName.toUpperCase()}`, val: transformLetAndLambda(rawArgs[p + 1]) });
+                            }
+                            let bodyExpr = transformLetAndLambda(rawArgs[rawArgs.length - 1]);
+                            for (let p = pairs.length - 1; p >= 0; p--) {
+                                const { name, safe, val } = pairs[p];
+                                bodyExpr = `((${safe}) => (${replaceLocalVar(bodyExpr, name, safe)}))(${val})`;
+                            }
+                            out += bodyExpr;
+                        } else {
+                            // LAMBDA(param1, [param2, ...], calculation)
+                            if (rawArgs.length < 2) return '"#VALUE!"';
+                            const params = rawArgs.slice(0, -1).map(p => p.trim());
+                            if (params.some(p => !/^[A-Za-z_][A-Za-z0-9_]*$/.test(p))) return '"#NAME?"';
+                            let bodyExpr = transformLetAndLambda(rawArgs[rawArgs.length - 1]);
+                            const safeParams = params.map(p => {
+                                const safe = `__LV_${p.toUpperCase()}`;
+                                bodyExpr = replaceLocalVar(bodyExpr, p, safe);
+                                return safe;
+                            });
+                            out += `((${safeParams.join(", ")}) => (${bodyExpr}))`;
+                        }
+                        i = pos;
+                    } else {
+                        out += src[i];
+                        i++;
+                    }
+                }
+                return out;
+            };
+
+            if (/\b(LET|LAMBDA)\s*\(/.test(expr)) {
+                expr = transformLetAndLambda(expr);
+            }
+
             // 文字列リテラル復元前に、許可された識別子のみであることを検証（任意JS実行防止 & #NAME? 判定）
-            const ALLOWED_IDENTIFIERS = new Set(["EXCEL_BLANK_CELL", "true", "false", ...FORMULA_FN_NAMES]);
+            const ALLOWED_IDENTIFIERS = new Set(["EXCEL_BLANK_CELL", "__XL_EQ", "true", "false", ...FORMULA_FN_NAMES]);
             const unsafeIdentMatch = expr.match(/\b[A-Za-z_$][A-Za-z0-9_$]*\b/g);
             if (unsafeIdentMatch) {
                 for (const ident of unsafeIdentMatch) {
-                    if (/^__STR_LIT_\d+__$/.test(ident)) continue;
+                    if (/^__STR_LIT_\d+__$/.test(ident) || /^__LV_[A-Z0-9_]+$/.test(ident)) continue;
                     if (!ALLOWED_IDENTIFIERS.has(ident)) {
                         return "#NAME?";
                     }
@@ -5352,11 +5685,11 @@ export default async function initSpreadsheetApp(content, options = {}) {
 
             let evaluator = compiledFormulaCache.get(expr);
             if (!evaluator) {
-                evaluator = new Function("EXCEL_BLANK_CELL", ...FORMULA_FN_NAMES, `"use strict"; return (${expr});`);
+                evaluator = new Function("EXCEL_BLANK_CELL", "__XL_EQ", ...FORMULA_FN_NAMES, `"use strict"; return (${expr});`);
                 if (compiledFormulaCache.size > 2000) compiledFormulaCache.clear();
                 compiledFormulaCache.set(expr, evaluator);
             }
-            const rawEval = evaluator(EXCEL_BLANK_CELL, ...FORMULA_FN_VALUES);
+            const rawEval = evaluator(EXCEL_BLANK_CELL, excelOpEquals, ...FORMULA_FN_VALUES);
             const result = unwrapBlank(rawEval);
             if (typeof result === "number") {
                 if (Number.isNaN(result)) return "#VALUE!";
@@ -5469,13 +5802,24 @@ export default async function initSpreadsheetApp(content, options = {}) {
             if (totalRows <= 120) {
                 rowsToScan = tbody.rows;
             } else {
-                // 大規模シートでは現在表示されているスクロール領域前後（バッファ含む）のみ更新
-                const approxRowH = 30;
-                const startIdx = Math.max(0, Math.floor(container.scrollTop / approxRowH) - 15);
-                const endIdx = Math.min(totalRows - 1, Math.ceil((container.scrollTop + container.clientHeight) / approxRowH) + 25);
+                // 行高さが可変でも正確に可視領域を特定（二分探索）
+                const viewTop = Math.max(0, container.scrollTop - 300);
+                const viewBottom = container.scrollTop + container.clientHeight + 450;
+                let lo = 0, hi = totalRows - 1, startIdx = 0;
+                while (lo <= hi) {
+                    const mid = (lo + hi) >> 1;
+                    if (tbody.rows[mid].offsetTop + tbody.rows[mid].offsetHeight < viewTop) {
+                        lo = mid + 1;
+                    } else {
+                        startIdx = mid;
+                        hi = mid - 1;
+                    }
+                }
                 rowsToScan = [];
-                for (let r = startIdx; r <= endIdx; r++) {
-                    rowsToScan.push(tbody.rows[r]);
+                for (let r = startIdx; r < totalRows; r++) {
+                    const tr = tbody.rows[r];
+                    if (tr.offsetTop > viewBottom) break;
+                    rowsToScan.push(tr);
                 }
             }
         }
@@ -5654,7 +5998,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
             const s = String(rawOp ?? "").trim();
             if (!s.startsWith("=")) return s;
             const shifted = adjustFormula(s, cellRow - rule.minRow, cellCol - rule.minCol);
-            const evaluated = evaluateFormula(shifted, new Set(), activeSheetIndex);
+            const evaluated = evaluateFormula(shifted, new Set(), activeSheetIndex, { row: cellRow, col: cellCol });
             return Array.isArray(evaluated) ? String(evaluated[0]?.[0] ?? "") : String(evaluated ?? "");
         };
 
@@ -5675,7 +6019,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
             if (!rule.formula) return false;
             const f = rule.formula.trim().startsWith("=") ? rule.formula.trim() : `=${rule.formula.trim()}`;
             const shifted = adjustFormula(f, cellRow - rule.minRow, cellCol - rule.minCol);
-            const res = evaluateFormula(shifted, new Set(), activeSheetIndex);
+            const res = evaluateFormula(shifted, new Set(), activeSheetIndex, { row: cellRow, col: cellCol });
             if (typeof res === "boolean") return res;
             if (typeof res === "number") return res !== 0;
             return String(res ?? "").trim().toUpperCase() === "TRUE";
@@ -6292,6 +6636,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
                                 <option value=">=" ${existing?.op === ">=" ? "selected" : ""}>次の値以上</option>
                                 <option value="<=" ${existing?.op === "<=" ? "selected" : ""}>次の値以下</option>
                                 <option value="contains" ${existing?.op === "contains" ? "selected" : ""}>特定の文字列を含む</option>
+                                <option value="date" ${existing?.op === "date" ? "selected" : ""}>日付 (期間指定)</option>
                                 <option value="blank" ${existing?.op === "blank" ? "selected" : ""}>空白</option>
                                 <option value="notBlank" ${existing?.op === "notBlank" ? "selected" : ""}>空白以外</option>
                                 <option value="error" ${existing?.op === "error" ? "selected" : ""}>エラー</option>
@@ -6353,12 +6698,13 @@ export default async function initSpreadsheetApp(content, options = {}) {
                     <div class="ss-cf-fmt-area" style="display:${initType === "scaleBar" ? "none" : "flex"}; flex-direction:column; gap:6px; border-top:1px solid #ccc; padding-top:6px; margin-top:2px;">
                         <div style="display:flex; align-items:center; gap:8px;">
                             <span>プレビュー:</span>
-                            <div class="ss-cf-preview border" style="flex:1; height:26px; line-height:24px; text-align:center; background:${existing?.bgColor || "#ffc7ce"}; color:${existing?.textColor || "#9c0006"}; font-weight:${existing?.bold ? "bold" : "normal"}; font-style:${existing?.italic ? "italic" : "normal"};">AaBbCcYyZz</div>
+                            <div class="ss-cf-preview border" style="flex:1; height:26px; line-height:24px; text-align:center; background:${existing && !existing.bgColor ? "#ffffff" : (existing?.bgColor || "#ffc7ce")}; color:${existing && !existing.textColor ? "#000000" : (existing?.textColor || "#9c0006")}; font-weight:${!existing || existing.bold ? "bold" : "normal"}; font-style:${existing?.italic ? "italic" : "normal"};">AaBbCcYyZz</div>
                         </div>
                         <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
                             <label>塗りつぶし: <input type="color" class="ss-cf-bg" value="${existing?.bgColor || "#ffc7ce"}"></label>
                             <label><input type="checkbox" class="ss-cf-nobg" ${existing && !existing.bgColor ? "checked" : ""}> 塗りつぶしなし</label>
                             <label>文字色: <input type="color" class="ss-cf-fg" value="${existing?.textColor || "#9c0006"}"></label>
+                            <label><input type="checkbox" class="ss-cf-nofg" ${existing && !existing.textColor ? "checked" : ""}> 文字色自動</label>
                             <label><input type="checkbox" class="ss-cf-bold" ${!existing || existing.bold ? "checked" : ""}> 太字</label>
                             <label><input type="checkbox" class="ss-cf-italic" ${existing?.italic ? "checked" : ""}> 斜体</label>
                         </div>
@@ -6377,8 +6723,9 @@ export default async function initSpreadsheetApp(content, options = {}) {
                     onClick: () => {
                         const rType = modalContent.querySelector(".ss-cf-ruletype").value;
                         const noBg = modalContent.querySelector(".ss-cf-nobg").checked;
+                        const noFg = modalContent.querySelector(".ss-cf-nofg").checked;
                         const bgColor = noBg ? "" : modalContent.querySelector(".ss-cf-bg").value;
-                        const textColor = modalContent.querySelector(".ss-cf-fg").value;
+                        const textColor = noFg ? "" : modalContent.querySelector(".ss-cf-fg").value;
                         const bold = modalContent.querySelector(".ss-cf-bold").checked;
                         const italic = modalContent.querySelector(".ss-cf-italic").checked;
 
@@ -6427,9 +6774,10 @@ export default async function initSpreadsheetApp(content, options = {}) {
                             if (sbMode === "iconset") rule.iconSet = existing?.iconSet || "arrows3";
                         } else if (rType === "cellValue") {
                             const selectedOp = modalContent.querySelector(".ss-cf-op").value;
-                            rule.op = (existing?.op === "date" && selectedOp === "between" && !modalContent.querySelector(".ss-cf-v1").value.trim())
-                                ? "date"
-                                : selectedOp;
+                            rule.op = selectedOp;
+                            if (selectedOp === "date") {
+                                rule.datePeriod = existing?.datePeriod || "today";
+                            }
                             rule.val1 = modalContent.querySelector(".ss-cf-v1").value.trim();
                             rule.val2 = modalContent.querySelector(".ss-cf-v2").value.trim();
                         } else if (rType === "topBottom") {
@@ -6443,7 +6791,9 @@ export default async function initSpreadsheetApp(content, options = {}) {
                             rule.op = modalContent.querySelector(".ss-cf-du-op").value;
                         } else if (rType === "formula") {
                             rule.op = "formula";
-                            rule.formula = modalContent.querySelector(".ss-cf-formula").value.trim();
+                            rule.formula = modalContent.querySelector(".ss-cf-formula").value
+                                .trim()
+                                .replace(/[“”″]/g, '"');
                         }
 
                         if (existing && editIndex !== null) {
@@ -6469,16 +6819,20 @@ export default async function initSpreadsheetApp(content, options = {}) {
         const bgInp = modalContent.querySelector(".ss-cf-bg");
         const noBgChk = modalContent.querySelector(".ss-cf-nobg");
         const fgInp = modalContent.querySelector(".ss-cf-fg");
+        const noFgChk = modalContent.querySelector(".ss-cf-nofg");
         const boldChk = modalContent.querySelector(".ss-cf-bold");
         const italicChk = modalContent.querySelector(".ss-cf-italic");
 
         const syncPreview = () => {
             previewEl.style.backgroundColor = noBgChk.checked ? "#ffffff" : bgInp.value;
-            previewEl.style.color = fgInp.value;
+            previewEl.style.color = noFgChk.checked ? "#000000" : fgInp.value;
             previewEl.style.fontWeight = boldChk.checked ? "bold" : "normal";
             previewEl.style.fontStyle = italicChk.checked ? "italic" : "normal";
         };
-        [bgInp, noBgChk, fgInp, boldChk, italicChk].forEach(el => el.addEventListener("change", syncPreview));
+        bgInp.addEventListener("input", () => { noBgChk.checked = false; syncPreview(); });
+        fgInp.addEventListener("input", () => { noFgChk.checked = false; syncPreview(); });
+        [bgInp, noBgChk, fgInp, noFgChk, boldChk, italicChk].forEach(el => el.addEventListener("change", syncPreview));
+        syncPreview();
 
         typeSel.addEventListener("change", () => {
             const val = typeSel.value;
@@ -6854,7 +7208,8 @@ export default async function initSpreadsheetApp(content, options = {}) {
 
                 const cellKey = `${activeSheetIndex}:${r},${c}`;
                 const visited = new Set([cellKey]);
-                const rawResult = evaluateFormula(cell.dataset.formula, visited, activeSheetIndex);
+                const rawResult = evaluateFormula(cell.dataset.formula, visited, activeSheetIndex, { row: r, col: c });
+
 
                 if (Array.isArray(rawResult)) {
                     const topVal = applySpillMatrix(cell, r, c, rawResult);
@@ -7062,7 +7417,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
         if (document.activeElement !== selectedCellsDisplay) {
             selectedCellsDisplay.value = text;
         }
-        updateSelectionEdges();
+        updateSelectionEdges(selected);
         updateToolbarState();
 
         if (selected.length > 1 && numCount > 0) {
@@ -7133,7 +7488,15 @@ export default async function initSpreadsheetApp(content, options = {}) {
         if (cell.dataset.rawValue !== undefined) return cell.dataset.rawValue;
         let txt = "";
         cell.childNodes.forEach(node => {
-            if (node.nodeType === Node.TEXT_NODE) txt += node.nodeValue;
+            if (node.nodeType === Node.TEXT_NODE) {
+                txt += node.nodeValue;
+            } else if (
+                node.nodeType === Node.ELEMENT_NODE &&
+                !node.classList.contains("ss-filter-arrow") &&
+                !node.classList.contains("fill-handle")
+            ) {
+                txt += node.textContent;
+            }
         });
         return txt;
     }
@@ -7537,23 +7900,30 @@ export default async function initSpreadsheetApp(content, options = {}) {
             const prevRaw = cell.dataset.rawValue;
             const hadFormula = Object.prototype.hasOwnProperty.call(cell.dataset, "formula");
             const prevFormula = cell.dataset.formula;
-            const prevText = Array.from(cell.childNodes)
-                .filter(n => n.nodeType === Node.TEXT_NODE)
-                .map(n => n.nodeValue)
-                .join("");
+            const prevDisplayText = getCellPureText(cell);
+            const prevRichRuns = cell.dataset.richRuns;
             try {
                 delete cell.dataset.formula;
+                delete cell.dataset.richRuns;
                 cell.dataset.rawValue = String(newText);
                 setCellTextPreservingControls(cell, String(newText));
                 formulaEvalCache.clear();
-                const res = evaluateFormula(f, new Set(), activeSheetIndex);
+                const res = evaluateFormula(f, new Set(), activeSheetIndex, {
+                    row: parseInt(cell.dataset.row, 10) || 1,
+                    col: parseInt(cell.dataset.col, 10) || 0
+                });
                 isValid = res === true || res === 1 || String(res ?? "").trim().toUpperCase() === "TRUE";
             } finally {
                 if (hadFormula) cell.dataset.formula = prevFormula;
                 else delete cell.dataset.formula;
                 if (hadRaw) cell.dataset.rawValue = prevRaw;
                 else delete cell.dataset.rawValue;
-                setCellTextPreservingControls(cell, prevText);
+                if (prevRichRuns !== undefined) cell.dataset.richRuns = prevRichRuns;
+                else delete cell.dataset.richRuns;
+                setCellTextPreservingControls(
+                    cell,
+                    formatDisplayByNumFmt(prevDisplayText, cell.dataset.numFormat, cell)
+                );
                 formulaEvalCache.clear();
             }
         }
@@ -7877,7 +8247,9 @@ export default async function initSpreadsheetApp(content, options = {}) {
                         const listSpec = modalContent.querySelector(".ss-dv-list-input").value.trim();
                         const min = modalContent.querySelector(".ss-dv-min").value.trim();
                         const max = modalContent.querySelector(".ss-dv-max").value.trim();
-                        const formula = modalContent.querySelector(".ss-dv-formula").value.trim();
+                        const formula = modalContent.querySelector(".ss-dv-formula").value
+                            .trim()
+                            .replace(/[“”″]/g, '"');
                         const ignoreBlank = modalContent.querySelector(".ss-dv-ignoreblank").checked;
                         const inCellDropdown = modalContent.querySelector(".ss-dv-incell").checked;
                         const showPrompt = modalContent.querySelector(".ss-dv-showprompt").checked;
@@ -8077,9 +8449,9 @@ export default async function initSpreadsheetApp(content, options = {}) {
         });
     }
 
-    function updateSelectionEdges() {
+    function updateSelectionEdges(preQueriedSelected = null) {
         clearSelectionEdges();
-        const selected = Array.from(tbody.querySelectorAll("td.selected"));
+        const selected = preQueriedSelected || Array.from(tbody.querySelectorAll("td.selected"));
         updateHeaderSelectionHighlights(selected);
         if (!selected.length) return;
 
@@ -8784,7 +9156,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
         if (handleAutocompleteKeydown(e)) return;
         if (handleF4ReferenceToggle(e)) return;
 
-        if (e.key === "Enter" && (e.altKey || e.shiftKey)) {
+        if (e.key === "Enter" && e.altKey) {
             e.preventDefault();
             e.stopPropagation();
             const pos = formulaBarInput.selectionStart ?? formulaBarInput.value.length;
@@ -8830,6 +9202,9 @@ export default async function initSpreadsheetApp(content, options = {}) {
         if (isCellEditing() || document.activeElement === cellEditor) return;
         if (!activeCell || e.ctrlKey || e.metaKey) return;
 
+        // Alt順次押し（Alt → O → A 等）待機中は文字入力として横取りせず document 側へ通す
+        if (altKeySequence) return;
+
         // Alt + ↓ でデータ入力規則のプルダウンを展開
         if (e.altKey) {
             if (e.key === "ArrowDown" && activeCell.dataset.dropdownList) {
@@ -8840,10 +9215,17 @@ export default async function initSpreadsheetApp(content, options = {}) {
             return;
         }
 
-        // 非編集時の Enter / Tab（複数セル選択中は選択範囲内をループ移動）
+        // Shift + Space（行全体選択）は文字入力として横取りせず document 側へ通す
+        if (e.shiftKey && e.key === " ") return;
+
+        // 非編集時の Enter / Tab（コピー中Enterは貼り付け、通常時は選択範囲内をループ移動）
         if (e.key === "Enter" || e.key === "Tab") {
             e.preventDefault();
             e.stopPropagation();
+            if (e.key === "Enter" && clipboardData && tbody.querySelector(".copy-marching-ants")) {
+                void pasteClipboardData("all");
+                return;
+            }
             moveActiveInSelectionOrStep(activeCell, e.key === "Enter" ? "vertical" : "horizontal", e.shiftKey);
             return;
         }
@@ -8878,10 +9260,14 @@ export default async function initSpreadsheetApp(content, options = {}) {
             return;
         }
 
-        // 4. Backspace：内容をクリアして編集モードへ
+        // 4. Backspace：単一セルはクリアして即編集モード、複数セル選択時は一括クリア
         if (e.key === "Backspace") {
             e.preventDefault();
             e.stopPropagation();
+            if (getTargetCells().length > 1) {
+                clearTargetCellsContent();
+                return;
+            }
             enterCellEditMode(activeCell, false, "backspace");
             cellEditor.value = "";
             formulaBarInput.value = "";
@@ -9056,7 +9442,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
             return;
         }
 
-        if (e.key === "Enter" && (e.altKey || e.shiftKey)) {
+        if (e.key === "Enter" && e.altKey) {
             e.preventDefault();
             e.stopPropagation();
             const pos = cellEditor.selectionStart ?? cellEditor.value.length;
@@ -9072,11 +9458,18 @@ export default async function initSpreadsheetApp(content, options = {}) {
             e.stopPropagation();
             const target = editingCell;
             if (!target) return;
-            if (!commitCellValue(target, cellEditor.value)) {
+            const isBulk = e.ctrlKey || e.metaKey;
+            if (!commitValueToTargets(target, getTargetCells(), cellEditor.value, isBulk)) {
                 target.focus({ preventScroll: true });
                 return;
             }
-            moveActiveInSelectionOrStep(target, "vertical", e.shiftKey);
+            if (isBulk) {
+                target.focus({ preventScroll: true });
+                updateSelectedCellsDisplay();
+                updateFillHandle();
+            } else {
+                moveActiveInSelectionOrStep(target, "vertical", e.shiftKey);
+            }
             return;
         }
 
@@ -9624,12 +10017,21 @@ export default async function initSpreadsheetApp(content, options = {}) {
             }
         }
 
-        // 4. 文字列＋末尾数字（項目1→項目2、逆方向で0未満にはしない）
+        // 4. 文字列＋末尾数字（単一セルは+1、複数セルは増分ステップを計算）
         const suffixMatch = first.match(/^(.*?)(\d+)$/);
         if (suffixMatch) {
             const prefix = suffixMatch[1];
             const numPart = suffixMatch[2];
-            const nextNum = Math.max(0, parseInt(numPart, 10) + stepIndex);
+            const startNum = parseInt(numPart, 10);
+            let numStep = 1;
+            if (n >= 2) {
+                const lastMatch = last.match(/^(.*?)(\d+)$/);
+                if (lastMatch && lastMatch[1] === prefix) {
+                    const diff = (parseInt(lastMatch[2], 10) - startNum) / (n - 1);
+                    if (Number.isInteger(diff)) numStep = diff;
+                }
+            }
+            const nextNum = Math.max(0, startNum + numStep * stepIndex);
             return prefix + String(nextNum).padStart(numPart.length, "0");
         }
 
@@ -9688,6 +10090,58 @@ export default async function initSpreadsheetApp(content, options = {}) {
         applyCellStyleData(targetCell, extractCellStyleObject(sourceCell));
         targetCell.removeAttribute("contenteditable");
         targetCell.classList.remove("selected", "fill-selected", "active-cell");
+    }
+
+    function extendConditionalFormatsForFill(srcRange, dstRange) {
+        const rules = sheets[activeSheetIndex]?.conditionalFormats;
+        if (!Array.isArray(rules) || !rules.length || !srcRange || !dstRange) return;
+
+        const isVerticalFill = dstRange.minCol === srcRange.minCol && dstRange.maxCol === srcRange.maxCol;
+        const isHorizontalFill = dstRange.minRow === srcRange.minRow && dstRange.maxRow === srcRange.maxRow;
+
+        rules.forEach(rule => {
+            const overlapsSrc = !(
+                rule.maxRow < srcRange.minRow || rule.minRow > srcRange.maxRow ||
+                rule.maxCol < srcRange.minCol || rule.minCol > srcRange.maxCol
+            );
+            if (!overlapsSrc) return;
+
+            if (isVerticalFill) {
+                if (dstRange.maxRow > rule.maxRow) {
+                    rule.maxRow = dstRange.maxRow;
+                }
+                if (dstRange.minRow < rule.minRow) {
+                    const rowShift = dstRange.minRow - rule.minRow;
+                    if (rule.formula && String(rule.formula).trim().startsWith("=")) {
+                        rule.formula = adjustFormula(rule.formula, rowShift, 0);
+                    }
+                    if (typeof rule.val1 === "string" && rule.val1.trim().startsWith("=")) {
+                        rule.val1 = adjustFormula(rule.val1, rowShift, 0);
+                    }
+                    if (typeof rule.val2 === "string" && rule.val2.trim().startsWith("=")) {
+                        rule.val2 = adjustFormula(rule.val2, rowShift, 0);
+                    }
+                    rule.minRow = dstRange.minRow;
+                }
+            } else if (isHorizontalFill && rule.minRow >= srcRange.minRow && rule.maxRow <= srcRange.maxRow) {
+                if (dstRange.maxCol > rule.maxCol) {
+                    rule.maxCol = dstRange.maxCol;
+                }
+                if (dstRange.minCol < rule.minCol) {
+                    const colShift = dstRange.minCol - rule.minCol;
+                    if (rule.formula && String(rule.formula).trim().startsWith("=")) {
+                        rule.formula = adjustFormula(rule.formula, 0, colShift);
+                    }
+                    if (typeof rule.val1 === "string" && rule.val1.trim().startsWith("=")) {
+                        rule.val1 = adjustFormula(rule.val1, 0, colShift);
+                    }
+                    if (typeof rule.val2 === "string" && rule.val2.trim().startsWith("=")) {
+                        rule.val2 = adjustFormula(rule.val2, 0, colShift);
+                    }
+                    rule.minCol = dstRange.minCol;
+                }
+            }
+        });
     }
 
     function updateFillHandle() {
@@ -9767,6 +10221,12 @@ export default async function initSpreadsheetApp(content, options = {}) {
                         cloneCellProperties(src, dst, nextVal);
                     }
                 }
+                extendConditionalFormatsForFill(bounds, {
+                    minRow: bounds.minRow,
+                    maxRow: endRow,
+                    minCol: bounds.minCol,
+                    maxCol: bounds.maxCol
+                });
                 clearSelection();
                 selectionStart = { row: bounds.minRow, col: bounds.minCol };
                 selectionEnd = { row: endRow, col: bounds.maxCol };
@@ -10067,6 +10527,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
                     }
                     if (fillSource) fillSource.classList.add("active-cell");
 
+                    extendConditionalFormatsForFill(initialFillRange, currentFillRange);
                     updateAllFormulas();
                     updateSelectedCellsDisplay();
                     updateFillHandle();
@@ -10370,6 +10831,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
             row: +cell.dataset.row,
             col: +cell.dataset.col,
             value: cell.dataset.rawValue ?? getCellPureText(cell),
+            evaluatedValue: cell.dataset.rawValue ?? getCellPureText(cell),
             formula: cell.dataset.formula || "",
             quotePrefix: cell.dataset.quotePrefix || "",
             valueType: cell.dataset.valueType || "",
@@ -10393,6 +10855,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
         clipboardData = {
             isCut,
             tsvText,
+            copyBounds: isContiguous ? copyBounds : null,
             sourceCoords: selectedCells.map(c => ({ row: +c.dataset.row, col: +c.dataset.col })),
             startRow: minRow,
             startCol: minCol,
@@ -10567,7 +11030,8 @@ export default async function initSpreadsheetApp(content, options = {}) {
             if (!dest || item.isMergedSub) return;
             if (valuesOnly) {
                 delete dest.dataset.formula;
-                const resolvedVal = item.formula ? evaluateFormula(item.formula) : item.value;
+                delete dest.dataset.richRuns;
+                const resolvedVal = item.formula ? (item.evaluatedValue ?? evaluateFormula(item.formula)) : item.value;
                 if (item.quotePrefix === "1") dest.dataset.quotePrefix = "1";
                 else delete dest.dataset.quotePrefix;
                 if (item.valueType) dest.dataset.valueType = item.valueType;
@@ -10633,8 +11097,8 @@ export default async function initSpreadsheetApp(content, options = {}) {
             }
             applyCellStyleData(dest, item.styleObj);
 
-            const rs = item.rowspan || 1;
-            const cs = item.colspan || 1;
+            const rs = isTranspose ? (item.colspan || 1) : (item.rowspan || 1);
+            const cs = isTranspose ? (item.rowspan || 1) : (item.colspan || 1);
             if (rs > 1 || cs > 1) {
                 const tr = +dest.dataset.row;
                 const tc = +dest.dataset.col;
@@ -10707,6 +11171,51 @@ export default async function initSpreadsheetApp(content, options = {}) {
             }
         }
 
+        // 通常コピー / 書式のみ貼り付け時に条件付き書式もコピー先へ複製
+        if (!clipboardData.isCut && !valuesOnly && !isTranspose && clipboardData.copyBounds) {
+            const isSingleToMulti =
+                Array.isArray(activeData[0]) &&
+                activeData.length === 1 &&
+                activeData[0].length === 1 &&
+                selected.length > 1;
+            if (isSingleToMulti) {
+                const destBounds = getSelectedRangeBounds();
+                const srcB = clipboardData.copyBounds;
+                const cfRules = sheets[activeSheetIndex]?.conditionalFormats;
+                if (destBounds && Array.isArray(cfRules) && cfRules.length > 0) {
+                    const added = [];
+                    cfRules.forEach(rule => {
+                        if (
+                            srcB.minRow < rule.minRow || srcB.minRow > rule.maxRow ||
+                            srcB.minCol < rule.minCol || srcB.minCol > rule.maxCol
+                        ) return;
+                        const cloned = JSON.parse(JSON.stringify(rule));
+                        const rOff = destBounds.minRow - rule.minRow;
+                        const cOff = destBounds.minCol - rule.minCol;
+                        cloned.minRow = destBounds.minRow;
+                        cloned.maxRow = destBounds.maxRow;
+                        cloned.minCol = destBounds.minCol;
+                        cloned.maxCol = destBounds.maxCol;
+                        if (cloned.formula && String(cloned.formula).trim().startsWith("=")) {
+                            cloned.formula = adjustFormula(cloned.formula, rOff, cOff);
+                        }
+                        if (typeof cloned.val1 === "string" && cloned.val1.trim().startsWith("=")) {
+                            cloned.val1 = adjustFormula(cloned.val1, rOff, cOff);
+                        }
+                        if (typeof cloned.val2 === "string" && cloned.val2.trim().startsWith("=")) {
+                            cloned.val2 = adjustFormula(cloned.val2, rOff, cOff);
+                        }
+                        added.push(cloned);
+                    });
+                    if (added.length) {
+                        cfRules.push(...added);
+                    }
+                }
+            } else {
+                shiftConditionalFormatsForMoveOrCopy(clipboardData.copyBounds, rowDelta, colDelta, { copyMode: true });
+            }
+        }
+
         if (clipboardData.isCut && !formatsOnly && Array.isArray(clipboardData.sourceCoords)) {
             const pastedSet = new Set();
             for (let r = targetRow; r < targetRow + pasteHeight; r++) {
@@ -10726,6 +11235,9 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 const cs = parseInt(src.getAttribute("colspan") || "1", 10);
 
                 if (!pastedSet.has(`${row},${col}`)) {
+                    clearAppliedConditionalStyle(src);
+                    delete src.dataset.cfIcon;
+                    src.style.removeProperty("--cf-icon-color");
                     src.textContent = "";
                     delete src.dataset.formula;
                     delete src.dataset.rawValue;
@@ -10738,12 +11250,13 @@ export default async function initSpreadsheetApp(content, options = {}) {
                     delete src.dataset.spillOrigin;
                     delete src.dataset.richRuns;
                     delete src.dataset.hyperlink;
+                    delete src.dataset.tableId;
                     src.classList.remove("ss-auto-align-right", "ss-auto-align-center", "ss-hyperlink");
                     src.removeAttribute("title");
                     if (!valuesOnly) src.removeAttribute("style");
                 }
 
-                if (!valuesOnly && (rs > 1 || cs > 1)) {
+                if (!valuesOnly && (rs > 1 || cs > 1) && !pastedSet.has(`${row},${col}`)) {
                     src.removeAttribute("rowspan");
                     src.removeAttribute("colspan");
                     src.classList.remove("merged");
@@ -10771,12 +11284,16 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 });
             }
             if (!valuesOnly && srcMinR <= srcMaxR) {
+                const movedSrcBounds = cutIgnoreBounds || { minRow: srcMinR, maxRow: srcMaxR, minCol: srcMinC, maxCol: srcMaxC };
                 redirectFormulasForMovedRange(
-                    { minRow: srcMinR, maxRow: srcMaxR, minCol: srcMinC, maxCol: srcMaxC },
+                    movedSrcBounds,
                     rowDelta,
                     colDelta,
                     { minRow: targetRow, maxRow: targetRow + pasteHeight - 1, minCol: targetCol, maxCol: targetCol + pasteWidth - 1 }
                 );
+                if (!isTranspose) {
+                    shiftTablesAndAutoFilterForMove(movedSrcBounds, rowDelta, colDelta);
+                }
             }
             clipboardData = null;
         }
@@ -10943,6 +11460,17 @@ export default async function initSpreadsheetApp(content, options = {}) {
         saveStateTimeout = managedTimeout(saveState, delay);
     }
 
+    let savedSnapshotJSON = null;
+
+    function flushDebouncedSaveState() {
+        if (saveStateTimeout) {
+            clearTimeout(saveStateTimeout);
+            timers.delete(saveStateTimeout);
+            saveStateTimeout = null;
+            saveState();
+        }
+    }
+
     async function loadState(stateJSON) {
         const prevTop = container.scrollTop;
         const prevLeft = container.scrollLeft;
@@ -10952,16 +11480,21 @@ export default async function initSpreadsheetApp(content, options = {}) {
         updateSelectedCellsDisplay();
         updateFillHandle();
         updateQATButtonsState();
-        setDirtyState(true);
+        const isClean = savedSnapshotJSON !== null && stateJSON === savedSnapshotJSON;
+        setDirtyState(!isClean);
     }
 
     async function undo() {
+        flushPendingEdits();
+        flushDebouncedSaveState();
         if (undoHistory.length <= 1) return;
         redoHistory.push(undoHistory.pop());
         await loadState(undoHistory[undoHistory.length - 1]);
     }
 
     async function redo() {
+        flushPendingEdits();
+        flushDebouncedSaveState();
         if (!redoHistory.length) return;
         const next = redoHistory.pop();
         undoHistory.push(next);
@@ -12129,7 +12662,10 @@ export default async function initSpreadsheetApp(content, options = {}) {
             if (sIdx === activeSheetIndex || !Array.isArray(sheet.cells)) return;
             sheet.cells.forEach(entry => {
                 if (entry.f && String(entry.f).startsWith("=")) {
-                    const res = evaluateFormula(entry.f, new Set(), sIdx);
+                    const res = evaluateFormula(entry.f, new Set(), sIdx, {
+                        row: Number(entry.r) || 1,
+                        col: Number(entry.c) || 0
+                    });
                     entry.v = res != null ? String(res) : "";
                 }
             });
@@ -12599,6 +13135,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
             undoHistory = [];
             redoHistory = [];
             saveState();
+            savedSnapshotJSON = undoHistory[undoHistory.length - 1] || null;
 
             if (normalized.toLowerCase().endsWith(".csv") || contentData.trim() === "") {
                 const a1 = getVisibleCell(1, 0);
@@ -12687,6 +13224,9 @@ export default async function initSpreadsheetApp(content, options = {}) {
             }
 
             currentFilePath = normalized;
+            flushDebouncedSaveState();
+            saveState();
+            savedSnapshotJSON = undoHistory[undoHistory.length - 1] || null;
             setDirtyState(false);
             clearCrashRecoveryBackup();
             statusBarState.stateText = "保存しました";
@@ -12982,6 +13522,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
     }
 
     function printSpreadsheet() {
+        const prevActiveCell = activeCell;
         flushPendingEdits();
         clearSelection();
         clearCalculationRangeHighlights();
@@ -13006,27 +13547,20 @@ export default async function initSpreadsheetApp(content, options = {}) {
         }
 
         const tempHiddenEls = [];
-        for (let r = maxDataR + 1; r <= rowsList.length; r++) {
-            const tr = getRow(r);
-            if (tr && tr.style.display !== "none") {
-                tr.dataset.prevPrintDisplay = tr.style.display;
-                tr.style.display = "none";
-                tempHiddenEls.push(tr);
+        const hideForPrint = (el) => {
+            if (el && el.style.display !== "none") {
+                tempHiddenEls.push({ el, prev: el.style.display });
+                el.style.display = "none";
             }
+        };
+        for (let r = maxDataR + 1; r <= rowsList.length; r++) {
+            hideForPrint(getRow(r));
         }
         const headerRow = table.querySelector("thead tr");
         for (let c = maxDataC + 1; c < currentColumns; c++) {
-            const th = headerRow?.children[c + 1];
-            if (th && th.style.display !== "none") {
-                th.style.display = "none";
-                tempHiddenEls.push(th);
-            }
+            hideForPrint(headerRow?.children[c + 1]);
             for (let r = 1; r <= maxDataR; r++) {
-                const td = getCell(r, c);
-                if (td && td.style.display !== "none") {
-                    td.style.display = "none";
-                    tempHiddenEls.push(td);
-                }
+                hideForPrint(getCell(r, c));
             }
         }
 
@@ -13055,20 +13589,19 @@ export default async function initSpreadsheetApp(content, options = {}) {
         }
         printStyle.textContent = `
             @media print {
+                html, body { height: auto !important; overflow: visible !important; margin: 0 !important; padding: 0 !important; }
                 body * { visibility: hidden !important; }
-                .ss-printing-active .ss-spreadsheet-content { zoom: ${printScale} !important; }
+                .ss-printing-active .ss-spreadsheet-content { zoom: ${printScale} !important; position: static !important; }
                 ${gridRule}
                 .ss-printing-active, .ss-printing-active * { visibility: visible !important; }
                 .ss-printing-active {
-                    position: fixed !important;
-                    inset: 0 !important;
+                    position: static !important;
                     width: 100% !important;
                     height: auto !important;
                     overflow: visible !important;
                     background: #fff !important;
-                    z-index: 2147483647 !important;
                 }
-               .ss-printing-active .ss-ribbon-shell,
+                .ss-printing-active .ss-ribbon-shell,
                 .ss-printing-active .ss-formula-bar-container,
                 .ss-printing-active .ss-bottom-bar,
                 .ss-printing-active .fill-handle,
@@ -13082,6 +13615,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
                     display: none !important;
                 }
                 .ss-printing-active .ss-spreadsheet-container {
+                    position: static !important;
                     overflow: visible !important;
                     height: auto !important;
                     width: 100% !important;
@@ -13091,6 +13625,10 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 .ss-printing-active table {
                     width: auto !important;
                     border-collapse: collapse !important;
+                }
+                .ss-printing-active tr {
+                    break-inside: avoid;
+                    page-break-inside: avoid;
                 }
                 .ss-printing-active tr,
                 .ss-printing-active td,
@@ -13105,10 +13643,14 @@ export default async function initSpreadsheetApp(content, options = {}) {
             if (isCleanedUp) return;
             isCleanedUp = true;
             appRoot.classList.remove("ss-printing-active");
-            tempHiddenEls.forEach(el => {
-                el.style.display = el.dataset.prevPrintDisplay || "";
-                delete el.dataset.prevPrintDisplay;
+            tempHiddenEls.forEach(({ el, prev }) => {
+                el.style.display = prev;
             });
+            if (prevActiveCell && prevActiveCell.isConnected) {
+                setActiveCell(prevActiveCell, false);
+                updateSelectedCellsDisplay();
+                updateFillHandle();
+            }
             refreshVisibleRows();
         };
 
@@ -13818,6 +14360,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
 
         const parseSortComparable = (cell, rawStr) => {
             if (!rawStr) return { type: "empty", val: "" };
+            if (cell?.dataset.quotePrefix === "1") return { type: "str", val: rawStr };
             if (cell?.dataset.dateValue) {
                 const numTs = Number(cell.dataset.dateValue);
                 const ts = Number.isFinite(numTs) ? numTs : Date.parse(cell.dataset.dateValue);
@@ -13842,8 +14385,9 @@ export default async function initSpreadsheetApp(content, options = {}) {
             for (let c = minC; c <= maxC; c++) {
                 const cell = getCell(r, c);
                 rowCells.push({
-                    value: cell?.dataset.rawValue ?? cell?.textContent ?? "",
+                    value: cell?.dataset.rawValue ?? getCellPureText(cell),
                     formula: cell?.dataset.formula || "",
+                    quotePrefix: cell?.dataset.quotePrefix || "",
                     numFormat: cell?.dataset.numFormat || "",
                     decimalPlaces: cell?.dataset.decimalPlaces ?? "",
                     dropdownList: cell?.dataset.dropdownList || "",
@@ -13856,7 +14400,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 });
             }
             const keyCell = getCell(r, sortKeyCol);
-            const rawKey = (keyCell?.dataset.formula ? keyCell.textContent : (keyCell?.dataset.rawValue ?? keyCell?.textContent ?? "")).trim();
+            const rawKey = (keyCell?.dataset.rawValue ?? getCellPureText(keyCell)).trim();
             rowsData.push({
                 origRow: r,
                 rawKey,
@@ -13904,6 +14448,9 @@ export default async function initSpreadsheetApp(content, options = {}) {
 
                 if (item.valueType) dest.dataset.valueType = item.valueType;
                 else delete dest.dataset.valueType;
+
+                if (item.quotePrefix === "1") dest.dataset.quotePrefix = "1";
+                else delete dest.dataset.quotePrefix;
 
                 if (item.dateValue) dest.dataset.dateValue = item.dateValue;
                 else delete dest.dataset.dateValue;
@@ -14496,6 +15043,86 @@ export default async function initSpreadsheetApp(content, options = {}) {
             total: { bg: "#107c41", fg: "#ffffff", bold: true, bt: "2px solid #ffffff", bb: "2px solid #107c41" },
             gridBorder: "1px solid #4e5660",
             numFormat: "comma"
+        },
+        {
+            id: "printMono",
+            name: "印刷最適（モノクロ帳票）",
+            header: { bg: "#d9d9d9", fg: "#000000", bold: true, italic: false, align: "center", bt: "2px solid #000000", bb: "2px solid #000000" },
+            rowOdd: { bg: "#ffffff", fg: "#000000" },
+            rowEven: { bg: "#f2f2f2", fg: "#000000" },
+            total: { bg: "#e6e6e6", fg: "#000000", bold: true, bt: "1px solid #000000", bb: "4px double #000000" },
+            gridBorder: "1px solid #808080",
+            numFormat: "comma"
+        },
+        {
+            id: "listMinimal",
+            name: "リスト 1（横罫線ミニマル）",
+            header: { bg: "#ffffff", fg: "#1f4e78", bold: true, italic: false, align: "left", bt: "2px solid #1f4e78", bb: "2px solid #1f4e78" },
+            rowOdd: { bg: "#ffffff", fg: "#000000" },
+            rowEven: { bg: "#f8fafc", fg: "#000000" },
+            total: { bg: "#edf2f7", fg: "#1f4e78", bold: true, bt: "2px solid #1f4e78", bb: "2px solid #1f4e78" },
+            gridBorder: "",
+            numFormat: "comma"
+        },
+        {
+            id: "corporateTeal",
+            name: "コーポレート・ティール",
+            header: { bg: "#006d77", fg: "#ffffff", bold: true, italic: false, align: "center", bt: "2px solid #004e55", bb: "2px solid #004e55" },
+            rowOdd: { bg: "#ffffff", fg: "#111111" },
+            rowEven: { bg: "#e6f4f5", fg: "#111111" },
+            total: { bg: "#bfe3e6", fg: "#004e55", bold: true, bt: "1px solid #006d77", bb: "3px double #004e55" },
+            gridBorder: "1px solid #83c5be",
+            numFormat: "comma"
+        },
+        {
+            id: "financeGold",
+            name: "財務レポート（ゴールド）",
+            header: { bg: "#7f6000", fg: "#ffffff", bold: true, italic: false, align: "center", bt: "2px solid #5c4500", bb: "2px solid #5c4500" },
+            rowOdd: { bg: "#ffffff", fg: "#000000" },
+            rowEven: { bg: "#fff9e6", fg: "#000000" },
+            total: { bg: "#ffe699", fg: "#5c4500", bold: true, bt: "1px solid #7f6000", bb: "4px double #5c4500" },
+            gridBorder: "1px solid #d9b84a",
+            numFormat: "currency"
+        },
+        {
+            id: "crimsonExecutive",
+            name: "エグゼクティブ（クリムゾン）",
+            header: { bg: "#8b1e24", fg: "#ffffff", bold: true, italic: false, align: "center", bt: "2px solid #5e1116", bb: "2px solid #5e1116" },
+            rowOdd: { bg: "#ffffff", fg: "#000000" },
+            rowEven: { bg: "#fbeaea", fg: "#000000" },
+            total: { bg: "#f4cccc", fg: "#5e1116", bold: true, bt: "2px solid #8b1e24", bb: "3px double #5e1116" },
+            gridBorder: "1px solid #d99594",
+            numFormat: "currency"
+        },
+        {
+            id: "pastelSky",
+            name: "パステル・スカイ（柔らか表示）",
+            header: { bg: "#b4d7f5", fg: "#0d3b66", bold: true, italic: false, align: "center", bt: "2px solid #5b9bd5", bb: "2px solid #5b9bd5" },
+            rowOdd: { bg: "#ffffff", fg: "#1a1a1a" },
+            rowEven: { bg: "#f0f7fd", fg: "#1a1a1a" },
+            total: { bg: "#d4e8fa", fg: "#0d3b66", bold: true, bt: "1px solid #5b9bd5", bb: "2px solid #0d3b66" },
+            gridBorder: "1px solid #bdd7ee",
+            numFormat: "comma"
+        },
+        {
+            id: "pastelMint",
+            name: "パステル・ミント（スケジュール用）",
+            header: { bg: "#c5e0b4", fg: "#274e13", bold: true, italic: false, align: "center", bt: "2px solid #548235", bb: "2px solid #548235" },
+            rowOdd: { bg: "#ffffff", fg: "#1a1a1a" },
+            rowEven: { bg: "#f3f9ef", fg: "#1a1a1a" },
+            total: { bg: "#d9ead3", fg: "#274e13", bold: true, bt: "1px solid #548235", bb: "2px solid #274e13" },
+            gridBorder: "1px solid #a9d08e",
+            numFormat: "comma"
+        },
+        {
+            id: "slatePro",
+            name: "スレートプロ（濃灰・高コントラスト）",
+            header: { bg: "#334155", fg: "#ffffff", bold: true, italic: false, align: "center", bt: "2px solid #0f172a", bb: "2px solid #0f172a" },
+            rowOdd: { bg: "#ffffff", fg: "#0f172a" },
+            rowEven: { bg: "#f1f5f9", fg: "#0f172a" },
+            total: { bg: "#cbd5e1", fg: "#0f172a", bold: true, bt: "2px solid #334155", bb: "4px double #0f172a" },
+            gridBorder: "1px solid #94a3b8",
+            numFormat: "comma"
         }
     ];
 
@@ -14978,8 +15605,8 @@ export default async function initSpreadsheetApp(content, options = {}) {
                     const dataStartR = tbl.hasHeader ? tbl.minRow + 1 : tbl.minRow;
                     if (oldTotCell.dataset.formula) {
                         const updatedF = oldTotCell.dataset.formula.replace(
-                            new RegExp(`(${colLetter}\\d+:)${colLetter}${oldTotalR - 1}`, "gi"),
-                            `$1${colLetter}${oldTotalR}`
+                            new RegExp(`(\\$?${colLetter}\\$?\\d+:\\$?${colLetter}\\$?)${oldTotalR - 1}\\b`, "gi"),
+                            `$1${oldTotalR}`
                         );
                         newTotCell.dataset.formula = updatedF;
                         setCellFormattedValue(newTotCell, evaluateFormula(updatedF));
@@ -15246,8 +15873,9 @@ export default async function initSpreadsheetApp(content, options = {}) {
 
         const applyAggFormat = (cell, val) => {
             if (val === "") return;
-            cell.dataset.numFormat = aggType === "AVERAGE" ? "number" : "comma";
+            cell.dataset.numFormat = "comma";
             if (aggType === "AVERAGE") cell.dataset.decimalPlaces = "2";
+            else delete cell.dataset.decimalPlaces;
             setCellFormattedValue(cell, val);
         };
 
@@ -15631,6 +16259,8 @@ export default async function initSpreadsheetApp(content, options = {}) {
             }
             applyAutoFilterRows();
             closeFilterDropdown();
+            setDirtyState(true);
+            debouncedSaveState();
         });
 
         dropdown.querySelector(".ss-flt-cancel").addEventListener("click", closeFilterDropdown);
@@ -16009,6 +16639,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 }
                 currentFilePath = null;
                 clearSheetToBlank();
+                savedSnapshotJSON = undoHistory[undoHistory.length - 1] || null;
                 setDirtyState(false);
                 statusBarState.stateText = "新規シート";
                 break;
@@ -16094,22 +16725,53 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 setDirtyState(true);
                 debouncedSaveState();
                 break;
-            case "clear-all":
+            case "clear-all": {
+                const clearBounds = getSelectedRangeBounds();
                 getTargetCells().forEach(c => {
                     clearAppliedConditionalStyle(c);
+                    delete c.dataset.cfIcon;
+                    c.style.removeProperty("--cf-icon-color");
                     c.removeAttribute("style");
                     delete c.dataset.numFormat;
                     delete c.dataset.decimalPlaces;
                     delete c.dataset.dropdownList;
                     delete c.dataset.dvRule;
                     delete c.dataset.hyperlink;
+                    delete c.dataset.tableId;
                     c.classList.remove("ss-hyperlink");
                     c.removeAttribute("title");
                 });
+                if (clearBounds) {
+                    // 選択範囲内に完全に含まれる構造化テーブル定義を削除
+                    if (sheets[activeSheetIndex] && Array.isArray(sheets[activeSheetIndex].tables)) {
+                        sheets[activeSheetIndex].tables = sheets[activeSheetIndex].tables.filter(tbl => !(
+                            tbl.minRow >= clearBounds.minRow && tbl.maxRow <= clearBounds.maxRow &&
+                            tbl.minCol >= clearBounds.minCol && tbl.maxCol <= clearBounds.maxCol
+                        ));
+                    }
+                    // 選択範囲内に完全に含まれる条件付き書式ルールを削除
+                    if (sheets[activeSheetIndex] && Array.isArray(sheets[activeSheetIndex].conditionalFormats)) {
+                        sheets[activeSheetIndex].conditionalFormats = sheets[activeSheetIndex].conditionalFormats.filter(rule => !(
+                            rule.minRow >= clearBounds.minRow && rule.maxRow <= clearBounds.maxRow &&
+                            rule.minCol >= clearBounds.minCol && rule.maxCol <= clearBounds.maxCol
+                        ));
+                    }
+                    // オートフィルターの見出し行が選択範囲と重なる場合はフィルターも解除
+                    if (
+                        autoFilterState &&
+                        autoFilterState.headerRow >= clearBounds.minRow &&
+                        autoFilterState.headerRow <= clearBounds.maxRow &&
+                        autoFilterState.maxCol >= clearBounds.minCol &&
+                        autoFilterState.minCol <= clearBounds.maxCol
+                    ) {
+                        clearAllAutoFilters();
+                    }
+                }
                 clearTargetCellsContent();
                 hideCellDropdownButton();
                 hideDataValidationTooltip();
                 break;
+            }
             case "add-sheet":
                 await addNewSheet(activeSheetIndex);
                 break;
@@ -16873,6 +17535,91 @@ export default async function initSpreadsheetApp(content, options = {}) {
     let moveGrabOffset = { row: 0, col: 0 };
     let moveTargetTopLeft = null;
 
+    let dragAutoScrollRaf = null;
+    let dragPointerState = { x: 0, y: 0, ctrlKey: false };
+
+    function stopDragAutoScroll() {
+        if (dragAutoScrollRaf !== null) {
+            cancelAnimationFrame(dragAutoScrollRaf);
+            dragAutoScrollRaf = null;
+        }
+    }
+
+    function stepDragAutoScroll() {
+        if (!isRangeMoving && !isSelecting) {
+            dragAutoScrollRaf = null;
+            return;
+        }
+        const rect = container.getBoundingClientRect();
+        const edge = 36;
+        const maxSpeed = 22;
+        let dx = 0;
+        let dy = 0;
+
+        if (dragPointerState.x < rect.left + edge) {
+            dx = -Math.ceil(((rect.left + edge - dragPointerState.x) / edge) * maxSpeed);
+        } else if (dragPointerState.x > rect.right - edge) {
+            dx = Math.ceil(((dragPointerState.x - (rect.right - edge)) / edge) * maxSpeed);
+        }
+
+        if (dragPointerState.y < rect.top + edge) {
+            dy = -Math.ceil(((rect.top + edge - dragPointerState.y) / edge) * maxSpeed);
+        } else if (dragPointerState.y > rect.bottom - edge) {
+            dy = Math.ceil(((dragPointerState.y - (rect.bottom - edge)) / edge) * maxSpeed);
+        }
+
+        if (dx === 0 && dy === 0) {
+            dragAutoScrollRaf = null;
+            return;
+        }
+
+        const prevLeft = container.scrollLeft;
+        const prevTop = container.scrollTop;
+        container.scrollLeft = Math.max(0, prevLeft + dx);
+        container.scrollTop = Math.max(0, prevTop + dy);
+
+        if (container.scrollLeft !== prevLeft || container.scrollTop !== prevTop) {
+            const clampedX = Math.min(rect.right - 6, Math.max(rect.left + 6, dragPointerState.x));
+            const clampedY = Math.min(rect.bottom - 6, Math.max(rect.top + 6, dragPointerState.y));
+            const coord = resolveGridCoordFromClientPoint(clampedX, clampedY);
+            if (coord) {
+                if (isRangeMoving && moveSourceBounds) {
+                    const destRow = Math.max(1, coord.row - moveGrabOffset.row);
+                    const destCol = Math.max(0, coord.col - moveGrabOffset.col);
+                    moveTargetTopLeft = { row: destRow, col: destCol };
+                    const h = moveSourceBounds.maxRow - moveSourceBounds.minRow + 1;
+                    const w = moveSourceBounds.maxCol - moveSourceBounds.minCol + 1;
+                    const destBounds = {
+                        minRow: destRow,
+                        maxRow: destRow + h - 1,
+                        minCol: destCol,
+                        maxCol: destCol + w - 1
+                    };
+                    const isInvalid = hasMergeConflictOnDestination(
+                        destBounds,
+                        dragPointerState.ctrlKey ? null : moveSourceBounds
+                    );
+                    document.body.style.cursor = isInvalid ? "not-allowed" : "move";
+                    showMoveTargetPreview(destBounds, isInvalid);
+                } else if (isSelecting) {
+                    selectionEnd = coord;
+                    updateSelection();
+                }
+            }
+        }
+
+        dragAutoScrollRaf = requestAnimationFrame(stepDragAutoScroll);
+    }
+
+    function updateDragAutoScroll(e) {
+        dragPointerState.x = e.clientX;
+        dragPointerState.y = e.clientY;
+        dragPointerState.ctrlKey = Boolean(e.ctrlKey || e.metaKey);
+        if (dragAutoScrollRaf === null) {
+            dragAutoScrollRaf = requestAnimationFrame(stepDragAutoScroll);
+        }
+    }
+
     function resolveCellFromPoint(e) {
         const rawCell = e.target?.closest?.("td");
         if (!rawCell || !tbody.contains(rawCell)) return null;
@@ -16923,10 +17670,122 @@ export default async function initSpreadsheetApp(content, options = {}) {
         return false;
     }
 
+    const movePreviewBox = document.createElement("div");
+    movePreviewBox.className = "ss-move-preview-box";
+    spreadsheetContent.appendChild(movePreviewBox);
+
     function clearMoveTargetPreview() {
-        tbody.querySelectorAll("td.move-target-preview, td.move-target-invalid").forEach(c => {
-            c.classList.remove("move-target-preview", "move-target-invalid");
-        });
+        movePreviewBox.style.display = "none";
+        movePreviewBox.classList.remove("invalid");
+    }
+
+    function getMovePreviewLocalRect(bounds) {
+        if (!bounds) return null;
+        const theadHeight = theadRow.offsetHeight || 30;
+        const rowHeaderWidth = theadRow.cells[0]?.offsetWidth || parseInt(colgroup.children[0]?.style.width, 10) || 54;
+
+        let left = rowHeaderWidth;
+        for (let c = 0; c < bounds.minCol; c++) {
+            left += getColumnWidth(c);
+        }
+        let right = left;
+        for (let c = bounds.minCol; c <= bounds.maxCol; c++) {
+            right += getColumnWidth(c);
+        }
+
+        const getRowH = (r) => {
+            const tr = getRow(r);
+            if (!tr) return 30;
+            if (tr.style.display === "none") return 0;
+            return parseInt(tr.style.height, 10) || tr.offsetHeight || 30;
+        };
+
+        let top = theadHeight;
+        for (let r = 1; r < bounds.minRow; r++) {
+            top += getRowH(r);
+        }
+        let bottom = top;
+        for (let r = bounds.minRow; r <= bounds.maxRow; r++) {
+            bottom += getRowH(r);
+        }
+        return { left, top, right, bottom };
+    }
+
+    function showMoveTargetPreview(destBounds, isInvalid) {
+        const rect = getMovePreviewLocalRect(destBounds);
+        if (!rect) {
+            clearMoveTargetPreview();
+            return;
+        }
+        movePreviewBox.style.left = `${rect.left}px`;
+        movePreviewBox.style.top = `${rect.top}px`;
+        movePreviewBox.style.width = `${Math.max(4, rect.right - rect.left)}px`;
+        movePreviewBox.style.height = `${Math.max(4, rect.bottom - rect.top)}px`;
+        movePreviewBox.classList.toggle("invalid", Boolean(isInvalid));
+        movePreviewBox.style.display = "block";
+    }
+
+    function resolveGridCoordFromClientPoint(clientX, clientY) {
+        const elem = document.elementFromPoint(clientX, clientY)?.closest("td");
+        if (!elem || !tbody.contains(elem)) return null;
+
+        const baseRow = parseInt(elem.dataset.row, 10);
+        const baseCol = parseInt(elem.dataset.col, 10);
+        const rs = parseInt(elem.getAttribute("rowspan") || "1", 10);
+        const cs = parseInt(elem.getAttribute("colspan") || "1", 10);
+        if (rs <= 1 && cs <= 1) {
+            return { row: baseRow, col: baseCol };
+        }
+
+        const rect = elem.getBoundingClientRect();
+        let subR = 0;
+        if (rs > 1 && rect.height > 0) {
+            const rowHeights = [];
+            let totalH = 0;
+            for (let i = 0; i < rs; i++) {
+                const tr = getRow(baseRow + i);
+                const h = (tr && tr.style.display !== "none")
+                    ? (parseInt(tr.style.height, 10) || tr.offsetHeight || 30)
+                    : 0;
+                rowHeights.push(h);
+                totalH += h;
+            }
+            const relY = Math.max(0, Math.min(rect.height, clientY - rect.top));
+            const scaledY = totalH > 0 ? (relY / rect.height) * totalH : 0;
+            let accH = 0;
+            subR = rs - 1;
+            for (let i = 0; i < rs; i++) {
+                accH += rowHeights[i];
+                if (scaledY < accH) {
+                    subR = i;
+                    break;
+                }
+            }
+        }
+
+        let subC = 0;
+        if (cs > 1 && rect.width > 0) {
+            const colWidths = [];
+            let totalW = 0;
+            for (let j = 0; j < cs; j++) {
+                const w = getColumnWidth(baseCol + j);
+                colWidths.push(w);
+                totalW += w;
+            }
+            const relX = Math.max(0, Math.min(rect.width, clientX - rect.left));
+            const scaledX = totalW > 0 ? (relX / rect.width) * totalW : 0;
+            let accW = 0;
+            subC = cs - 1;
+            for (let j = 0; j < cs; j++) {
+                accW += colWidths[j];
+                if (scaledX < accW) {
+                    subC = j;
+                    break;
+                }
+            }
+        }
+
+        return { row: baseRow + subR, col: baseCol + subC };
     }
 
     function hasMergeConflictOnDestination(bounds, ignoreBounds = null) {
@@ -17195,9 +18054,12 @@ export default async function initSpreadsheetApp(content, options = {}) {
             }
         }
 
-        // Excel準拠：複製ではなく「移動」のとき、移動元セルを参照していた別数式を移動先へ自動追従させる
+        // Excel準拠：移動時は数式・テーブル・フィルター・条件付き書式を追従、複製時は条件付き書式をコピー
         if (!copyMode) {
             redirectFormulasForMovedRange(srcBounds, rowDelta, colDelta, destBounds);
+            shiftTablesAndAutoFilterForMove(srcBounds, rowDelta, colDelta);
+        } else {
+            shiftConditionalFormatsForMoveOrCopy(srcBounds, rowDelta, colDelta, { copyMode: true });
         }
 
         const newActive = getVisibleCell(destTopLeft.row, destTopLeft.col);
@@ -17211,6 +18073,218 @@ export default async function initSpreadsheetApp(content, options = {}) {
         updateFillHandle();
         setDirtyState(true);
         debouncedSaveState();
+    }
+
+    function shiftTablesAndAutoFilterForMove(srcBounds, rowDelta, colDelta) {
+        if (!srcBounds || (rowDelta === 0 && colDelta === 0)) return;
+
+        // 1. 構造化テーブル（Ctrl+T / 表の書式）の座標を移動先へ追従
+        const tables = getSheetTables();
+        tables.forEach(tbl => {
+            const isTableInsideMove =
+                tbl.minRow >= srcBounds.minRow && tbl.maxRow <= srcBounds.maxRow &&
+                tbl.minCol >= srcBounds.minCol && tbl.maxCol <= srcBounds.maxCol;
+            if (!isTableInsideMove) return;
+
+            tbl.minRow = Math.max(1, tbl.minRow + rowDelta);
+            tbl.maxRow = Math.max(tbl.minRow, tbl.maxRow + rowDelta);
+            tbl.minCol = Math.max(0, tbl.minCol + colDelta);
+            tbl.maxCol = Math.max(tbl.minCol, tbl.maxCol + colDelta);
+            applyStructuredTableVisuals(tbl);
+        });
+
+        // 2. オートフィルターの座標・対象列・▼ボタンを移動先へ追従
+        if (autoFilterState) {
+            const af = autoFilterState;
+            const isFilterHeaderMoved =
+                af.headerRow >= srcBounds.minRow && af.headerRow <= srcBounds.maxRow &&
+                af.minCol >= srcBounds.minCol && af.maxCol <= srcBounds.maxCol;
+            if (isFilterHeaderMoved) {
+                // 移動前の非表示行が残らないようにいったん全行表示へ戻す
+                Array.from(tbody.rows).forEach(tr => { tr.style.display = ""; });
+                tbody.querySelectorAll(".ss-filter-arrow").forEach(el => el.remove());
+
+                af.headerRow = Math.max(1, af.headerRow + rowDelta);
+                af.maxRow = Math.max(af.headerRow, af.maxRow + rowDelta);
+                af.minCol = Math.max(0, af.minCol + colDelta);
+                af.maxCol = Math.max(af.minCol, af.maxCol + colDelta);
+
+                const shiftedFilters = new Map();
+                af.filters.forEach((vals, colIdx) => {
+                    shiftedFilters.set(Math.max(0, colIdx + colDelta), vals);
+                });
+                af.filters = shiftedFilters;
+
+                for (let c = af.minCol; c <= af.maxCol; c++) {
+                    const headerCell = getVisibleCell(af.headerRow, c);
+                    if (!headerCell) continue;
+                    const arrow = document.createElement("span");
+                    arrow.className = "ss-filter-arrow";
+                    arrow.dataset.filterCol = String(c);
+                    arrow.textContent = "";
+                    arrow.title = "フィルターと並べ替え";
+                    arrow.addEventListener("mousedown", (e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        openFilterDropdownMenu(c, arrow);
+                    }, { signal });
+                    headerCell.appendChild(arrow);
+                }
+                applyAutoFilterRows();
+            }
+        }
+
+        // 3. 条件付き書式ルールの適用範囲・内部数式を移動先へ追従（部分移動・$絶対参照も対応）
+        shiftConditionalFormatsForMoveOrCopy(srcBounds, rowDelta, colDelta, { copyMode: false });
+    }
+
+    function adjustFormulaRefsInMovedRange(formula, srcBounds, rowDelta, colDelta) {
+        if (!formula || formula[0] !== "=" || (rowDelta === 0 && colDelta === 0)) return formula;
+        const activeSheetName = sheets[activeSheetIndex]?.name || "";
+        const stringLiterals = [];
+        const masked = formula.substring(1).replace(/"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'(?!\s*!)/g, (m) => {
+            const token = `__CF_MOV_${stringLiterals.length}__`;
+            stringLiterals.push(m);
+            return token;
+        });
+
+        const tokenRegex = /((?:'[^']+'|[A-Za-z0-9_\u3040-\u30FF\u4E00-\u9FAF]+)!)?(?<![A-Za-z0-9_$])(\$?)([A-Za-z]+)(\$?)(\d+)(?::(\$?)([A-Za-z]+)(\$?)(\d+))?(?!\s*!)/g;
+        const replaced = masked.replace(tokenRegex, (match, sheetPrefix, aC1, col1, aR1, row1, aC2, col2, aR2, row2) => {
+            if (sheetPrefix) {
+                const rawSheet = sheetPrefix.slice(0, -1);
+                const unquoted = (rawSheet.startsWith("'") && rawSheet.endsWith("'"))
+                    ? rawSheet.slice(1, -1).replace(/''/g, "'")
+                    : rawSheet;
+                if (unquoted !== activeSheetName) return match;
+            }
+            const prefix = sheetPrefix || "";
+            const c1 = columnLettersToIndex(col1);
+            const r1 = parseInt(row1, 10);
+
+            if (col2 !== undefined) {
+                const c2 = columnLettersToIndex(col2);
+                const r2 = parseInt(row2, 10);
+                if (isRangeWithinBounds(r1, c1, r2, c2, srcBounds)) {
+                    const nc1 = Math.max(0, c1 + colDelta);
+                    const nr1 = Math.max(1, r1 + rowDelta);
+                    const nc2 = Math.max(0, c2 + colDelta);
+                    const nr2 = Math.max(1, r2 + rowDelta);
+                    return `${prefix}${aC1}${getColumnName(nc1)}${aR1}${nr1}:${aC2}${getColumnName(nc2)}${aR2}${nr2}`;
+                }
+                return match;
+            }
+            if (isCoordInBounds(r1, c1, srcBounds)) {
+                const nc1 = Math.max(0, c1 + colDelta);
+                const nr1 = Math.max(1, r1 + rowDelta);
+                return `${prefix}${aC1}${getColumnName(nc1)}${aR1}${nr1}`;
+            }
+            return match;
+        });
+
+        return "=" + replaced.replace(/__CF_MOV_(\d+)__/g, (_, idx) => stringLiterals[Number(idx)]);
+    }
+
+    function shiftConditionalFormatsForMoveOrCopy(srcBounds, rowDelta, colDelta, { copyMode = false } = {}) {
+        const cfRules = sheets[activeSheetIndex]?.conditionalFormats;
+        if (!Array.isArray(cfRules) || !cfRules.length || !srcBounds) return;
+        if (rowDelta === 0 && colDelta === 0) return;
+
+        const shiftRuleFormulas = (ruleObj, fn) => {
+            if (ruleObj.formula && String(ruleObj.formula).trim().startsWith("=")) {
+                ruleObj.formula = fn(ruleObj.formula);
+            }
+            if (typeof ruleObj.val1 === "string" && ruleObj.val1.trim().startsWith("=")) {
+                ruleObj.val1 = fn(ruleObj.val1);
+            }
+            if (typeof ruleObj.val2 === "string" && ruleObj.val2.trim().startsWith("=")) {
+                ruleObj.val2 = fn(ruleObj.val2);
+            }
+        };
+
+        const nextRules = [];
+        let changed = false;
+
+        for (const rule of cfRules) {
+            const iMinR = Math.max(rule.minRow, srcBounds.minRow);
+            const iMaxR = Math.min(rule.maxRow, srcBounds.maxRow);
+            const iMinC = Math.max(rule.minCol, srcBounds.minCol);
+            const iMaxC = Math.min(rule.maxCol, srcBounds.maxCol);
+
+            // 移動・コピー範囲と重ならないルールはそのまま維持
+            if (iMinR > iMaxR || iMinC > iMaxC) {
+                nextRules.push(rule);
+                continue;
+            }
+
+            changed = true;
+            const isWholeRuleCovered =
+                iMinR === rule.minRow && iMaxR === rule.maxRow &&
+                iMinC === rule.minCol && iMaxC === rule.maxCol;
+
+            // 1. 移動先（またはコピー先）のルールを生成
+            const movedRule = JSON.parse(JSON.stringify(rule));
+            movedRule.minRow = Math.max(1, iMinR + rowDelta);
+            movedRule.maxRow = Math.max(movedRule.minRow, iMaxR + rowDelta);
+            movedRule.minCol = Math.max(0, iMinC + colDelta);
+            movedRule.maxCol = Math.max(movedRule.minCol, iMaxC + colDelta);
+
+            const anchorRowOff = iMinR - rule.minRow;
+            const anchorColOff = iMinC - rule.minCol;
+            shiftRuleFormulas(movedRule, (f) => {
+                // 元ルールの左上から切り出し範囲の左上へ相対位置を合わせる
+                let adjusted = (anchorRowOff !== 0 || anchorColOff !== 0)
+                    ? adjustFormula(f, anchorRowOff, anchorColOff)
+                    : f;
+                if (copyMode) {
+                    // 複製時は $ 絶対参照を固定し、相対参照だけ移動量シフト
+                    return adjustFormula(adjusted, rowDelta, colDelta);
+                }
+                // 移動時は移動範囲内を指す参照を $ 付きも含めて移動先へ追従
+                return adjustFormulaRefsInMovedRange(adjusted, srcBounds, rowDelta, colDelta);
+            });
+
+            if (copyMode) {
+                nextRules.push(rule);
+                nextRules.push(movedRule);
+            } else if (isWholeRuleCovered) {
+                nextRules.push(movedRule);
+            } else {
+                // 部分移動：元ルールから移動済み矩形をくり抜いた残り（最大4矩形）を保持
+                const remainders = [];
+                if (rule.minRow < iMinR) {
+                    remainders.push({ minRow: rule.minRow, maxRow: iMinR - 1, minCol: rule.minCol, maxCol: rule.maxCol });
+                }
+                if (rule.maxRow > iMaxR) {
+                    remainders.push({ minRow: iMaxR + 1, maxRow: rule.maxRow, minCol: rule.minCol, maxCol: rule.maxCol });
+                }
+                if (rule.minCol < iMinC) {
+                    remainders.push({ minRow: iMinR, maxRow: iMaxR, minCol: rule.minCol, maxCol: iMinC - 1 });
+                }
+                if (rule.maxCol > iMaxC) {
+                    remainders.push({ minRow: iMinR, maxRow: iMaxR, minCol: iMaxC + 1, maxCol: rule.maxCol });
+                }
+
+                remainders.forEach(rem => {
+                    const subRule = JSON.parse(JSON.stringify(rule));
+                    subRule.minRow = rem.minRow;
+                    subRule.maxRow = rem.maxRow;
+                    subRule.minCol = rem.minCol;
+                    subRule.maxCol = rem.maxCol;
+                    const dr = rem.minRow - rule.minRow;
+                    const dc = rem.minCol - rule.minCol;
+                    if (dr !== 0 || dc !== 0) {
+                        shiftRuleFormulas(subRule, (f) => adjustFormula(f, dr, dc));
+                    }
+                    nextRules.push(subRule);
+                });
+                nextRules.push(movedRule);
+            }
+        }
+
+        if (changed) {
+            sheets[activeSheetIndex].conditionalFormats = nextRules;
+            applyConditionalFormats();
+        }
     }
 
     function isCoordInBounds(row, col, bounds) {
@@ -17344,7 +18418,28 @@ export default async function initSpreadsheetApp(content, options = {}) {
             }
         });
 
-        // 2. 他シートからアクティブシートを参照している数式も追従更新
+        // 1-B. アクティブシートの「移動範囲外」にある条件付き書式の参照も移動先へ追従
+        const activeCfRules = sheets[activeSheetIndex]?.conditionalFormats;
+        if (Array.isArray(activeCfRules) && activeCfRules.length > 0) {
+            activeCfRules.forEach(rule => {
+                const overlapsSrc = !(
+                    rule.maxRow < srcBounds.minRow || rule.minRow > srcBounds.maxRow ||
+                    rule.maxCol < srcBounds.minCol || rule.minCol > srcBounds.maxCol
+                );
+                if (overlapsSrc) return;
+                if (rule.formula && String(rule.formula).trim().startsWith("=")) {
+                    rule.formula = adjustFormulaRefsInMovedRange(rule.formula, srcBounds, rowDelta, colDelta);
+                }
+                if (typeof rule.val1 === "string" && rule.val1.trim().startsWith("=")) {
+                    rule.val1 = adjustFormulaRefsInMovedRange(rule.val1, srcBounds, rowDelta, colDelta);
+                }
+                if (typeof rule.val2 === "string" && rule.val2.trim().startsWith("=")) {
+                    rule.val2 = adjustFormulaRefsInMovedRange(rule.val2, srcBounds, rowDelta, colDelta);
+                }
+            });
+        }
+
+        // 2. 他シートからアクティブシートを参照している数式・条件付き書式も追従更新
         if (activeSheetName && Array.isArray(sheets)) {
             const escapedName = activeSheetName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
             const escapedQuotedName = activeSheetName.replace(/'/g, "''").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -17354,23 +18449,42 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 "g"
             );
 
-            sheets.forEach((sheet, idx) => {
-                if (idx === activeSheetIndex || !Array.isArray(sheet.cells)) return;
-                sheet.cells.forEach(entry => {
-                    if (!entry.f || entry.f[0] !== "=") return;
-                    const stringLiterals = [];
-                    const masked = entry.f.substring(1).replace(/"(?:\\.|[^"\\])*"/g, (m) => {
-                        const token = `__XSHEET_STR_${stringLiterals.length}__`;
-                        stringLiterals.push(m);
-                        return token;
-                    });
-
-                    const replaced = masked.replace(crossSheetRefRegex, (_, sheetPrefix, refPart) => {
-                        return sheetPrefix + shiftRefTokens(refPart);
-                    });
-
-                    entry.f = "=" + replaced.replace(/__XSHEET_STR_(\d+)__/g, (_, i) => stringLiterals[Number(i)]);
+            const rewriteCrossSheetExpr = (exprStr) => {
+                if (!exprStr || exprStr[0] !== "=") return exprStr;
+                const stringLiterals = [];
+                const masked = exprStr.substring(1).replace(/"(?:\\.|[^"\\])*"/g, (m) => {
+                    const token = `__XSHEET_STR_${stringLiterals.length}__`;
+                    stringLiterals.push(m);
+                    return token;
                 });
+                const replaced = masked.replace(crossSheetRefRegex, (_, sheetPrefix, refPart) => {
+                    return sheetPrefix + shiftRefTokens(refPart);
+                });
+                return "=" + replaced.replace(/__XSHEET_STR_(\d+)__/g, (_, i) => stringLiterals[Number(i)]);
+            };
+
+            sheets.forEach((sheet, idx) => {
+                if (idx === activeSheetIndex) return;
+                if (Array.isArray(sheet.cells)) {
+                    sheet.cells.forEach(entry => {
+                        if (entry.f && entry.f[0] === "=") {
+                            entry.f = rewriteCrossSheetExpr(entry.f);
+                        }
+                    });
+                }
+                if (Array.isArray(sheet.conditionalFormats)) {
+                    sheet.conditionalFormats.forEach(rule => {
+                        if (rule.formula && String(rule.formula).trim().startsWith("=")) {
+                            rule.formula = rewriteCrossSheetExpr(rule.formula);
+                        }
+                        if (typeof rule.val1 === "string" && rule.val1.trim().startsWith("=")) {
+                            rule.val1 = rewriteCrossSheetExpr(rule.val1);
+                        }
+                        if (typeof rule.val2 === "string" && rule.val2.trim().startsWith("=")) {
+                            rule.val2 = rewriteCrossSheetExpr(rule.val2);
+                        }
+                    });
+                }
             });
         }
     }
@@ -17438,8 +18552,12 @@ export default async function initSpreadsheetApp(content, options = {}) {
         if (!isInFormulaEdit() && isPointerOnSelectionEdge(e, cell)) {
             const bounds = getSelectedRangeBounds();
             if (bounds) {
-                const grabRow = Math.min(bounds.maxRow, Math.max(bounds.minRow, parseInt(cell.dataset.row, 10)));
-                const grabCol = Math.min(bounds.maxCol, Math.max(bounds.minCol, parseInt(cell.dataset.col, 10)));
+                const ptCoord = resolveGridCoordFromClientPoint(e.clientX, e.clientY) || {
+                    row: parseInt(cell.dataset.row, 10),
+                    col: parseInt(cell.dataset.col, 10)
+                };
+                const grabRow = Math.min(bounds.maxRow, Math.max(bounds.minRow, ptCoord.row));
+                const grabCol = Math.min(bounds.maxCol, Math.max(bounds.minCol, ptCoord.col));
                 isRangeMoving = true;
                 moveSourceBounds = bounds;
                 moveGrabOffset = {
@@ -17447,6 +18565,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
                     col: grabCol - bounds.minCol
                 };
                 moveTargetTopLeft = { row: bounds.minRow, col: bounds.minCol };
+                showMoveTargetPreview(bounds, false);
                 e.preventDefault();
                 return;
             }
@@ -17514,13 +18633,12 @@ export default async function initSpreadsheetApp(content, options = {}) {
 
     container.addEventListener("mousemove", (e) => {
         if (isRangeMoving && moveSourceBounds) {
-            const hoverCell = e.target.closest("td");
-            if (hoverCell && tbody.contains(hoverCell)) {
-                const destRow = Math.max(1, parseInt(hoverCell.dataset.row, 10) - moveGrabOffset.row);
-                const destCol = Math.max(0, parseInt(hoverCell.dataset.col, 10) - moveGrabOffset.col);
+            const hoverCoord = resolveGridCoordFromClientPoint(e.clientX, e.clientY);
+            if (hoverCoord) {
+                const destRow = Math.max(1, hoverCoord.row - moveGrabOffset.row);
+                const destCol = Math.max(0, hoverCoord.col - moveGrabOffset.col);
                 moveTargetTopLeft = { row: destRow, col: destCol };
 
-                clearMoveTargetPreview();
                 const h = moveSourceBounds.maxRow - moveSourceBounds.minRow + 1;
                 const w = moveSourceBounds.maxCol - moveSourceBounds.minCol + 1;
                 const destBounds = {
@@ -17534,12 +18652,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
                     (e.ctrlKey || e.metaKey) ? null : moveSourceBounds
                 );
                 document.body.style.cursor = isInvalid ? "not-allowed" : "move";
-                const previewClass = isInvalid ? "move-target-invalid" : "move-target-preview";
-                for (let r = destRow; r < destRow + h; r++) {
-                    for (let c = destCol; c < destCol + w; c++) {
-                        getCell(r, c)?.classList.add(previewClass);
-                    }
-                }
+                showMoveTargetPreview(destBounds, isInvalid);
             }
             return;
         }
@@ -17568,10 +18681,15 @@ export default async function initSpreadsheetApp(content, options = {}) {
             if (th) {
                 const cur = parseInt(th.textContent.trim(), 10);
                 clearSelection();
-                for (let r = Math.min(rowSelectionStart, cur); r <= Math.max(rowSelectionStart, cur); r++) {
-                    tbody.querySelectorAll(`td[data-row="${r}"]`).forEach(c => {
-                        if (c.style.display !== "none") c.classList.add("selected");
-                    });
+                const rMin = Math.min(rowSelectionStart, cur);
+                const rMax = Math.max(rowSelectionStart, cur);
+                for (let r = rMin; r <= rMax; r++) {
+                    const tr = tbody.rows[r - 1];
+                    if (!tr) continue;
+                    for (let c = 1; c < tr.cells.length; c++) {
+                        const td = tr.cells[c];
+                        if (td.style.display !== "none") td.classList.add("selected");
+                    }
                 }
                 updateSelectedCellsDisplay();
             }
@@ -17580,17 +18698,28 @@ export default async function initSpreadsheetApp(content, options = {}) {
             if (th) {
                 const cur = columnLettersToIndex(th.textContent.trim());
                 clearSelection();
-                for (let c = Math.min(colSelectionStart, cur); c <= Math.max(colSelectionStart, cur); c++) {
-                    tbody.querySelectorAll(`td[data-col="${c}"]`).forEach(td => {
-                        if (td.style.display !== "none") td.classList.add("selected");
-                    });
+                const cMin = Math.min(colSelectionStart, cur);
+                const cMax = Math.max(colSelectionStart, cur);
+                for (let r = 0; r < tbody.rows.length; r++) {
+                    const cells = tbody.rows[r].cells;
+                    for (let c = cMin; c <= cMax; c++) {
+                        const td = cells[c + 1];
+                        if (td && td.style.display !== "none") td.classList.add("selected");
+                    }
                 }
                 updateSelectedCellsDisplay();
             }
         }
     }, { signal });
 
+    document.addEventListener("mousemove", (e) => {
+        if (isRangeMoving || isSelecting) {
+            updateDragAutoScroll(e);
+        }
+    }, { signal });
+
     document.addEventListener("mouseup", (e) => {
+        stopDragAutoScroll();
         if (isRangeMoving) {
             document.body.style.cursor = "";
             clearMoveTargetPreview();
@@ -17748,10 +18877,111 @@ export default async function initSpreadsheetApp(content, options = {}) {
         }
     }, { signal });
 
+    // Excel準拠：Alt順次押しアクセスキー（例: Alt → O → A でオートフォーマット）
+    let altKeySequence = "";
+    let altSequenceTimer = null;
+    let altKeyPressedAlone = false;
+
+    const ALT_ACCESS_SEQUENCES = {
+        oa: () => openAutoFormatDialog()
+    };
+
+    function resetAltSequence(restoreStatus = false) {
+        altKeySequence = "";
+        if (altSequenceTimer) {
+            clearTimeout(altSequenceTimer);
+            timers.delete(altSequenceTimer);
+            altSequenceTimer = null;
+        }
+        if (restoreStatus && statusBarState.stateText.startsWith("アクセスキー:")) {
+            statusBarState.stateText = "準備完了";
+            renderWindowStatusBar();
+        }
+    }
+
+    function armAltSequence(seq) {
+        altKeySequence = seq;
+        if (altSequenceTimer) {
+            clearTimeout(altSequenceTimer);
+            timers.delete(altSequenceTimer);
+        }
+        altSequenceTimer = managedTimeout(() => resetAltSequence(true), 2500);
+        const displaySeq = seq === "_" ? "Alt" : `Alt → ${seq.toUpperCase().split("").join(" → ")}`;
+        statusBarState.stateText = `アクセスキー: ${displaySeq} ...`;
+        renderWindowStatusBar();
+    }
+
+    document.addEventListener("keyup", (e) => {
+        if (e.key !== "Alt") return;
+        if (!isAppFocused() || isCellEditing() || document.activeElement === formulaBarInput) {
+            altKeyPressedAlone = false;
+            return;
+        }
+        if (altKeyPressedAlone) {
+            altKeyPressedAlone = false;
+            e.preventDefault();
+            if (altKeySequence) resetAltSequence(true);
+            else armAltSequence("_");
+        }
+    }, { signal });
+
+    document.addEventListener("mousedown", () => {
+        if (altKeySequence) resetAltSequence(true);
+    }, { signal });
+
     document.addEventListener("keydown", (e) => {
         if (!isAppFocused()) return;
         if (e.target.closest(".floating-textbox, .ss-find-win-body, .ss-find-dialog")) return;
         if (isCellEditing() || document.activeElement === cellEditor) return;
+
+        // Alt単押し待機フラグ制御
+        if (e.key === "Alt") {
+            if (!e.repeat && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
+                altKeyPressedAlone = true;
+            }
+            return;
+        }
+        altKeyPressedAlone = false;
+
+        // Alt順次押しシーケンス（Alt→O→A / Alt+O→A）の処理
+        if (document.activeElement !== formulaBarInput && !e.ctrlKey && !e.metaKey) {
+            const lowerKey = e.key.length === 1 ? e.key.toLowerCase() : "";
+
+            if (e.altKey && lowerKey && /^[a-z]$/.test(lowerKey)) {
+                const hasPrefix = Object.keys(ALT_ACCESS_SEQUENCES).some(k => k.startsWith(lowerKey));
+                if (hasPrefix) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    armAltSequence(lowerKey);
+                    return;
+                }
+            }
+
+            if (altKeySequence) {
+                if (e.key === "Escape") {
+                    e.preventDefault();
+                    resetAltSequence(true);
+                    return;
+                }
+                if (lowerKey && /^[a-z]$/.test(lowerKey)) {
+                    const nextSeq = (altKeySequence === "_" ? "" : altKeySequence) + lowerKey;
+                    if (ALT_ACCESS_SEQUENCES[nextSeq]) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        resetAltSequence(true);
+                        ALT_ACCESS_SEQUENCES[nextSeq]();
+                        return;
+                    }
+                    if (Object.keys(ALT_ACCESS_SEQUENCES).some(k => k.startsWith(nextSeq))) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        armAltSequence(nextSeq);
+                        return;
+                    }
+                }
+                resetAltSequence(true);
+            }
+        }
 
         if ((e.key === "Process" || e.keyCode === 229) && activeCell && !isCellEditing() && document.activeElement !== formulaBarInput) {
             clearCopyAnimation();
@@ -17822,18 +19052,60 @@ export default async function initSpreadsheetApp(content, options = {}) {
                     const base = activeCell || getVisibleCell(1, 0);
                     if (!base) return;
 
-                    const isFilledAt = (r, c) => {
-                        const td = peekCell(r, c);
-                        if (!td || td.closest("tr")?.style.display === "none") return false;
-                        const vis = td.style.display === "none" ? getVisibleCell(r, c) : td;
-                        return Boolean(vis && (vis.dataset.formula || (vis.dataset.rawValue ?? vis.textContent).trim() !== ""));
-                    };
-
-                    // Excelの CurrentRegion 準拠：アクティブセルまたは隣接8マスのデータから外接矩形を拡張
                     const r0 = parseInt(base.dataset.row, 10);
                     const c0 = parseInt(base.dataset.col, 10);
                     const maxR = tbody.rows.length;
                     const maxC = currentColumns - 1;
+                    const cur = getSelectedRangeBounds();
+                    const sameBounds = (a, b) => Boolean(
+                        a && b &&
+                        a.minRow === b.minRow && a.maxRow === b.maxRow &&
+                        a.minCol === b.minCol && a.maxCol === b.maxCol
+                    );
+
+                    // 1. 構造化テーブル内なら Excel 準拠の3段階選択（データ本体 → テーブル全体 → シート全体）
+                    const activeTable = findTableAtCoord(r0, c0);
+                    if (activeTable) {
+                        const dataBodyBounds = {
+                            minRow: activeTable.hasHeader ? Math.min(activeTable.maxRow, activeTable.minRow + 1) : activeTable.minRow,
+                            maxRow: activeTable.hasTotalRow ? Math.max(activeTable.minRow, activeTable.maxRow - 1) : activeTable.maxRow,
+                            minCol: activeTable.minCol,
+                            maxCol: activeTable.maxCol
+                        };
+                        const fullTableBounds = {
+                            minRow: activeTable.minRow,
+                            maxRow: activeTable.maxRow,
+                            minCol: activeTable.minCol,
+                            maxCol: activeTable.maxCol
+                        };
+
+                        let nextTarget = null;
+                        if (r0 >= dataBodyBounds.minRow && r0 <= dataBodyBounds.maxRow && !sameBounds(cur, dataBodyBounds) && !sameBounds(cur, fullTableBounds)) {
+                            nextTarget = dataBodyBounds;
+                        } else if (!sameBounds(cur, fullTableBounds)) {
+                            nextTarget = fullTableBounds;
+                        }
+
+                        if (nextTarget) {
+                            clearSelection();
+                            selectionStart = { row: nextTarget.minRow, col: nextTarget.minCol };
+                            selectionEnd = { row: nextTarget.maxRow, col: nextTarget.maxCol };
+                            updateSelection();
+                            setActiveCell(base, true);
+                            updateSelectedCellsDisplay();
+                            updateFillHandle();
+                            return;
+                        }
+                    }
+
+                    // 2. フィルター非表示行を含めて連続データ領域（CurrentRegion）を正確に検出
+                    const isFilledAt = (r, c) => {
+                        const td = peekCell(r, c);
+                        if (!td) return false;
+                        const vis = td.style.display === "none" ? getVisibleCell(r, c) : td;
+                        return Boolean(vis && (vis.dataset.formula || (vis.dataset.rawValue ?? getCellPureText(vis)).trim() !== ""));
+                    };
+
                     let seed = isFilledAt(r0, c0) ? { r: r0, c: c0 } : null;
                     if (!seed) {
                         for (const [dr, dc] of [[-1, 0], [1, 0], [0, -1], [0, 1], [-1, -1], [-1, 1], [1, -1], [1, 1]]) {
@@ -17875,26 +19147,23 @@ export default async function initSpreadsheetApp(content, options = {}) {
                         region = expandBoundsForMergedCells({ minRow, maxRow, minCol, maxCol });
                     }
 
-                    const cur = getSelectedRangeBounds();
-                    const alreadySelectedRegion = Boolean(
-                        region && cur &&
-                        cur.minRow === region.minRow && cur.maxRow === region.maxRow &&
-                        cur.minCol === region.minCol && cur.maxCol === region.maxCol
-                    );
-
                     clearSelection();
-                    if (region && !alreadySelectedRegion) {
+                    if (region && !activeTable && !sameBounds(cur, region)) {
                         selectionStart = { row: region.minRow, col: region.minCol };
                         selectionEnd = { row: region.maxRow, col: region.maxCol };
                         updateSelection();
                         setActiveCell(base, true);
                     } else {
-                        const allCells = tbody.querySelectorAll("td");
-                        allCells.forEach(c => {
-                            if (c.style.display !== "none" && c.closest("tr")?.style.display !== "none") {
-                                c.classList.add("selected");
+                        selectionStart = { row: 1, col: 0 };
+                        selectionEnd = { row: maxR, col: maxC };
+                        for (let r = 0; r < tbody.rows.length; r++) {
+                            const tr = tbody.rows[r];
+                            if (tr.style.display === "none") continue;
+                            for (let c = 1; c < tr.cells.length; c++) {
+                                const td = tr.cells[c];
+                                if (td.style.display !== "none") td.classList.add("selected");
                             }
-                        });
+                        }
                         setActiveCell(base, true);
                     }
                     updateSelectedCellsDisplay();
@@ -17937,10 +19206,90 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 openHyperlinkDialog();
                 return;
             }
+            if (key === "p" && !e.shiftKey) {
+                e.preventDefault();
+                printSpreadsheet();
+                return;
+            }
+            if (document.activeElement !== formulaBarInput) {
+                if (key === "b" && !e.shiftKey) {
+                    e.preventDefault();
+                    appRoot.querySelector(".ss-toggle-bold")?.click();
+                    return;
+                }
+                if (key === "i" && !e.shiftKey) {
+                    e.preventDefault();
+                    appRoot.querySelector(".ss-toggle-italic")?.click();
+                    return;
+                }
+                if (key === "u" && !e.shiftKey) {
+                    e.preventDefault();
+                    appRoot.querySelector(".ss-toggle-underline")?.click();
+                    return;
+                }
+                if (e.key === "5" && !e.shiftKey) {
+                    e.preventDefault();
+                    appRoot.querySelector(".ss-toggle-strike")?.click();
+                    return;
+                }
+                if (e.shiftKey && (e.code === "Digit1" || e.code === "Digit4" || e.code === "Digit5")) {
+                    e.preventDefault();
+                    const fmtMap = { Digit1: "comma", Digit4: "currency", Digit5: "percent" };
+                    appRoot.querySelector(`[data-numfmt="${fmtMap[e.code]}"]`)?.click();
+                    return;
+                }
+                if (e.key === " " && !e.shiftKey && activeCell) {
+                    // Ctrl + Space: 列全体選択
+                    e.preventDefault();
+                    const b = getSelectedRangeBounds();
+                    const cStart = b ? b.minCol : parseInt(activeCell.dataset.col, 10);
+                    const cEnd = b ? b.maxCol : cStart;
+                    clearSelection();
+                    selectionStart = { row: 1, col: cStart };
+                    selectionEnd = { row: tbody.rows.length, col: cEnd };
+                    updateSelection();
+                    setActiveCell(activeCell, true);
+                    updateFillHandle();
+                    return;
+                }
+                if (e.key === "PageUp") {
+                    e.preventDefault();
+                    void switchToSheet(activeSheetIndex - 1);
+                    return;
+                }
+                if (e.key === "PageDown") {
+                    e.preventDefault();
+                    void switchToSheet(activeSheetIndex + 1);
+                    return;
+                }
+            }
             return;
         }
 
+
         if (document.activeElement === formulaBarInput) return;
+
+        // Alt + = : オートSUM
+        if (e.altKey && e.key === "=") {
+            e.preventDefault();
+            insertAutoSum();
+            return;
+        }
+
+        // Shift + Space : 行全体選択
+        if (e.shiftKey && !e.altKey && e.key === " " && activeCell) {
+            e.preventDefault();
+            const b = getSelectedRangeBounds();
+            const rStart = b ? b.minRow : parseInt(activeCell.dataset.row, 10);
+            const rEnd = b ? b.maxRow : rStart;
+            clearSelection();
+            selectionStart = { row: rStart, col: 0 };
+            selectionEnd = { row: rEnd, col: currentColumns - 1 };
+            updateSelection();
+            setActiveCell(activeCell, true);
+            updateFillHandle();
+            return;
+        }
 
         // F2でセル編集開始
         if (e.key === "F2" && activeCell) {
@@ -17956,32 +19305,21 @@ export default async function initSpreadsheetApp(content, options = {}) {
             return;
         }
 
-        // Enter処理（非編集時は下セルへ移動）
+        // Enter処理（コピー中なら貼り付け、通常時は選択範囲内ループ／上下移動）
         if (e.key === "Enter" && activeCell) {
             e.preventDefault();
-            const r = parseInt(activeCell.dataset.row, 10);
-            const c = parseInt(activeCell.dataset.col, 10);
-            const rs = parseInt(activeCell.getAttribute("rowspan") || "1", 10);
-            navigateToCell(r + rs, c, e);
+            if (clipboardData && tbody.querySelector(".copy-marching-ants")) {
+                void pasteClipboardData("all");
+                return;
+            }
+            moveActiveInSelectionOrStep(activeCell, "vertical", e.shiftKey);
             return;
         }
 
-        // Tab処理（Shift+Tab左端折り返し対応）
+        // Tab処理（選択範囲内ループ／左右移動）
         if (e.key === "Tab" && activeCell) {
             e.preventDefault();
-            let r = parseInt(activeCell.dataset.row, 10);
-            const c = parseInt(activeCell.dataset.col, 10);
-            const cs = parseInt(activeCell.getAttribute("colspan") || "1", 10);
-            let targetCol = e.shiftKey ? c - 1 : c + cs;
-            let targetRow = r;
-            if (targetCol >= currentColumns) {
-                loadColumnsSync(targetCol - currentColumns + 1);
-            }
-            if (targetCol < 0) {
-                targetRow = Math.max(1, r - 1);
-                targetCol = currentColumns - 1;
-            }
-            navigateToCell(targetRow, targetCol, e);
+            moveActiveInSelectionOrStep(activeCell, "horizontal", e.shiftKey);
             return;
         }
 
@@ -18304,27 +19642,41 @@ export default async function initSpreadsheetApp(content, options = {}) {
         if (!boxes.length) return;
 
         if (isWindowMinimizedOrHidden()) {
-            boxes.forEach(box => box.classList.remove("ss-obj-offscreen"));
+            for (let i = 0; i < boxes.length; i++) {
+                boxes[i].classList.remove("ss-obj-offscreen");
+            }
             return;
         }
 
-        const contRect = container.getBoundingClientRect();
-        const cornerEl = theadRow.querySelector(".ss-corner");
-        const viewTop = cornerEl ? cornerEl.getBoundingClientRect().bottom : contRect.top;
-        const viewLeft = cornerEl ? cornerEl.getBoundingClientRect().right : contRect.left;
+        const zoom = parseFloat(spreadsheetContent.style.zoom || "1") || 1;
+        const headerH = 30;
+        const rowHeaderW = parseInt(colgroup.children[0]?.style.width, 10) || 54;
+        const viewTop = (container.scrollTop + headerH) / zoom;
+        const viewBottom = (container.scrollTop + container.clientHeight) / zoom;
+        const viewLeft = (container.scrollLeft + rowHeaderW) / zoom;
+        const viewRight = (container.scrollLeft + container.clientWidth) / zoom;
         const active = document.activeElement;
 
-        boxes.forEach(box => {
-            const rect = box.getBoundingClientRect();
+        for (let i = 0; i < boxes.length; i++) {
+            const box = boxes[i];
             const isEditingBox = Boolean(active && box.contains(active));
+            const left = parseFloat(box.dataset.initialLeft || box.style.left) || 0;
+            const top = parseFloat(box.dataset.initialTop || box.style.top) || 0;
+            const w = parseFloat(box.style.width) || 260;
+            const h = parseFloat(box.style.height) || 120;
+
             const inView = !(
-                rect.bottom <= viewTop ||
-                rect.top >= contRect.bottom ||
-                rect.right <= viewLeft ||
-                rect.left >= contRect.right
+                top + h <= viewTop ||
+                top >= viewBottom ||
+                left + w <= viewLeft ||
+                left >= viewRight
             );
-            box.classList.toggle("ss-obj-offscreen", !inView && !isEditingBox);
-        });
+            const shouldHide = !inView && !isEditingBox;
+            const isHidden = box.classList.contains("ss-obj-offscreen");
+            if (shouldHide !== isHidden) {
+                box.classList.toggle("ss-obj-offscreen", shouldHide);
+            }
+        }
     }
 
     function setupRowVisibilityObserver() {
@@ -18394,9 +19746,20 @@ export default async function initSpreadsheetApp(content, options = {}) {
     });
 
     container.addEventListener("scroll", () => {
-        isScrollingNow = true;
+        if (!isScrollingNow) {
+            isScrollingNow = true;
+            // スクロール開始時に浮遊プルダウンボタンだけ一時退避（毎フレームの座標計測を回避）
+            if (dropdownOwnerCell && floatingDropdownBtn.style.display !== "none") {
+                floatingDropdownBtn.style.display = "none";
+            }
+        }
         if (scrollIdleTimer) { clearTimeout(scrollIdleTimer); timers.delete(scrollIdleTimer); }
-        scrollIdleTimer = managedTimeout(() => { isScrollingNow = false; }, 120);
+        scrollIdleTimer = managedTimeout(() => {
+            isScrollingNow = false;
+            scrollIdleTimer = null;
+            if (dropdownOwnerCell) syncCellDropdownButtonPosition();
+            if (tbody.rows.length > 120) scheduleTextOverflowUpdate();
+        }, 120);
 
         if (activeDropdownCleanup) closeCellDropdownList();
         if (activeFilterDropdownEl) closeFilterDropdown();
@@ -18407,17 +19770,24 @@ export default async function initSpreadsheetApp(content, options = {}) {
         requestAnimationFrame(() => {
             scrollPending = false;
             if (isWindowMinimizedOrHidden()) return;
-            if (!isLoadingRows && container.scrollTop + container.clientHeight >= container.scrollHeight - 400) {
+
+            const sTop = container.scrollTop;
+            const sLeft = container.scrollLeft;
+            const cH = container.clientHeight;
+            const cW = container.clientWidth;
+            const sH = container.scrollHeight;
+            const sW = container.scrollWidth;
+
+            if (!isLoadingRows && sTop + cH >= sH - 400) {
                 isLoadingRows = true;
                 loadRowsSync(ROW_BATCH);
                 isLoadingRows = false;
             }
-            if (!isLoadingCols && container.scrollLeft + container.clientWidth >= container.scrollWidth - 400) {
+            if (!isLoadingCols && sLeft + cW >= sW - 400) {
                 isLoadingCols = true;
                 loadColumnsSync(COLUMN_BATCH);
                 isLoadingCols = false;
             }
-            if (dropdownOwnerCell) syncCellDropdownButtonPosition();
             refreshVisibleFloatingObjects();
         });
     }, { passive: true, signal });
@@ -18601,6 +19971,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
 
         setDirtyState(false);
         saveState();
+        savedSnapshotJSON = undoHistory[undoHistory.length - 1] || null;
         await updateStorageUsageDisplay();
 
         const a1Cell = getVisibleCell(1, 0);
@@ -18748,6 +20119,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
             closeCellDropdownList();
             closeAutocompletePopup();
             stopTouchInertia();
+            stopDragAutoScroll();
             if (findWin) {
                 if (windowAPI?.destroyWindow) windowAPI.destroyWindow(findWin);
                 else if (windowAPI?.closeWindow) windowAPI.closeWindow(findWin);
