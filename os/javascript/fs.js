@@ -212,7 +212,7 @@ const baseFS = {
                 "Browser.app": { type: "app", entry: "./apps/Browser.js", icon: "./icons/browser.png", system: true },
                 "Networkmonitor.app": { type: "app", entry: "./apps/network_monitor.js", icon: "./icons/network_monitor.png", system: true },
                 "Eventlog.app": { type: "app", entry: "./apps/eventlog.js", icon: "./icons/eventlog.png", system: true },
-                "Spreadsheet.app": { type: "app", name: "Spreadsheet", entry: "./apps/spreadsheet.js", icon: "./icons/spreadsheet.png", system: true },
+                "Spreadsheet.app": { type: "app", name: "Spreadsheet", entry: "./apps/office/spreadsheet/spreadsheet.js", icon: "./icons/spreadsheet.png", system: true },
                 "Toolbar.app": { type: "app", entry: "./apps/toolbar.js", icon: "./icons/toolbar.png", system: true, frameless: true, singleton: true, shell: true },
                 "Startmenu.app": { type: "app", entry: "./apps/startmenu.js", icon: "./icons/startmenu.png", system: true, frameless: true, singleton: true, shell: true }
             },
