@@ -1,7 +1,6 @@
 // ImageViewer.js
 import { resolveFS } from "../fs-utils.js";
 import { setupRibbon } from "../ribbon.js";
-import { getFileContent } from "../fs-db.js";
 
 function showWarning(root, message) {
     const win = root.closest(".window");
@@ -24,10 +23,11 @@ function showConfirm(root, message, onYes, onNo) {
    ImageViewer
 ========================= */
 export default function ImageViewer(root, options = {}) {
-    const { path } = options;
+    const { path, syscall } = options;
     const win = root.closest(".window");
     const titleEl = win?.querySelector(".title-text");
 
+    let isDisposed = false;
     let filePath = path || null;
     let fileNode = filePath ? resolveFS(filePath) : null;
 
@@ -46,7 +46,8 @@ export default function ImageViewer(root, options = {}) {
     }
 
     let dirty = false;
-    let draftImage = null;
+    let draftImage = options.fileObject || null;
+    let loadedContent = null;
 
     /* =========================
        UI
@@ -108,38 +109,33 @@ export default function ImageViewer(root, options = {}) {
     }
 
     /* =========================
-       表示更新（多形式対応）
-    ========================== */
+        表示更新（多形式対応）
+     ========================== */
     function refresh() {
         // 前回のBlob URLがあれば解放してメモリリークを防ぐ
-        if (img.src.startsWith('blob:')) {
+        if (img.src.startsWith("blob:")) {
             URL.revokeObjectURL(img.src);
         }
 
-        if (dirty && draftImage) {
-            if (draftImage instanceof File) {
-                img.src = URL.createObjectURL(draftImage);
-            } else {
-                img.src = draftImage; // DataURL (回転後はこちらに入る)
-            }
-        } else if (fileNode?.content) {
-            const content = fileNode.content;
+        const content = (dirty && draftImage) ? draftImage : loadedContent;
 
-            if (typeof content === "string") {
-                if (content.startsWith("data:")) {
-                    img.src = content;
-                } else if (/^(https?|file):\/\//i.test(content)) {
-                    img.src = content;
-                } else {
-                    const blob = new Blob([content], { type: "image/png" });
-                    img.src = URL.createObjectURL(blob);
-                }
-            } else if (content instanceof File || content instanceof Blob) {
-                img.src = URL.createObjectURL(content);
-            } else if (content instanceof Uint8Array || content instanceof ArrayBuffer) {
+        if (!content || content === "__EXTERNAL_DATA__") {
+            img.removeAttribute("src");
+            return;
+        }
+
+        if (content instanceof File || content instanceof Blob) {
+            img.src = URL.createObjectURL(content);
+        } else if (typeof content === "string") {
+            if (content.startsWith("data:") || /^(https?|file):\/\//i.test(content)) {
+                img.src = content;
+            } else {
                 const blob = new Blob([content], { type: "image/png" });
                 img.src = URL.createObjectURL(blob);
             }
+        } else if (content instanceof Uint8Array || content instanceof ArrayBuffer) {
+            const blob = new Blob([content], { type: "image/png" });
+            img.src = URL.createObjectURL(blob);
         } else {
             img.removeAttribute("src");
         }
@@ -210,42 +206,50 @@ export default function ImageViewer(root, options = {}) {
 
 
     /* =========================
-       保存処理
-    ========================== */
+        保存処理 (syscall経由・Blob直接保存対応)
+     ========================== */
     async function save() {
-        // 1. 保存先を Programs/Picture に変更
-        const targetDir = resolveFS("Programs/Picture");
-        if (!targetDir) {
-            showWarning(root, "Programs/Picture が見つかりません");
+        if (!syscall?.writeFile) {
+            showWarning(root, "システムコール (syscall.writeFile) が利用できません");
             return;
         }
 
-        const treatAsNew = !fileNode || (filePath && filePath.toLowerCase().endsWith("imageviewer.app"));
+        const targetDir = resolveFS("C:/Programs/Picture");
+        if (!targetDir) {
+            showWarning(root, "C:/Programs/Picture が見つかりません");
+            return;
+        }
+
+        const treatAsNew = !filePath || filePath.toLowerCase().endsWith("imageviewer.app");
 
         /* 上書き保存 */
         if (!treatAsNew) {
             if (!dirty) return;
-            const dataToSave = draftImage || fileNode?.content;
+            const dataToSave = draftImage || loadedContent;
             if (!dataToSave) return;
 
-            // 常に DataURL に統一
-            if (dataToSave instanceof File || dataToSave instanceof Blob) {
-                fileNode.content = await blobToDataURL(dataToSave);
-            } else {
-                fileNode.content = dataToSave;
+            try {
+                await syscall.writeFile(filePath, dataToSave);
+                loadedContent = dataToSave;
+                dirty = false;
+                draftImage = null;
+
+                refresh();
+                updateTitle();
+            } catch (err) {
+                console.error("[ImageViewer] Save failed:", err);
+                showWarning(root, `保存に失敗しました: ${err.message}`);
             }
-            fileNode.type = "file";
-
-            dirty = false;
-            draftImage = null;
-
-            refresh();
-            updateTitle();
-            window.dispatchEvent(new Event("fs-updated"));
             return;
         }
 
         /* 新規保存 */
+        const dataToSave = draftImage || loadedContent;
+        if (!dataToSave) {
+            showWarning(root, "保存する画像データがありません");
+            return;
+        }
+
         let finalName = baseTitle;
 
         async function askFileName(defaultName) {
@@ -288,43 +292,39 @@ export default function ImageViewer(root, options = {}) {
             });
         }
 
-        // 重複チェックも targetDir (Programs/Picture) に対して行う
         let idx = 1;
         while (targetDir[finalName]) {
-            finalName = baseTitle.replace(/\.(png|jpg|jpeg)$/i, "") + ` (${idx++}).png`;
+            finalName = baseTitle.replace(/\.(png|jpg|jpeg|webp|gif)$/i, "") + ` (${idx++}).png`;
         }
 
         const name = await askFileName(finalName);
         if (!name) return;
-        finalName = name;
+        finalName = name.trim();
 
         if (targetDir[finalName]) {
             showWarning(root, "同名のファイルが存在します");
             return;
         }
 
-        const newNode = {
-            type: "file",
-            content: draftImage instanceof File ? await blobToDataURL(draftImage) : draftImage
-        };
+        const newFilePath = `C:/Programs/Picture/${finalName}`;
 
-        // targetDir に保存
-        targetDir[finalName] = newNode;
+        try {
+            await syscall.writeFile(newFilePath, dataToSave);
 
-        // パスを Programs/Picture に合わせて設定
-        const newFilePath = `Programs/Picture/${finalName}`;
+            /* 内部状態の更新（既存ウィンドウとカーネルプロセス管理を維持） */
+            filePath = newFilePath;
+            fileNode = resolveFS(newFilePath);
+            loadedContent = dataToSave;
+            baseTitle = finalName;
+            dirty = false;
+            draftImage = null;
 
-        window.dispatchEvent(new Event("fs-updated"));
-
-        /* 内部状態の更新（既存ウィンドウとカーネルプロセス管理を維持） */
-        filePath = newFilePath;
-        fileNode = newNode;
-        baseTitle = finalName;
-        dirty = false;
-        draftImage = null;
-
-        refresh();
-        updateTitle();
+            refresh();
+            updateTitle();
+        } catch (err) {
+            console.error("[ImageViewer] Save as new failed:", err);
+            showWarning(root, `保存に失敗しました: ${err.message}`);
+        }
     }
 
     /* =========================
@@ -409,35 +409,30 @@ export default function ImageViewer(root, options = {}) {
     window.addEventListener("keydown", handleKeyDown);
 
     /* =========================
-       ユーティリティ
-    ========================== */
-    async function blobToDataURL(blob) {
-        return new Promise(resolve => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(reader.result);
-            reader.readAsDataURL(blob);
-        });
-    }
+        初期化 (syscall.readFile経由)
+     ========================== */
     async function init() {
-        if (filePath && fileNode) {
-            let content = fileNode.content;
+        if (!filePath || filePath.toLowerCase().endsWith("imageviewer.app")) return;
+        if (!syscall?.readFile) return;
 
-            // ★ ここが重要：外部データなら取得する
-            if (content === "__EXTERNAL_DATA__") {
-                content = await getFileContent(filePath);
-                // メモリ上でも展開しておく
-                fileNode.content = content;
-            }
+        try {
+            const content = await syscall.readFile(filePath);
+            if (isDisposed) return;
 
-            if (content) {
-                img.src = content;
-            }
+            loadedContent = content;
+            refresh();
+        } catch (err) {
+            console.error("[ImageViewer] Read failed:", err);
+            showWarning(root, `画像の読み込みに失敗しました: ${err.message}`);
         }
     }
-    init(); // 実行
+    init();
+
     // ★ kernelの killProcess から連携される dispose とハンドルを返す
     return {
         dispose: () => {
+            isDisposed = true;
+
             // 1. グローバルリスナーの削除（メモリリーク・ゾンビ化防止）
             window.removeEventListener("keydown", handleKeyDown);
 

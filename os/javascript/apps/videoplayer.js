@@ -1,8 +1,6 @@
 // VideoPlayer.js
-import { resolveFS } from "../fs-utils.js";
+import { resolveFS, basename } from "../fs-utils.js";
 import { setupRibbon } from "../ribbon.js";
-import { getFileContent } from "../fs-db.js";
-import { basename, importFileSmart } from "../fs-utils.js";
 
 function showWarning(root, message) {
     const win = root.closest(".window");
@@ -23,7 +21,7 @@ function showConfirm(root, message, onYes, onNo) {
 
 export default function VideoPlayer(root, options = {}) {
     let isDisposed = false;
-    const { path } = options;
+    const { path, syscall } = options;
     const win = root.closest(".window");
     const titleEl = win?.querySelector(".title-text");
 
@@ -42,6 +40,7 @@ export default function VideoPlayer(root, options = {}) {
 
     let dirty = false;
     let draftVideo = options.fileObject || null;
+    let loadedContent = null;
 
     /* =========================
        UI構築 (フリーズ対策用オーバーレイ維持)
@@ -63,22 +62,25 @@ export default function VideoPlayer(root, options = {}) {
     const saveOverlay = root.querySelector(".save-overlay");
 
     /* =========================
-       表示更新 (エラー対策修正)
-    ========================== */
+        表示更新 (メモリ分離・多形式対応)
+     ========================== */
     function refresh() {
-        if (video.src && video.src.startsWith('blob:')) {
+        if (video.src && video.src.startsWith("blob:")) {
             URL.revokeObjectURL(video.src);
             video.src = "";
         }
 
-        // 表示するコンテンツの選定
-        const content = (dirty && draftVideo) ? draftVideo : fileNode?.content;
+        // 表示するコンテンツの選定（FSノードの外部マーカーを直接参照しない）
+        const content = (dirty && draftVideo) ? draftVideo : loadedContent;
 
-        if (!content) return;
+        if (!content || content === "__EXTERNAL_DATA__") return;
 
         // 型チェックを行い、適切な方法でビデオソースを設定
         if (content instanceof Blob || content instanceof File) {
             video.src = URL.createObjectURL(content);
+        } else if (content instanceof Uint8Array || content instanceof ArrayBuffer) {
+            const blob = new Blob([content], { type: "video/mp4" });
+            video.src = URL.createObjectURL(blob);
         } else if (typeof content === "string") {
             if (content.startsWith("data:") || content.startsWith("blob:") || /^(https?|file):\/\//i.test(content)) {
                 video.src = content;
@@ -142,73 +144,56 @@ export default function VideoPlayer(root, options = {}) {
     });
 
     /* =========================
-       保存ロジック (統合版)
-    ========================== */
+        保存ロジック (syscall経由・Blob直接チャンク保存版)
+     ========================== */
     async function save() {
-        // 1. 保存先を Desktop から Programs/Movie に変更
-        const targetDir = resolveFS("Programs/Movie");
-        if (!targetDir) return showWarning(root, "Programs/Movieが見つかりません");
+        if (!syscall?.writeFile) {
+            return showWarning(root, "システムコール (syscall.writeFile) が利用できません");
+        }
 
-        const treatAsNew = !fileNode || (filePath && filePath.toLowerCase().endsWith("videoplayer.app"));
+        const targetDir = resolveFS("C:/Programs/Movie");
+        if (!targetDir) return showWarning(root, "C:/Programs/Movie が見つかりません");
 
-        saveOverlay.style.display = "flex";
-        await new Promise(r => setTimeout(r, 100)); // 描画待ち
+        const treatAsNew = !filePath || filePath.toLowerCase().endsWith("videoplayer.app");
 
         try {
-            /* --- 1. 保存する実データの準備とサイズ計算 --- */
-            const dataToSave = treatAsNew ? draftVideo : (draftVideo || fileNode?.content);
+            const dataToSave = treatAsNew ? draftVideo : (draftVideo || loadedContent);
             if (!dataToSave) throw new Error("保存するデータがありません");
 
-            // Blob/FileならDataURLに変換
-            const encodedContent = (dataToSave instanceof File || dataToSave instanceof Blob)
-                ? await importFileSmart(dataToSave)
-                : dataToSave;
-
-            // Base64(DataURL)から実際のバイト数を計算
-            let actualSize = 0;
-            if (typeof encodedContent === "string" && encodedContent.startsWith("data:")) {
-                const base64Part = encodedContent.split(",")[1] || "";
-                actualSize = Math.floor((base64Part.length * 3) / 4) - (base64Part.endsWith("==") ? 2 : base64Part.endsWith("=") ? 1 : 0);
-            } else if (typeof encodedContent === "string") {
-                actualSize = new TextEncoder().encode(encodedContent).length;
-            }
-
-            /* --- 2. 上書き保存 --- */
+            /* --- 1. 上書き保存 --- */
             if (!treatAsNew) {
                 if (!dirty) {
-                    saveOverlay.style.display = "none";
                     updateTitle();
                     return;
                 }
 
-                // contentとsizeを同時に更新
-                fileNode.content = encodedContent;
-                fileNode.size = actualSize;
+                saveOverlay.style.display = "flex";
+                await new Promise(r => setTimeout(r, 50)); // 描画待ち
 
+                // Blob/Fileのまま渡すことで Base64 変換を回避し、FS側で10MBチャンク保存を実行
+                await syscall.writeFile(filePath, dataToSave);
+
+                loadedContent = dataToSave;
                 dirty = false;
                 draftVideo = null;
                 updateTitle();
-                window.dispatchEvent(new Event("fs-updated"));
                 refresh();
-                saveOverlay.style.display = "none";
                 return;
             }
 
-            /* --- 3. 新規保存 --- */
+            /* --- 2. 新規保存 --- */
             let finalName = baseTitle;
             let idx = 1;
-            // targetDir (Programs/Movie) 内で重複チェック
             while (targetDir[finalName]) {
                 finalName = baseTitle.replace(/\.(mp4|webm|ogg)$/i, "") + ` (${idx++}).mp4`;
             }
 
-            saveOverlay.style.display = "none";
             const name = await askFileName(finalName);
             if (!name) {
                 updateTitle();
                 return;
             }
-            finalName = name;
+            finalName = name.trim();
 
             if (targetDir[finalName]) {
                 showWarning(root, "同名のファイルが存在します");
@@ -218,27 +203,22 @@ export default function VideoPlayer(root, options = {}) {
             saveOverlay.style.display = "flex";
             await new Promise(r => setTimeout(r, 50));
 
-            // 新規ファイルのノード作成
-            const newNode = {
-                type: "file",
-                content: encodedContent,
-                size: actualSize
-            };
-            targetDir[finalName] = newNode;
+            const newFilePath = `C:/Programs/Movie/${finalName}`;
+            await syscall.writeFile(newFilePath, dataToSave);
 
-            // ★ DOM差し替えを行わず、既存インスタンスの変数だけ書き換え
-            fileNode = newNode;
-            filePath = `Programs/Movie/${finalName}`;
+            // DOM差し替えを行わず、既存インスタンスの状態だけ更新
+            filePath = newFilePath;
+            fileNode = resolveFS(newFilePath);
+            loadedContent = dataToSave;
             baseTitle = finalName;
             dirty = false;
             draftVideo = null;
 
             updateTitle();
-            window.dispatchEvent(new Event("fs-updated"));
             refresh();
         } catch (err) {
-            console.error(err);
-            showWarning(root, "保存中にエラーが発生しました。");
+            console.error("[VideoPlayer] Save failed:", err);
+            showWarning(root, `保存中にエラーが発生しました: ${err.message}`);
         } finally {
             if (saveOverlay) saveOverlay.style.display = "none";
             updateTitle();
@@ -331,15 +311,21 @@ export default function VideoPlayer(root, options = {}) {
     }, true);
 
     /* =========================
-       ユーティリティ & 初期化
-    ========================== */
-
+        初期化 (syscall.readFile経由)
+     ========================== */
     async function init() {
-        if (filePath && fileNode) {
-            const content = await getFileContent(filePath);
+        if (!filePath || filePath.toLowerCase().endsWith("videoplayer.app")) return;
+        if (!syscall?.readFile) return;
+
+        try {
+            const content = await syscall.readFile(filePath);
             if (isDisposed) return; // 既に破棄されている場合は処理を中断
-            fileNode.content = content;
+
+            loadedContent = content;
             refresh();
+        } catch (err) {
+            console.error("[VideoPlayer] Read failed:", err);
+            showWarning(root, `ビデオの読み込みに失敗しました: ${err.message}`);
         }
     }
     init();

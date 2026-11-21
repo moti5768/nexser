@@ -2,9 +2,6 @@
 import { resolveFS } from "../fs-utils.js";
 import { centerWindowOptions } from "../window.js";
 import { setupRibbon } from "../ribbon.js";
-import { getFileContent } from "../fs-db.js";
-
-let activeSearchWin = null;
 
 function showWarning(root, message) {
     const win = root.closest(".window");
@@ -27,27 +24,45 @@ function showConfirm(root, message, onYes, onNo) {
    TextEditor
 ========================= */
 export default async function TextEditor(root, options = {}) {
-    const { path } = options;
+    const { path, syscall } = options;
     const win = root.closest(".window");
     const ribbon = win?._ribbon;
     const titleEl = win?.querySelector(".title-text");
 
+    let isDisposed = false;
+    let activeSearchWin = null;
+    let closeActiveSearch = null;
+
     let filePath = path || null;
     let fileNode = filePath ? resolveFS(filePath) : null;
-    let isNewFile = !fileNode;
+    const isAppLaunch = !filePath || filePath.toLowerCase().endsWith("texteditor.app") || fileNode?.type === "app";
 
-    // --- 追加: 実体データの取得処理 ---
-    if (fileNode && fileNode.content === "__EXTERNAL_DATA__") {
-        try {
-            fileNode.content = await getFileContent(filePath);
-        } catch (e) {
-            console.error("Failed to load file content:", e);
-            fileNode.content = "Error: データの読み込みに失敗しました。";
+    // syscall.readFile 経由で透過的にテキストを取得（FSノードへ書き戻さない）
+    let initialContent = "";
+    if (!isAppLaunch && filePath) {
+        if (syscall?.readFile) {
+            try {
+                const rawData = await syscall.readFile(filePath);
+                if (rawData instanceof Blob) {
+                    initialContent = await rawData.text();
+                } else if (rawData instanceof ArrayBuffer || ArrayBuffer.isView(rawData)) {
+                    initialContent = new TextDecoder().decode(rawData);
+                } else if (rawData !== null && rawData !== undefined) {
+                    initialContent = String(rawData);
+                }
+            } catch (e) {
+                console.error("[TextEditor] Failed to load file content:", e);
+                initialContent = "Error: データの読み込みに失敗しました。";
+            }
+        } else if (fileNode && typeof fileNode.content === "string" && fileNode.content !== "__EXTERNAL_DATA__") {
+            initialContent = fileNode.content;
         }
     }
 
     const untitledId = Date.now().toString(36);
-    let baseTitle = filePath?.split("/").pop()?.trim() || `Untitled-${untitledId}`;
+    let baseTitle = (!isAppLaunch && filePath)
+        ? filePath.split("/").pop().trim()
+        : `Untitled-${untitledId}.txt`;
 
     let dirty = false;
 
@@ -55,8 +70,11 @@ export default async function TextEditor(root, options = {}) {
         fontSize: 16,
         fontFamily: "monospace",
         fontWeight: "normal",
-        fontStyle: "normal"
-    }, fileNode?.style || {});
+        fontStyle: "normal",
+        textDecoration: "none",
+        color: "black",
+        backgroundColor: "white"
+    }, (!isAppLaunch && fileNode?.style) ? fileNode.style : {});
 
     /* =========================
        UI
@@ -80,7 +98,7 @@ export default async function TextEditor(root, options = {}) {
     `;
 
     const textarea = root.querySelector(".texteditor");
-    textarea.value = fileNode?.content || "";
+    textarea.value = initialContent;
 
     const contentEl = win?.querySelector(".content");
     if (contentEl) contentEl.style.overflow = "hidden";
@@ -104,25 +122,41 @@ export default async function TextEditor(root, options = {}) {
     updateTitle();
 
     async function save() {
-        const desktop = resolveFS("C:/Desktop");
-        if (!desktop) { showWarning(root, "Desktop が見つかりません"); return; }
-
-        const treatAsNew = !fileNode || (filePath && filePath.toLowerCase().endsWith("texteditor.app"));
-
-        if (!treatAsNew) {
-            if (fileNode.content === "__EXTERNAL_DATA__") {
-                showWarning(root, "データがまだ読み込み中のため保存できません。");
-                return;
-            }
-            fileNode.content = textarea.value;
-            fileNode.style = { ...styleState };
-            dirty = false;
-            updateTitle();
-            window.dispatchEvent(new Event("fs-updated"));
-            return;
+        if (!syscall?.writeFile) {
+            showWarning(root, "システムコール (syscall.writeFile) が利用できません");
+            return false;
         }
 
-        // 新規ファイル名入力
+        const desktop = resolveFS("C:/Desktop");
+        if (!desktop) {
+            showWarning(root, "C:/Desktop が見つかりません");
+            return false;
+        }
+
+        const treatAsNew = !filePath || filePath.toLowerCase().endsWith("texteditor.app") || fileNode?.type === "app";
+
+        /* 上書き保存 */
+        if (!treatAsNew) {
+            try {
+                // 先にスタイルメタデータを反映し、writeFile 時の差分保存1回に統合してコミットする
+                const targetNode = resolveFS(filePath);
+                if (targetNode && targetNode.type === "file") {
+                    targetNode.style = { ...styleState };
+                }
+
+                await syscall.writeFile(filePath, textarea.value);
+                fileNode = resolveFS(filePath);
+                dirty = false;
+                updateTitle();
+                return true;
+            } catch (err) {
+                console.error("[TextEditor] Save failed:", err);
+                showWarning(root, `保存に失敗しました: ${err.message}`);
+                return false;
+            }
+        }
+
+        /* 新規保存 */
         let finalName = baseTitle;
         async function askFileName(defaultName) {
             return new Promise(resolve => {
@@ -132,7 +166,6 @@ export default async function TextEditor(root, options = {}) {
                     buttons: [
                         {
                             label: "OK", onClick: () => {
-                                // OK時に現在の input の値を取得
                                 const currentInput = content.querySelector(".modal-prompt-input");
                                 resolve(currentInput ? currentInput.value : defaultName);
                             }
@@ -143,16 +176,14 @@ export default async function TextEditor(root, options = {}) {
 
                 if (!content) {
                     console.error("showModalWindow が要素を返しませんでした。");
+                    resolve(null);
                     return;
                 }
 
-                // 1. すでに input が存在するかチェック（重複防止）
                 let promptInput = content.querySelector(".modal-prompt-input");
-
-                // 2. 存在しない場合のみ新規作成
                 if (!promptInput) {
                     promptInput = document.createElement("input");
-                    promptInput.className = "modal-prompt-input"; // 識別用クラス
+                    promptInput.className = "modal-prompt-input";
                     promptInput.type = "text";
                     promptInput.value = defaultName;
                     promptInput.style.width = "100%";
@@ -160,7 +191,6 @@ export default async function TextEditor(root, options = {}) {
                     promptInput.style.padding = "4px";
                     promptInput.style.marginTop = "10px";
 
-                    // ボタンコンテナを探してその前に挿入
                     const btnContainer = content.querySelector(".button-container") || content.querySelector(".modal-button-container") || content.lastElementChild;
                     if (btnContainer) {
                         content.insertBefore(promptInput, btnContainer);
@@ -168,32 +198,48 @@ export default async function TextEditor(root, options = {}) {
                         content.appendChild(promptInput);
                     }
                 } else {
-                    // 3. すでに存在する場合は値を最新にする
                     promptInput.value = defaultName;
                 }
 
                 setTimeout(() => promptInput.focus(), 10);
             });
         }
+
         let idx = 1;
-        while (desktop[finalName]) finalName = `${baseTitle} (${idx++})`;
+        while (desktop[finalName]) {
+            finalName = baseTitle.replace(/\.txt$/i, "") + ` (${idx++}).txt`;
+        }
+
         const name = await askFileName(finalName);
-        if (!name) return;
-        finalName = name;
-        if (desktop[finalName]) { showWarning(root, "同名のファイルが存在します"); return; }
+        if (!name || !name.trim()) return false;
+        finalName = name.trim();
 
-        // Desktop に新規ファイルを作成
-        const newNode = { type: "file", content: textarea.value, style: { ...styleState } };
-        desktop[finalName] = newNode;
+        if (desktop[finalName]) {
+            showWarning(root, "同名のファイルが存在します");
+            return false;
+        }
 
-        // ★ DOMやウィンドウの差し替えは行わず、内部状態をその場で更新
-        fileNode = newNode;
-        filePath = `Desktop/${finalName}`;
-        baseTitle = finalName;
-        dirty = false;
+        const newFilePath = `C:/Desktop/${finalName}`;
+        try {
+            await syscall.writeFile(newFilePath, textarea.value);
+            const createdNode = resolveFS(newFilePath);
+            if (createdNode) {
+                createdNode.style = { ...styleState };
+            }
 
-        updateTitle();
-        window.dispatchEvent(new Event("fs-updated"));
+            // DOMやウィンドウの差し替えは行わず、内部状態をその場で更新
+            fileNode = createdNode;
+            filePath = newFilePath;
+            baseTitle = finalName;
+            dirty = false;
+
+            updateTitle();
+            return true;
+        } catch (err) {
+            console.error("[TextEditor] Save as new failed:", err);
+            showWarning(root, `保存に失敗しました: ${err.message}`);
+            return false;
+        }
     }
 
     /* =========================
@@ -267,7 +313,15 @@ export default async function TextEditor(root, options = {}) {
                     { label: "Save", action: save },
                     {
                         label: "Reset", action: () => {
-                            Object.assign(styleState, { fontSize: 16, fontFamily: "monospace", fontWeight: "normal", fontStyle: "normal" });
+                            Object.assign(styleState, {
+                                fontSize: 16,
+                                fontFamily: "monospace",
+                                fontWeight: "normal",
+                                fontStyle: "normal",
+                                textDecoration: "none",
+                                color: "black",
+                                backgroundColor: "white"
+                            });
                             dirty = true; applyStyle(); updateTitle();
                         }
                     }
@@ -328,6 +382,9 @@ export default async function TextEditor(root, options = {}) {
         if (e.ctrlKey && e.key.toLowerCase() === "s") {
             e.preventDefault();
             save();
+        } else if (e.ctrlKey && e.key.toLowerCase() === "f") {
+            e.preventDefault();
+            searchText();
         } else if (e.altKey && e.key === "F4") {
             e.preventDefault();
             requestClose();
@@ -349,8 +406,8 @@ export default async function TextEditor(root, options = {}) {
         }
         showConfirm(root, "編集中の内容があります。\n保存しますか？",
             async () => {
-                await save();
-                closeWindow();
+                const saved = await save();
+                if (saved) closeWindow();
             },
             () => {
                 dirty = false;
@@ -441,10 +498,15 @@ export default async function TextEditor(root, options = {}) {
         observer.observe(document.body, { childList: true, subtree: true });
 
         function closeSearch() {
-            if (observer) observer.disconnect();
+            if (observer) {
+                observer.disconnect();
+                observer = null;
+            }
             if (searchWin && searchWin.parentNode) searchWin.remove();
             if (activeSearchWin === searchWin) activeSearchWin = null;
+            if (closeActiveSearch === closeSearch) closeActiveSearch = null;
         }
+        closeActiveSearch = closeSearch;
 
         const searchCloseBtn = searchWin.querySelector(".close-btn");
         if (searchCloseBtn) searchCloseBtn.addEventListener("click", closeSearch);
@@ -479,11 +541,18 @@ export default async function TextEditor(root, options = {}) {
     }
     return {
         dispose: () => {
-            // ★ キーリスナーを破棄
+            isDisposed = true;
+
+            // デバウンスタイマーの解放
+            clearTimeout(statusBarTimeout);
+
+            // キーリスナーを破棄
             win?.removeEventListener("keydown", handleKeyDown);
 
-            // エディタ終了時に開いたままの検索ウィンドウがあれば強制的に閉じる
-            if (activeSearchWin && document.body.contains(activeSearchWin)) {
+            // 検索ウィンドウと MutationObserver を確実に破棄
+            if (closeActiveSearch) {
+                closeActiveSearch();
+            } else if (activeSearchWin && document.body.contains(activeSearchWin)) {
                 activeSearchWin.remove();
                 activeSearchWin = null;
             }

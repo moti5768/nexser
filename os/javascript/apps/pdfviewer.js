@@ -1,7 +1,6 @@
 // PDFViewer.js
 import { resolveFS } from "../fs-utils.js";
 import { setupRibbon } from "../ribbon.js";
-import { getFileContent } from "../fs-db.js";
 
 function showWarning(root, message) {
     const win = root.closest(".window");
@@ -24,9 +23,10 @@ function showConfirm(root, message, onYes, onNo) {
    PDFViewer
 ========================= */
 export default function PDFViewer(root, options = {}) {
-    const { path } = options;
+    const { path, syscall } = options;
     const win = root.closest(".window");
 
+    let isDisposed = false;
     let filePath = path || null;
     let fileNode = filePath ? resolveFS(filePath) : null;
 
@@ -41,7 +41,8 @@ export default function PDFViewer(root, options = {}) {
     }
 
     let dirty = false;
-    let draftBlob = null;
+    let draftBlob = options.fileObject || null;
+    let loadedContent = null;
 
     /* =========================
        UI
@@ -55,29 +56,27 @@ export default function PDFViewer(root, options = {}) {
     const viewer = root.querySelector(".pdf-render");
 
     /* =========================
-       表示更新
+       表示更新 (メモリ分離・Blob対応)
     ========================== */
     function refresh() {
-        if (viewer.src.startsWith('blob:')) {
+        if (viewer.src.startsWith("blob:")) {
             URL.revokeObjectURL(viewer.src);
         }
 
-        let content = null;
-        if (dirty && draftBlob) {
-            content = draftBlob;
-        } else if (fileNode?.content) {
-            content = fileNode.content;
+        const content = (dirty && draftBlob) ? draftBlob : loadedContent;
+
+        if (!content || content === "__EXTERNAL_DATA__") {
+            viewer.removeAttribute("src");
+            return;
         }
 
-        if (content) {
-            if (content instanceof Blob || content instanceof File) {
-                viewer.src = URL.createObjectURL(content);
-            } else if (typeof content === "string") {
-                viewer.src = content;
-            } else if (content instanceof Uint8Array || content instanceof ArrayBuffer) {
-                const blob = new Blob([content], { type: "application/pdf" });
-                viewer.src = URL.createObjectURL(blob);
-            }
+        if (content instanceof Blob || content instanceof File) {
+            viewer.src = URL.createObjectURL(content);
+        } else if (typeof content === "string") {
+            viewer.src = content;
+        } else if (content instanceof Uint8Array || content instanceof ArrayBuffer) {
+            const blob = new Blob([content], { type: "application/pdf" });
+            viewer.src = URL.createObjectURL(blob);
         } else {
             viewer.removeAttribute("src");
         }
@@ -132,36 +131,45 @@ export default function PDFViewer(root, options = {}) {
     });
 
     /* =========================
-       保存処理 (ImageViewer互換)
-    ========================== */
+        保存処理 (syscall経由・Blob直接保存)
+     ========================== */
     async function save() {
-        const targetDir = resolveFS("Programs/Documents") || resolveFS("Programs");
+        if (!syscall?.writeFile) {
+            showWarning(root, "システムコール (syscall.writeFile) が利用できません");
+            return;
+        }
+
+        const dirPath = resolveFS("C:/Programs/Documents") ? "C:/Programs/Documents" : "C:/Programs";
+        const targetDir = resolveFS(dirPath);
         if (!targetDir) {
             showWarning(root, "保存先ディレクトリが見つかりません");
             return;
         }
 
-        const treatAsNew = !fileNode || (filePath && filePath.toLowerCase().endsWith("pdfviewer.app"));
+        const treatAsNew = !filePath || filePath.toLowerCase().endsWith("pdfviewer.app");
+        const dataToSave = draftBlob || loadedContent;
 
         /* 上書き保存 */
         if (!treatAsNew) {
-            if (!dirty) return;
-            const dataToSave = draftBlob || fileNode?.content;
-            if (!dataToSave) return;
+            if (!dirty || !dataToSave) return;
 
-            if (dataToSave instanceof File || dataToSave instanceof Blob) {
-                fileNode.content = await blobToDataURL(dataToSave);
-            } else {
-                fileNode.content = dataToSave;
+            try {
+                await syscall.writeFile(filePath, dataToSave);
+                loadedContent = dataToSave;
+                dirty = false;
+                draftBlob = null;
+
+                refresh();
+                updateTitle();
+            } catch (err) {
+                console.error("[PDFViewer] Save failed:", err);
+                showWarning(root, `保存に失敗しました: ${err.message}`);
             }
-            fileNode.type = "file";
+            return;
+        }
 
-            dirty = false;
-            draftBlob = null;
-
-            refresh();
-            updateTitle();
-            window.dispatchEvent(new Event("fs-updated"));
+        if (!dataToSave) {
+            showWarning(root, "保存するPDFデータがありません");
             return;
         }
 
@@ -189,7 +197,6 @@ export default function PDFViewer(root, options = {}) {
                     promptInput.type = "text";
                     promptInput.style.cssText = "width:100%; margin-top:10px; box-sizing:border-box; padding:4px;";
 
-                    // ImageViewer.jsと同様の安全な挿入ロジック
                     const btnContainer = content.querySelector(".modal-button-container") || content.lastElementChild;
                     if (btnContainer && btnContainer.parentNode === content) {
                         content.insertBefore(promptInput, btnContainer);
@@ -210,26 +217,31 @@ export default function PDFViewer(root, options = {}) {
 
         const name = await askFileName(finalName);
         if (!name) return;
-        finalName = name;
+        finalName = name.trim();
 
-        const newNode = {
-            type: "file",
-            content: draftBlob instanceof File ? await blobToDataURL(draftBlob) : draftBlob
-        };
+        if (targetDir[finalName]) {
+            showWarning(root, "同名のファイルが存在します");
+            return;
+        }
 
-        targetDir[finalName] = newNode;
-        const newFilePath = `Programs/Documents/${finalName}`;
-        window.dispatchEvent(new Event("fs-updated"));
+        const newFilePath = `${dirPath}/${finalName}`;
+        try {
+            await syscall.writeFile(newFilePath, dataToSave);
 
-        /* 内部状態の更新（既存ウィンドウとカーネルプロセス管理を維持） */
-        filePath = newFilePath;
-        fileNode = newNode;
-        baseTitle = finalName;
-        dirty = false;
-        draftBlob = null;
+            /* 内部状態の更新（既存ウィンドウとカーネルプロセス管理を維持） */
+            filePath = newFilePath;
+            fileNode = resolveFS(newFilePath);
+            loadedContent = dataToSave;
+            baseTitle = finalName;
+            dirty = false;
+            draftBlob = null;
 
-        refresh();
-        updateTitle();
+            refresh();
+            updateTitle();
+        } catch (err) {
+            console.error("[PDFViewer] Save as new failed:", err);
+            showWarning(root, `保存に失敗しました: ${err.message}`);
+        }
     }
 
     /* =========================
@@ -273,20 +285,17 @@ export default function PDFViewer(root, options = {}) {
     }, true);
 
     /* =========================
-       ユーティリティ & 初期化
-    ========================== */
-    async function blobToDataURL(blob) {
-        return new Promise(resolve => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(reader.result);
-            reader.readAsDataURL(blob);
-        });
-    }
-
+        初期化 (syscall.readFile経由)
+     ========================== */
     async function init() {
-        if (filePath && fileNode) {
-            if (fileNode.content === "__EXTERNAL_DATA__") {
-                fileNode.content = await getFileContent(filePath);
+        if (filePath && !filePath.toLowerCase().endsWith("pdfviewer.app") && syscall?.readFile) {
+            try {
+                const content = await syscall.readFile(filePath);
+                if (isDisposed) return;
+                loadedContent = content;
+            } catch (err) {
+                console.error("[PDFViewer] Read failed:", err);
+                showWarning(root, `PDFの読み込みに失敗しました: ${err.message}`);
             }
         }
         refresh();
@@ -305,6 +314,8 @@ export default function PDFViewer(root, options = {}) {
     init();
 
     function dispose() {
+        isDisposed = true;
+
         // 1. キーイベントの解約（メモリリーク防止）
         window.removeEventListener("keydown", handleKeyDown);
 
@@ -318,7 +329,7 @@ export default function PDFViewer(root, options = {}) {
         }
 
         // 3. Blob URL解放
-        if (currentSrc && currentSrc.startsWith('blob:')) {
+        if (currentSrc && currentSrc.startsWith("blob:")) {
             URL.revokeObjectURL(currentSrc);
         }
     }

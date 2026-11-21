@@ -1,14 +1,45 @@
 // soundplayer.js
 import { FS, forceSave } from "../fs.js";
 import { resolveFS } from "../fs-utils.js";
-import { getFileContent } from "../fs-db.js";
 import { FILE_ASSOCIATIONS } from "../file-associations.js";
 
-export default function main(content, options) {
+const SOUND_CONFIG_PATH = "C:/System/SoundConfig.json";
+
+export default function main(content, options = {}) {
+    const { syscall } = options;
+    let isDisposed = false;
     let currentAudio = null;
     let currentVolume = 1.0;
     let isLooping = false;
     let searchQuery = "";
+
+    const stopCurrentAudio = () => {
+        if (!currentAudio) return;
+        currentAudio.pause();
+        currentAudio.onended = null;
+        if (currentAudio.src && currentAudio.src.startsWith("blob:")) {
+            URL.revokeObjectURL(currentAudio.src);
+        }
+        currentAudio.src = "";
+        currentAudio = null;
+    };
+
+    const loadSoundConfig = async () => {
+        try {
+            const raw = syscall?.readFile ? await syscall.readFile(SOUND_CONFIG_PATH) : "{}";
+            return JSON.parse(typeof raw === "string" && raw.trim() ? raw : "{}");
+        } catch (err) {
+            console.warn("[SoundPlayer] Failed to parse SoundConfig.json:", err);
+            return {};
+        }
+    };
+
+    const saveSoundConfig = async (config) => {
+        if (!syscall?.writeFile) {
+            throw new Error("syscall.writeFile が利用できません");
+        }
+        await syscall.writeFile(SOUND_CONFIG_PATH, JSON.stringify(config, null, 2));
+    };
 
     const container = document.createElement("div");
     // Windows 95 スタイル（#c0c0c0背景、MS Sans Serifフォント、クラシックな余白）
@@ -110,18 +141,14 @@ export default function main(content, options) {
         return files;
     };
 
-    const refresh = () => {
-        listEl.innerHTML = "";
+    const refresh = async () => {
         const musicNode = resolveFS("C:/Programs/Music");
         if (!musicNode) return;
 
-        let config = {};
-        try {
-            config = JSON.parse(FS["C:"].System["SoundConfig.json"].content || "{}");
-        } catch (e) {
-            config = {};
-        }
+        const config = await loadSoundConfig();
+        if (isDisposed) return;
 
+        listEl.innerHTML = "";
         const files = collectAudioFiles(musicNode);
         const filteredFiles = files.filter(name => name.toLowerCase().includes(searchQuery.toLowerCase()));
 
@@ -186,11 +213,7 @@ export default function main(content, options) {
     };
 
     container.querySelector("#stop-all-btn").onclick = () => {
-        if (currentAudio) {
-            currentAudio.pause();
-            currentAudio.src = "";
-            currentAudio = null;
-        }
+        stopCurrentAudio();
     };
 
     // イベント割り当て変更
@@ -200,67 +223,52 @@ export default function main(content, options) {
             if (eventName === "ignore") return;
 
             const fileName = e.target.dataset.filename;
-            let config = {};
             try {
-                config = JSON.parse(FS["C:"].System["SoundConfig.json"].content || "{}");
+                const config = await loadSoundConfig();
+                Object.keys(config).forEach(key => {
+                    if (config[key] === fileName) delete config[key];
+                });
+
+                if (eventName !== "") {
+                    config[eventName] = fileName;
+                }
+
+                await saveSoundConfig(config);
+                await refresh();
             } catch (err) {
-                config = {};
+                console.error("[SoundPlayer] Config save failed:", err);
+                window.nexser?.windowAPI.alertWindow(`設定の保存に失敗しました: ${err.message}`, { title: "soundplayer" });
             }
-
-            Object.keys(config).forEach(key => {
-                if (config[key] === fileName) delete config[key];
-            });
-
-            if (eventName !== "") {
-                config[eventName] = fileName;
-            }
-
-            FS["C:"].System["SoundConfig.json"].content = JSON.stringify(config, null, 2);
-
-            // 保存処理とイベント伝播を確実に完了させる
-            await forceSave?.();
-            window.dispatchEvent(new Event("fs-updated"));
-
-            // 非同期で安全にUIを再描画する
-            setTimeout(() => {
-                refresh();
-            }, 0);
         }
     };
 
     container.querySelector("#upload-btn").onclick = () => inputEl.click();
 
-    // ファイルインポート共通関数
+    // ファイルインポート共通関数 (syscall.writeFile経由・File/Blob直接保存)
     const handleFilesImport = async (files) => {
         if (!files || files.length === 0) return;
+        if (!syscall?.writeFile) {
+            window.nexser?.windowAPI.alertWindow("システムコール (syscall.writeFile) が利用できません。", { title: "soundplayer" });
+            return;
+        }
 
         const allowedExtensions = /(\.mp3|\.ogg|\.wav|\.m4a|\.aac|\.flac)$/i;
-        const loadedFiles = {};
 
         for (const file of files) {
-            if (!allowedExtensions.exec(file.name)) {
+            if (!allowedExtensions.test(file.name)) {
                 window.nexser?.windowAPI.alertWindow(`ファイル「${file.name}」はサポートされていない形式です。`, { title: "soundplayer" });
                 continue;
             }
 
-            await new Promise((resolve) => {
-                const reader = new FileReader();
-                reader.onload = (ev) => {
-                    loadedFiles[file.name] = {
-                        type: "file",
-                        subtype: "audio",
-                        content: ev.target.result
-                    };
-                    resolve();
-                };
-                reader.readAsDataURL(file);
-            });
+            try {
+                await syscall.writeFile(`C:/Programs/Music/${file.name}`, file);
+            } catch (err) {
+                console.error(`[SoundPlayer] Import failed (${file.name}):`, err);
+                window.nexser?.windowAPI.alertWindow(`インポートに失敗しました (${file.name}): ${err.message}`, { title: "soundplayer" });
+            }
         }
 
-        Object.assign(FS["C:"].Programs.Music, loadedFiles);
-        await forceSave?.();
-        window.dispatchEvent(new Event("fs-updated"));
-        refresh();
+        await refresh();
     };
 
     inputEl.onchange = async (e) => {
@@ -283,55 +291,60 @@ export default function main(content, options) {
 
         // 再生ボタン
         if (e.target.classList.contains("play-btn")) {
-            if (currentAudio) {
-                currentAudio.pause();
-                currentAudio.src = "";
+            stopCurrentAudio();
+
+            if (!syscall?.readFile) {
+                window.nexser?.windowAPI.alertWindow("システムコール (syscall.readFile) が利用できません。", { title: "soundplayer" });
+                return;
             }
 
-            let fileNode = resolveFS(`C:/Programs/Music/${path}`);
-            if (!fileNode) {
+            const fullPath = `C:/Programs/Music/${path}`;
+            let audioData = null;
+            try {
+                audioData = await syscall.readFile(fullPath);
+            } catch (err) {
+                console.error("[SoundPlayer] Read error:", err);
+                window.nexser?.windowAPI.alertWindow(`データの取得に失敗しました: ${err.message}`, { title: "soundplayer" });
+                return;
+            }
+
+            if (isDisposed) return;
+            if (!audioData) {
                 window.nexser?.windowAPI.alertWindow("ファイルが見つかりませんでした。", { title: "soundplayer" });
                 return;
             }
-            let audioData = fileNode.content;
 
-            if (audioData === "__EXTERNAL_DATA__") {
-                audioData = await getFileContent(`C:/Programs/Music/${path}`);
+            let audioSrc = "";
+            if (audioData instanceof Blob || audioData instanceof File) {
+                audioSrc = URL.createObjectURL(audioData);
+            } else if (audioData instanceof ArrayBuffer || ArrayBuffer.isView(audioData)) {
+                audioSrc = URL.createObjectURL(new Blob([audioData], { type: "audio/mpeg" }));
+            } else if (typeof audioData === "string") {
+                audioSrc = audioData;
             }
 
-            if (!audioData) {
-                window.nexser?.windowAPI.alertWindow("データの取得に失敗しました。", { title: "soundplayer" });
-                return;
-            }
-
-            currentAudio = new Audio(audioData);
+            currentAudio = new Audio(audioSrc);
             currentAudio.volume = currentVolume;
             currentAudio.loop = isLooping;
             currentAudio.onended = () => {
-                if (!currentAudio.loop) currentAudio = null;
+                if (!currentAudio?.loop) stopCurrentAudio();
             };
             currentAudio.play().catch(err => {
                 console.error("Playback error:", err);
+                stopCurrentAudio();
                 window.nexser?.windowAPI.alertWindow("再生に失敗しました。", { title: "soundplayer" });
             });
         }
 
         // 停止ボタン
         if (e.target.classList.contains("stop-btn")) {
-            if (currentAudio) {
-                currentAudio.pause();
-                currentAudio.src = "";
-                currentAudio = null;
-            }
+            stopCurrentAudio();
         }
 
         // 削除ボタン
         if (e.target.classList.contains("delete-btn")) {
             if (!path) return;
-            if (currentAudio) {
-                currentAudio.pause();
-                currentAudio = null;
-            }
+            stopCurrentAudio();
 
             const parts = path.split("/");
             const fileName = parts.pop();
@@ -342,16 +355,22 @@ export default function main(content, options) {
                 delete parentNode[fileName];
             }
 
-            let config = JSON.parse(FS["C:"].System["SoundConfig.json"].content || "{}");
-            let changed = false;
-            Object.keys(config).forEach(k => {
-                if (config[k] === path) { delete config[k]; changed = true; }
-            });
-            if (changed) FS["C:"].System["SoundConfig.json"].content = JSON.stringify(config, null, 2);
+            try {
+                const config = await loadSoundConfig();
+                let changed = false;
+                Object.keys(config).forEach(k => {
+                    if (config[k] === path) { delete config[k]; changed = true; }
+                });
+                if (changed) {
+                    await saveSoundConfig(config);
+                } else {
+                    await forceSave?.();
+                }
+            } catch (err) {
+                console.error("[SoundPlayer] Config cleanup failed:", err);
+            }
 
-            await forceSave?.();
-            window.dispatchEvent(new Event("fs-updated"));
-            refresh();
+            await refresh();
         }
     };
 
@@ -360,11 +379,8 @@ export default function main(content, options) {
     return {
         isTabApp: false,
         dispose: () => {
-            if (currentAudio) {
-                currentAudio.pause();
-                currentAudio.src = "";
-                currentAudio = null;
-            }
+            isDisposed = true;
+            stopCurrentAudio();
             console.log("SoundPlayer disposed successfully.");
         }
     };

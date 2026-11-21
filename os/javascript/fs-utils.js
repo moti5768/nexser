@@ -19,15 +19,51 @@ export async function readFileContent(path, cwd = "C:/") {
 }
 
 /**
- * パスを指定してファイル内容を書き込む（排他ロックや差分保存は FS の Proxy が自動処理）
+ * パスを指定してファイル内容を書き込む（未存在の場合は親フォルダに新規作成。排他ロックや差分保存は FS の Proxy が自動処理）
  */
 export function writeFileContent(path, data, cwd = "C:/") {
     const normalized = normalizePath(path, cwd);
-    const node = resolveFS(normalized);
-    if (!node || (node.type !== "file" && node.type !== "app")) {
-        throw new Error(`書き込み対象が見つかりません: ${normalized}`);
+    const existing = resolveFS(normalized);
+
+    if (existing) {
+        if (existing.type !== "file" && existing.type !== "app") {
+            throw new Error(`書き込み対象がファイルではありません: ${normalized}`);
+        }
+        existing.content = data;
+        return true;
     }
-    node.content = data;
+
+    const lastSlash = normalized.lastIndexOf("/");
+    if (lastSlash === -1) {
+        throw new Error(`無効なファイルパスです: ${normalized}`);
+    }
+
+    const parentPath = normalized.slice(0, lastSlash) || "C:/";
+    const fileName = normalized.slice(lastSlash + 1);
+    const nameError = validateName(fileName);
+    if (nameError) {
+        throw new Error(`無効なファイル名です (${fileName}): ${nameError}`);
+    }
+
+    const parentNode = resolveFS(parentPath);
+    if (!parentNode || parentNode.type !== "folder") {
+        throw new Error(`親フォルダが見つかりません: ${parentPath}`);
+    }
+
+    const isBlobOrBuffer =
+        data instanceof Blob ||
+        data instanceof ArrayBuffer ||
+        ArrayBuffer.isView(data);
+    const byteSize = isBlobOrBuffer
+        ? (data.size || data.byteLength || 0)
+        : (typeof data === "string" ? data.length : 0);
+
+    parentNode[fileName] = {
+        type: "file",
+        content: data,
+        size: byteSize,
+        lastModified: Date.now()
+    };
     return true;
 }
 

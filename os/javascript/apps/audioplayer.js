@@ -1,12 +1,13 @@
 // AudioPlayer.js
 import { resolveFS } from "../fs-utils.js";
-import { getFileContent } from "../fs-db.js";
 import { FILE_ASSOCIATIONS } from "../file-associations.js";
 
 /**
- * 高機能オーディオプレーヤー（エラーハンドリング・自動再生対策強化版）
+ * 高機能オーディオプレーヤー（syscall統合・Blob対応・エラーハンドリング強化版）
  */
-export default function main(content, options) {
+export default function main(content, options = {}) {
+    const { syscall } = options;
+    let isDisposed = false;
     let currentAudio = null;
     let updateTimer = null;
     let isDragging = false;
@@ -216,9 +217,25 @@ export default function main(content, options) {
             return;
         }
 
-        let audioData = fileNode.content;
-        if (audioData === "__EXTERNAL_DATA__") {
-            audioData = await getFileContent(targetPath);
+        if (!syscall?.readFile) {
+            window.nexser?.windowAPI.alertWindow("システムコール (syscall.readFile) が利用できません。", { title: "audioplayer" });
+            isLoading = false;
+            return;
+        }
+
+        let audioData = null;
+        try {
+            audioData = await syscall.readFile(targetPath);
+        } catch (readErr) {
+            console.error("[AudioPlayer] Read failed:", readErr);
+            window.nexser?.windowAPI.alertWindow(`再生データの読み込みに失敗しました: ${readErr.message}`, { title: "audioplayer" });
+            isLoading = false;
+            return;
+        }
+
+        if (isDisposed) {
+            isLoading = false;
+            return;
         }
 
         if (!audioData) {
@@ -227,8 +244,23 @@ export default function main(content, options) {
             return;
         }
 
+        let audioSrc = "";
+        if (audioData instanceof Blob || audioData instanceof File) {
+            audioSrc = URL.createObjectURL(audioData);
+        } else if (audioData instanceof ArrayBuffer || ArrayBuffer.isView(audioData)) {
+            audioSrc = URL.createObjectURL(new Blob([audioData], { type: "audio/mpeg" }));
+        } else if (typeof audioData === "string") {
+            audioSrc = audioData;
+        }
+
+        if (!audioSrc) {
+            window.nexser?.windowAPI.alertWindow("サポートされていない音声データ形式です。", { title: "audioplayer" });
+            isLoading = false;
+            return;
+        }
+
         try {
-            currentAudio = new Audio(audioData);
+            currentAudio = new Audio(audioSrc);
             currentAudio.volume = currentVolume;
             volSlider.value = currentVolume;
             if (titleEl) titleEl.innerText = fileName;
@@ -314,6 +346,7 @@ export default function main(content, options) {
 
     volSlider.oninput = () => {
         const val = parseFloat(volSlider.value);
+        currentVolume = val;
         if (currentAudio) currentAudio.volume = val;
         volIcon.innerText = val === 0 ? "🔇" : val < 0.5 ? "🔉" : "🔊";
     };
@@ -357,6 +390,7 @@ export default function main(content, options) {
 
     return {
         dispose: () => {
+            isDisposed = true;
             cleanupAudio();
             window.removeEventListener("click", handleGlobalClick);
             window.removeEventListener("mouseup", globalHandleUp);

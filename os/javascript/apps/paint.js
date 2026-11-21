@@ -1,13 +1,13 @@
 // Paint.js
 import { resolveFS } from "../fs-utils.js";
 import { setupRibbon } from "../ribbon.js";
-import { getFileContent } from "../fs-db.js";
 import { showColorPicker } from "./texteditor.js";
 
 export default async function Paint(root, options = {}) {
-    const { path } = options;
+    const { path, syscall } = options;
     const win = root.closest(".window");
 
+    let isDisposed = false;
     let filePath = path || null;
     let fileNode = filePath ? resolveFS(filePath) : null;
     let dirty = false;
@@ -171,18 +171,44 @@ export default async function Paint(root, options = {}) {
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    if (fileNode && fileNode.content) {
-        if (fileNode.content === "__EXTERNAL_DATA__") {
-            try { fileNode.content = await getFileContent(filePath); } catch (e) { console.error(e); }
+    if (filePath && !filePath.toLowerCase().endsWith(".app") && syscall?.readFile) {
+        try {
+            const loadedData = await syscall.readFile(filePath);
+            if (!isDisposed && loadedData) {
+                let objectUrl = null;
+                let imgSrc = "";
+
+                if (loadedData instanceof Blob || loadedData instanceof File) {
+                    objectUrl = URL.createObjectURL(loadedData);
+                    imgSrc = objectUrl;
+                } else if (loadedData instanceof ArrayBuffer || ArrayBuffer.isView(loadedData)) {
+                    objectUrl = URL.createObjectURL(new Blob([loadedData], { type: "image/png" }));
+                    imgSrc = objectUrl;
+                } else if (typeof loadedData === "string") {
+                    imgSrc = loadedData;
+                }
+
+                if (imgSrc) {
+                    const img = new Image();
+                    img.onload = () => {
+                        if (!isDisposed) {
+                            canvas.width = img.width;
+                            canvas.height = img.height;
+                            ctx.drawImage(img, 0, 0);
+                            updateStatus();
+                        }
+                        if (objectUrl) URL.revokeObjectURL(objectUrl);
+                    };
+                    img.onerror = () => {
+                        if (objectUrl) URL.revokeObjectURL(objectUrl);
+                    };
+                    img.src = imgSrc;
+                }
+            }
+        } catch (e) {
+            console.error("[Paint] Read failed:", e);
+            showWarning(`画像の読み込みに失敗しました: ${e.message}`);
         }
-        const img = new Image();
-        img.onload = () => {
-            canvas.width = img.width;
-            canvas.height = img.height;
-            ctx.drawImage(img, 0, 0);
-            updateStatus();
-        };
-        img.src = fileNode.content;
     }
 
     updateTitle();
@@ -320,22 +346,49 @@ export default async function Paint(root, options = {}) {
     });
 
     /* =========================
-       保存ロジック (オリジナル維持)
+       保存ロジック (syscall経由・Blob直接保存)
     ========================== */
-    async function save() {
-        const desktop = resolveFS("C:/Desktop");
-        if (!desktop) { showWarning("Desktop が見つかりません"); return; }
-        const dataUrl = canvas.toDataURL("image/png");
-        const treatAsNew = !fileNode || (filePath && filePath.toLowerCase().endsWith(".app"));
+    function canvasToBlobAsync(targetCanvas, type = "image/png") {
+        return new Promise((resolve, reject) => {
+            targetCanvas.toBlob(blob => {
+                if (blob) resolve(blob);
+                else reject(new Error("Canvas の画像変換に失敗しました"));
+            }, type);
+        });
+    }
 
-        if (!treatAsNew) {
-            fileNode.content = dataUrl;
-            dirty = false; updateTitle();
-            window.dispatchEvent(new Event("fs-updated"));
+    async function save() {
+        if (!syscall?.writeFile) {
+            showWarning("システムコール (syscall.writeFile) が利用できません");
             return;
         }
 
-        const finalName = await new Promise(resolve => {
+        const desktop = resolveFS("C:/Desktop");
+        if (!desktop) { showWarning("C:/Desktop が見つかりません"); return; }
+
+        let imageBlob;
+        try {
+            imageBlob = await canvasToBlobAsync(canvas, "image/png");
+        } catch (err) {
+            showWarning(err.message);
+            return;
+        }
+
+        const treatAsNew = !filePath || filePath.toLowerCase().endsWith(".app");
+
+        if (!treatAsNew) {
+            try {
+                await syscall.writeFile(filePath, imageBlob);
+                dirty = false;
+                updateTitle();
+            } catch (err) {
+                console.error("[Paint] Save failed:", err);
+                showWarning(`保存に失敗しました: ${err.message}`);
+            }
+            return;
+        }
+
+        const inputName = await new Promise(resolve => {
             const content = window.nexser?.windowAPI.showModalWindow("新規保存", "ファイル名を入力してください", {
                 parentWin: win, silent: true,
                 buttons: [
@@ -352,13 +405,20 @@ export default async function Paint(root, options = {}) {
             setTimeout(() => promptInput.focus(), 10);
         });
 
+        const finalName = inputName?.trim();
         if (!finalName) return;
-        const newNode = { type: "file", content: dataUrl };
-        desktop[finalName] = newNode;
-        fileNode = newNode;
-        filePath = `Desktop/${finalName}`;
-        dirty = false; updateTitle();
-        window.dispatchEvent(new Event("fs-updated"));
+
+        const newFilePath = `C:/Desktop/${finalName}`;
+        try {
+            await syscall.writeFile(newFilePath, imageBlob);
+            filePath = newFilePath;
+            fileNode = resolveFS(newFilePath);
+            dirty = false;
+            updateTitle();
+        } catch (err) {
+            console.error("[Paint] Save as new failed:", err);
+            showWarning(`保存に失敗しました: ${err.message}`);
+        }
     }
 
     /* =========================
@@ -457,6 +517,7 @@ export default async function Paint(root, options = {}) {
     }
     return {
         dispose: () => {
+            isDisposed = true;
             win?.removeEventListener("keydown", handleKeyDown);
             window.removeEventListener("mouseup", handleMouseUp);
             window.removeEventListener("touchend", handleTouchEnd);

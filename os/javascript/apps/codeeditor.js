@@ -1,20 +1,13 @@
 // CodeEditor.js
 import { resolveFS } from "../fs-utils.js";
 import { setupRibbon } from "../ribbon.js";
-import { getFileContent } from "../fs-db.js";
 
 /* =========================
    Preview Virtual FS Utils
 ========================= */
-const previewBlobMap = new Map();
-// ファイルパス（ディレクトリパス）ごとのタブとサイドバー状態を保持
+// ファイルパス（ディレクトリパス）ごとのタブとサイドバー状態のみを共有保持
 const editorStateMap = new Map();
 const openedFolders = new Set();
-let searchQuery = "";
-let searchIndex = -1;
-let searchStatus = null; // ← 追加: findNext/findPrevious から参照可能
-let searchResultsList = null; // ← 追加: 検索結果リスト用コンテナ
-let selectedSearchLine = -1; // ★追加: 現在クリックされて選択されている行番号
 
 function createBlobURL(content, type) {
     return URL.createObjectURL(new Blob([content], { type }));
@@ -123,9 +116,23 @@ function resolveRelativePath(fromPath, relative, rootDir = "C:") {
    CodeEditor with Tabs + Sidebar
 ========================= */
 export default function CodeEditor(root, options = {}) {
-    const { path } = options;
+    const { path, syscall } = options;
     const win = root.closest(".window");
     const titleEl = win?.querySelector(".title-text");
+
+    async function readFileSafe(targetPath) {
+        if (!syscall?.readFile) {
+            throw new Error("syscall.readFile が利用できません");
+        }
+        return await syscall.readFile(targetPath);
+    }
+
+    async function writeFileSafe(targetPath, data) {
+        if (!syscall?.writeFile) {
+            throw new Error("syscall.writeFile が利用できません");
+        }
+        return await syscall.writeFile(targetPath, data);
+    }
 
     let filePath = path || null;
     let fileNode = filePath ? resolveFS(filePath) : null;
@@ -136,6 +143,26 @@ export default function CodeEditor(root, options = {}) {
     let previewWin = null;
     let previewIframe = null;
     let minimapUpdatePending = false;
+
+    // インスタンス固有の状態（複数ウィンドウ同時起動時の衝突を防止）
+    const previewBlobMap = new Map();
+    let searchQuery = "";
+    let searchIndex = -1;
+    let searchStatus = null;
+    let searchResultsList = null;
+    let selectedSearchLine = -1;
+    let searchMatchCase = false;
+    let currentDiagnostics = [];
+    let currentLang = "plain";
+    let currentFoldRanges = {}; // { [visualStartLine]: visualEndLine }
+    let foldIdSeq = 1;
+    let cachedLineMap = [1];    // visualLineIndex -> realFileLine (1-based)
+
+    const LINE_HEIGHT = 20;
+    const PADDING_TOP = 10;
+    const FOLD_TOKEN_GLOBAL_RE = / \.\.\.\[\+(\d+):#(\d+)\]/g;
+    const FOLD_TOKEN_SINGLE_RE = / \.\.\.\[\+(\d+):#(\d+)\]/;
+
     /* =========================
        Tabs State
     ========================== */
@@ -143,10 +170,56 @@ export default function CodeEditor(root, options = {}) {
     let activeTab = null;
 
     /* =========================
-       Helpers
+       Helpers (VS Code互換 多形式対応 & バイナリ保護)
     ========================== */
+    const CODE_FILE_EXT_RE = /\.(html|htm|xhtml|xml|svg|css|scss|sass|less|js|mjs|cjs|jsx|ts|tsx|vue|svelte|json|jsonc|md|markdown|txt|log|csv|tsv|py|pyw|c|h|cpp|hpp|cc|cxx|cs|java|go|rs|rb|php|swift|kt|kts|lua|dart|sql|sh|bash|zsh|bat|cmd|ps1|yml|yaml|toml|ini|cfg|conf|env|properties|gitignore|url)$/i;
+    const SPECIAL_TEXT_NAMES = new Set(["dockerfile", "makefile", "license", "readme", ".gitignore", ".env"]);
+    const BINARY_EXT_RE = /\.(png|jpe?g|gif|webp|avif|bmp|ico|mp4|webm|ogv|mov|avi|mkv|mp3|wav|ogg|m4a|flac|aac|pdf|zip|gz|tar|7z|rar|woff2?|ttf|otf|exe|dll)$/i;
+
     function isCodeFile(name) {
-        return /\.(html|htm|css|js|txt|json)$/i.test(name); // 拡張
+        if (!name || typeof name !== "string") return false;
+        const lower = name.toLowerCase();
+        return CODE_FILE_EXT_RE.test(lower) || SPECIAL_TEXT_NAMES.has(lower);
+    }
+
+    function isKnownBinaryFile(name) {
+        return typeof name === "string" && BINARY_EXT_RE.test(name.toLowerCase());
+    }
+
+    async function decodeFileDataToText(rawData, fileName = "") {
+        if (isKnownBinaryFile(fileName)) {
+            return { text: "", isBinary: true };
+        }
+        if (rawData === null || rawData === undefined) {
+            return { text: "", isBinary: false };
+        }
+
+        let text = "";
+        if (rawData instanceof Blob) {
+            if (rawData.type && /^(image|video|audio)\/|application\/(pdf|zip|octet-stream)/i.test(rawData.type) && !/svg/i.test(rawData.type)) {
+                return { text: "", isBinary: true };
+            }
+            text = await rawData.text();
+        } else if (rawData instanceof ArrayBuffer || ArrayBuffer.isView(rawData)) {
+            text = new TextDecoder("utf-8", { fatal: false }).decode(rawData);
+        } else {
+            text = String(rawData);
+            if (/^data:(image|video|audio|application\/pdf)/i.test(text) && !/^data:image\/svg/i.test(text)) {
+                return { text: "", isBinary: true };
+            }
+        }
+
+        // 先頭4KBにNUL文字が含まれる場合はバイナリとして保護
+        if (text.slice(0, 4096).includes("\u0000")) {
+            return { text: "", isBinary: true };
+        }
+        return { text, isBinary: false };
+    }
+
+    function ensureTabFoldStore(tab) {
+        if (!tab) return null;
+        if (!tab.foldStore) tab.foldStore = new Map();
+        return tab.foldStore;
     }
 
     function getDirPath(p) {
@@ -231,13 +304,14 @@ export default function CodeEditor(root, options = {}) {
     }
 
     /* =========================
-       UI
+       UI (VS Code風レイアウト + フローティング検索置換 + ステータスバー)
     ========================== */
     root.innerHTML = `
+<div class="editor-shell" style="display:flex;flex-direction:column;width:100%;height:100%;overflow:hidden;background:#1e1e1e;">
 <div class="tabbar scrollbar-none" style="display:flex;background:#1b1b1b;border-bottom:1px solid #333;user-select:none;overflow-x:auto;overflow-y:hidden;flex-shrink:0;white-space:nowrap;"></div>
-<div class="main-layout" style="display:flex;width:100%;height:calc(100% - 32px);overflow:hidden;background:#111;">
+<div class="main-layout" style="display:flex;width:100%;flex:1;min-height:0;overflow:hidden;background:#1e1e1e;">
     <div class="activity-bar" style="width:48px;background:#1a1a1a;display:flex;flex-direction:column;align-items:center;padding-top:5px;border-right:1px solid #111;flex-shrink:0;">
-        <div class="activity-icon search-trigger" title="Search" style="cursor:pointer;width:100%;height:48px;display:flex;align-items:center;justify-content:center;transition:all 0.2s;border-left:2px solid transparent;">
+        <div class="activity-icon search-trigger" title="Explorer / Search" style="cursor:pointer;width:100%;height:48px;display:flex;align-items:center;justify-content:center;transition:all 0.2s;border-left:2px solid transparent;">
             <svg class="search-svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <circle cx="11" cy="11" r="8"></circle>
                 <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
@@ -247,28 +321,47 @@ export default function CodeEditor(root, options = {}) {
     
     <div class="sidebar" style="width:250px;background:#1a1a1a;color:#ccc;overflow:auto;display:none;border-right:1px solid #222;padding:0;box-sizing:border-box;flex-shrink:0;"></div>
     
-  <div class="linenumbers" style="position:relative; width:52px; padding:10px 6px; box-sizing:border-box; text-align:right; color:#777; background:#1e1e1e; border-right:1px solid #2d2d2d; user-select:none; overflow:hidden; white-space:pre;">
-        <div class="active-line-number-highlight" style="position:absolute; right:6px; color:#c6c6c6; display:none; background:#1e1e1e; padding-left:10px;"></div>
+    <div class="linenumbers" style="position:relative; width:68px; box-sizing:border-box; color:#858585; background:#1e1e1e; border-right:1px solid #2d2d2d; user-select:none; overflow:hidden; flex-shrink:0;">
+        <div class="linenumbers-content" style="position:absolute; top:0; left:0; right:0; will-change:transform;"></div>
     </div>
     
-<div class="codecontainer" style="position:relative;flex:1;display:flex;min-width:0;overflow:hidden;background:#111;">
+    <div class="codecontainer" style="position:relative;flex:1;display:flex;min-width:0;overflow:hidden;background:#1e1e1e;">
         <div class="active-line-layer" style="position:absolute;top:0;left:0;right:0;bottom:0;pointer-events:none;z-index:0;overflow:hidden;">
-            <div class="active-line-bg" style="position:absolute;left:0;width:100%;background:rgba(255,255,255,0.08);display:none;"></div>
+            <div class="active-line-bg" style="position:absolute;left:0;width:100%;background:rgba(255,255,255,0.06);display:none;"></div>
         </div>
         
-<pre class="syntax-highlight" aria-hidden="true" style="z-index: 1;"></pre>
-<textarea class="codeeditor" spellcheck="false" wrap="off"></textarea>
-<!-- 検索ハイライト用レイヤー -->
-<div class="highlight-overlay" style="position:absolute;top:0;left:0;right:0;bottom:0;pointer-events:none;z-index:2;"></div>
-<!-- エラー赤波線用レイヤー -->
-<div class="error-overlay" style="position:absolute;top:0;left:0;right:0;bottom:0;pointer-events:none;z-index:3;"></div>
+        <pre class="syntax-highlight" aria-hidden="true" style="z-index: 1;"></pre>
+        <textarea class="codeeditor" spellcheck="false" wrap="off"></textarea>
+        <!-- 対応括弧ハイライト用レイヤー -->
+        <div class="bracket-overlay" style="position:absolute;top:0;left:0;right:0;bottom:0;pointer-events:none;z-index:1;overflow:hidden;"></div>
+        <!-- 検索ハイライト用レイヤー -->
+        <div class="highlight-overlay" style="position:absolute;top:0;left:0;right:0;bottom:0;pointer-events:none;z-index:2;"></div>
+        <!-- エラー赤波線用レイヤー -->
+        <div class="error-overlay" style="position:absolute;top:0;left:0;right:0;bottom:0;pointer-events:none;z-index:3;"></div>
 
+        <!-- VS Code風 フローティング検索・置換ウィジェット (Ctrl+F / Ctrl+H) -->
+        <div class="find-widget" style="display:none;position:absolute;top:8px;right:14px;z-index:20;background:#252526;border:1px solid #454545;box-shadow:0 4px 12px rgba(0,0,0,0.5);padding:6px 8px;border-radius:3px;color:#ccc;font-family:'Segoe UI',sans-serif;font-size:12px;min-width:300px;">
+            <div style="display:flex;align-items:center;gap:4px;">
+                <input type="text" class="find-input" placeholder="検索 (Enter: 次 / Shift+Enter: 前)" style="flex:1;background:#3c3c3c;color:#fff;border:1px solid #555;padding:3px 6px;outline:none;font-size:12px;">
+                <button type="button" class="find-case-btn" title="大文字と小文字を区別" style="background:#333;color:#aaa;border:1px solid #555;padding:2px 5px;cursor:pointer;font-size:11px;">Aa</button>
+                <span class="find-count" style="min-width:44px;text-align:center;font-size:11px;color:#999;">0/0</span>
+                <button type="button" class="find-prev-btn" title="前を検索 (Shift+Enter)" style="background:transparent;color:#ccc;border:none;cursor:pointer;padding:2px 4px;">↑</button>
+                <button type="button" class="find-next-btn" title="次を検索 (Enter)" style="background:transparent;color:#ccc;border:none;cursor:pointer;padding:2px 4px;">↓</button>
+                <button type="button" class="find-close-btn" title="閉じる (Esc)" style="background:transparent;color:#ccc;border:none;cursor:pointer;padding:2px 4px;">✕</button>
+            </div>
+            <div class="replace-row" style="display:none;align-items:center;gap:4px;margin-top:5px;">
+                <input type="text" class="replace-input" placeholder="置換後の文字列..." style="flex:1;background:#3c3c3c;color:#fff;border:1px solid #555;padding:3px 6px;outline:none;font-size:12px;">
+                <button type="button" class="replace-one-btn" title="1件置換" style="background:#333;color:#ddd;border:1px solid #555;padding:2px 6px;cursor:pointer;font-size:11px;">置換</button>
+                <button type="button" class="replace-all-btn" title="すべて置換" style="background:#0e639c;color:#fff;border:1px solid #1177bb;padding:2px 6px;cursor:pointer;font-size:11px;">全置換</button>
+            </div>
+        </div>
     </div>
 
-    <div class="minimap-container" style="width:60px; background:#0d0d0d; border-left:1px solid #222; position:relative; flex-shrink:0; cursor:pointer; user-select:none;">
+    <div class="minimap-container" style="width:60px; background:#1a1a1a; border-left:1px solid #252526; position:relative; flex-shrink:0; cursor:pointer; user-select:none;">
         <canvas class="minimap-canvas" style="width:100%; height:100%; pointer-events:none;"></canvas>
-        <div class="minimap-slider" style="position:absolute; top:0; left:0; width:100%; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); pointer-events:none; box-sizing:border-box; z-index:3;"></div>
+        <div class="minimap-slider" style="position:absolute; top:0; left:0; width:100%; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.12); pointer-events:none; box-sizing:border-box; z-index:3;"></div>
     </div>
+</div>
 </div>
 
 <style>
@@ -282,6 +375,56 @@ export default function CodeEditor(root, options = {}) {
     font-variant-ligatures: none !important;
     -webkit-font-smoothing: antialiased;
     overflow-anchor: none !important;
+}
+
+/* 仮想スクロール行番号＆折りたたみガター */
+.gutter-row {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 20px;
+    line-height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-right: 4px;
+    box-sizing: border-box;
+    white-space: nowrap;
+}
+.gutter-row.is-active {
+    color: #e0e0e0;
+    font-weight: bold;
+}
+.gutter-num {
+    flex: 1;
+    text-align: right;
+    padding-right: 4px;
+}
+.fold-toggle {
+    width: 16px;
+    height: 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    color: #858585;
+    cursor: pointer;
+    border-radius: 2px;
+    flex-shrink: 0;
+    opacity: 0.7;
+}
+.fold-toggle:hover {
+    background: rgba(255, 255, 255, 0.14);
+    color: #ffffff;
+    opacity: 1;
+}
+.fold-toggle.is-folded {
+    color: #4fc1ff;
+    opacity: 1;
+}
+.fold-spacer {
+    width: 16px;
+    flex-shrink: 0;
 }
 
 .codeeditor, .syntax-highlight {
@@ -369,19 +512,30 @@ export default function CodeEditor(root, options = {}) {
 /* HTML */
 .hl-tag      { color: #569cd6; }
 .hl-attr     { color: #9cdcfe; }
-.hl-doctype  { color: #808080; }
+.hl-doctype  { color: #569cd6; font-weight: bold; }
 
 /* CSS */
 .hl-selector { color: #d7ba7d; }
 .hl-property { color: #9cdcfe; }
 .hl-unit     { color: #b5cea8; } /* 単位 (10pxなど) */
 .hl-value    { color: #ce9178; } /* CSSの値 */
+
+/* Markdown / INI / プリプロセッサ / 折りたたみバッジ */
+.hl-heading    { color: #569cd6; font-weight: bold; }
+.hl-meta       { color: #c586c0; }
+.hl-fold-badge {
+    background: #37373d;
+    color: #cccccc;
+    border-radius: 3px;
+    outline: 1px solid #555555;
+}
 </style>
 `;
 
     const tabbar = root.querySelector(".tabbar");
     const textarea = root.querySelector(".codeeditor");
     const lineNumbers = root.querySelector(".linenumbers");
+    const lineNumbersContent = root.querySelector(".linenumbers-content");
     const errorOverlay = root.querySelector(".error-overlay");
     const highlightOverlay = root.querySelector(".highlight-overlay");
     const sidebar = root.querySelector(".sidebar");
@@ -390,36 +544,457 @@ export default function CodeEditor(root, options = {}) {
     const activeLineLayer = root.querySelector(".active-line-layer");
     const activeLineBg = root.querySelector(".active-line-bg");
 
-    const activeLineNumberHighlight = root.querySelector(".active-line-number-highlight"); // 上部で取得しておく
+    // フローティング検索・置換ウィジェット & ステータスバー要素
+    const findWidget = root.querySelector(".find-widget");
+    const findInput = root.querySelector(".find-input");
+    const findCaseBtn = root.querySelector(".find-case-btn");
+    const findCountEl = root.querySelector(".find-count");
+    const findPrevBtn = root.querySelector(".find-prev-btn");
+    const findNextBtn = root.querySelector(".find-next-btn");
+    const findCloseBtn = root.querySelector(".find-close-btn");
+    const replaceRow = root.querySelector(".replace-row");
+    const replaceInput = root.querySelector(".replace-input");
+    const replaceOneBtn = root.querySelector(".replace-one-btn");
+    const replaceAllBtn = root.querySelector(".replace-all-btn");
+    const bracketOverlay = root.querySelector(".bracket-overlay");
 
-    function updateActiveLine() {
-        if (!activeTab || !activeLineBg) return;
-        const start = textarea.selectionStart;
-        const textUpToCursor = textarea.value.slice(0, start);
-        const currentLine = textUpToCursor.split("\n").length - 1;
+    // window.js 標準の win._statusBar (.window-statusbar) を使用してステータス項目を構築
+    const statusbarEl = win?._statusBar || null;
+    let statusDiagEl = null;
+    let statusCursorEl = null;
+    let statusLangEl = null;
 
+    if (statusbarEl) {
+        Object.assign(statusbarEl.style, {
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "10px",
+            padding: "0 20px 0 8px", // 右側20pxは window.js の .resize_icon グリップ領域を保護
+            boxSizing: "border-box",
+            overflow: "hidden",
+            userSelect: "none"
+        });
+        statusbarEl.innerHTML = `
+            <span class="ce-status-diag" title="クリックで最初のエラー行へ移動" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0;cursor:pointer;">✓ 問題なし</span>
+            <span style="display:inline-flex;align-items:center;gap:12px;flex-shrink:0;">
+                <span class="ce-status-cursor" title="クリックで行番号ジャンプ (Ctrl+G)" style="cursor:pointer;">Ln 1, Col 1</span>
+                <span class="ce-status-indent">Tab: 4</span>
+                <span class="ce-status-encoding">UTF-8</span>
+                <span class="ce-status-lang" title="クリックで言語モードを切り替え" style="cursor:pointer;text-decoration:underline dotted;">Plain Text</span>
+            </span>
+        `;
+        statusDiagEl = statusbarEl.querySelector(".ce-status-diag");
+        statusCursorEl = statusbarEl.querySelector(".ce-status-cursor");
+        statusLangEl = statusbarEl.querySelector(".ce-status-lang");
+    }
+
+    const LANG_LABELS = {
+        js: "JavaScript",
+        ts: "TypeScript",
+        html: "HTML",
+        xml: "XML / SVG",
+        css: "CSS",
+        json: "JSON",
+        python: "Python",
+        c: "C / C++ / Java / Go / Rust",
+        sql: "SQL",
+        shell: "Shell / Script",
+        markdown: "Markdown",
+        yaml: "YAML",
+        ini: "INI / Config",
+        plain: "Plain Text"
+    };
+    const LANG_ORDER = Object.keys(LANG_LABELS);
+
+    /* =========================
+       非破壊 折りたたみ（Code Folding）エンジン
+    ========================== */
+    function expandFoldTokens(text, foldStore, depth = 0) {
+        if (!text || !foldStore || foldStore.size === 0 || depth > 20) return text;
+        let changed = false;
+        const expanded = text.replace(FOLD_TOKEN_GLOBAL_RE, (match, _count, idStr) => {
+            const entry = foldStore.get(Number(idStr));
+            if (!entry) return match;
+            changed = true;
+            return "\n" + entry.hiddenLines.join("\n");
+        });
+        return changed ? expandFoldTokens(expanded, foldStore, depth + 1) : expanded;
+    }
+
+    function getFullText(tab = activeTab) {
+        if (!tab) return "";
+        const raw = (tab === activeTab) ? textarea.value : String(tab.content ?? "");
+        return expandFoldTokens(raw, tab.foldStore);
+    }
+
+    function countHiddenRealLines(entry, foldStore, depth = 0) {
+        if (!entry || depth > 20) return 0;
+        let total = entry.hiddenLines.length;
+        for (const hl of entry.hiddenLines) {
+            const m = hl.match(FOLD_TOKEN_SINGLE_RE);
+            if (m && foldStore) {
+                const nested = foldStore.get(Number(m[2]));
+                if (nested) total += countHiddenRealLines(nested, foldStore, depth + 1);
+            }
+        }
+        return total;
+    }
+
+    function rebuildLineMap() {
+        const foldStore = activeTab?.foldStore;
+        const map = new Array(visualLines.length);
+        let realLine = 1;
+
+        for (let i = 0; i < visualLines.length; i++) {
+            map[i] = realLine;
+            realLine += 1;
+            if (foldStore && foldStore.size > 0) {
+                const m = visualLines[i].match(FOLD_TOKEN_SINGLE_RE);
+                if (m) {
+                    const entry = foldStore.get(Number(m[2]));
+                    if (entry) realLine += countHiddenRealLines(entry, foldStore);
+                }
+            }
+        }
+        cachedLineMap = map;
+        return map;
+    }
+
+    function realLineToVisualLine(realLineNum) {
+        if (!cachedLineMap.length) return 1;
+        for (let i = cachedLineMap.length - 1; i >= 0; i--) {
+            if (cachedLineMap[i] <= realLineNum) return i + 1;
+        }
+        return 1;
+    }
+
+    function foldBlockAtLine(visualLineIdx) {
+        if (!activeTab || activeTab.isBinary) return false;
+        const endLine = currentFoldRanges[visualLineIdx];
+        if (endLine === undefined || endLine <= visualLineIdx) return false;
+
+        const lines = textarea.value.split("\n");
+        if (visualLineIdx < 0 || endLine >= lines.length) return false;
+        if (FOLD_TOKEN_SINGLE_RE.test(lines[visualLineIdx])) return false;
+
+        const foldStore = ensureTabFoldStore(activeTab);
+        const hiddenLines = lines.slice(visualLineIdx + 1, endLine + 1);
+        const id = foldIdSeq++;
+        const entry = { id, hiddenLines };
+        foldStore.set(id, entry);
+
+        const realHiddenCount = countHiddenRealLines(entry, foldStore);
+        const prevScrollTop = textarea.scrollTop;
+        const prevScrollLeft = textarea.scrollLeft;
+
+        lines[visualLineIdx] = `${lines[visualLineIdx]} ...[+${realHiddenCount}:#${id}]`;
+        lines.splice(visualLineIdx + 1, hiddenLines.length);
+
+        textarea.value = lines.join("\n");
+        activeTab.content = textarea.value;
+        textarea.scrollTop = prevScrollTop;
+        textarea.scrollLeft = prevScrollLeft;
+
+        updateLineNumbers();
+        applySyntaxHighlight(true);
+        updateActiveLine();
+        return true;
+    }
+
+    function unfoldBlockAtLine(visualLineIdx) {
+        if (!activeTab?.foldStore) return false;
+        const lines = textarea.value.split("\n");
+        if (visualLineIdx < 0 || visualLineIdx >= lines.length) return false;
+
+        const match = lines[visualLineIdx].match(FOLD_TOKEN_SINGLE_RE);
+        if (!match) return false;
+
+        const id = Number(match[2]);
+        const entry = activeTab.foldStore.get(id);
+        if (!entry) return false;
+
+        const prevScrollTop = textarea.scrollTop;
+        const prevScrollLeft = textarea.scrollLeft;
+
+        lines[visualLineIdx] = lines[visualLineIdx].replace(FOLD_TOKEN_SINGLE_RE, "");
+        lines.splice(visualLineIdx + 1, 0, ...entry.hiddenLines);
+        activeTab.foldStore.delete(id);
+
+        textarea.value = lines.join("\n");
+        activeTab.content = textarea.value;
+        textarea.scrollTop = prevScrollTop;
+        textarea.scrollLeft = prevScrollLeft;
+
+        updateLineNumbers();
+        applySyntaxHighlight(true);
+        updateActiveLine();
+        return true;
+    }
+
+    function toggleFoldAtLine(visualLineIdx) {
+        const lines = textarea.value.split("\n");
+        if (visualLineIdx < 0 || visualLineIdx >= lines.length) return;
+        if (FOLD_TOKEN_SINGLE_RE.test(lines[visualLineIdx])) {
+            unfoldBlockAtLine(visualLineIdx);
+        } else if (currentFoldRanges[visualLineIdx] !== undefined) {
+            foldBlockAtLine(visualLineIdx);
+        }
+    }
+
+    function foldAll() {
+        if (!activeTab || activeTab.isBinary) return;
+        const ranges = Object.entries(currentFoldRanges)
+            .map(([s, e]) => ({ start: Number(s), end: Number(e) }))
+            .sort((a, b) => a.start - b.start);
+
+        // トップレベル領域のみを重複なく抽出し、後ろから折りたたむ
+        const topLevel = [];
+        let coveredEnd = -1;
+        for (const r of ranges) {
+            if (r.start > coveredEnd) {
+                topLevel.push(r);
+                coveredEnd = r.end;
+            }
+        }
+        for (let i = topLevel.length - 1; i >= 0; i--) {
+            foldBlockAtLine(topLevel[i].start);
+        }
+    }
+
+    function unfoldAll() {
+        if (!activeTab?.foldStore || activeTab.foldStore.size === 0) return;
+        const prevScrollTop = textarea.scrollTop;
+        const prevScrollLeft = textarea.scrollLeft;
+
+        textarea.value = getFullText(activeTab);
+        activeTab.content = textarea.value;
+        activeTab.foldStore.clear();
+
+        textarea.scrollTop = prevScrollTop;
+        textarea.scrollLeft = prevScrollLeft;
+
+        updateLineNumbers();
+        applySyntaxHighlight(true);
+        updateActiveLine();
+    }
+
+    // ステータスバーの言語名クリックで言語モードを手動切替（VS Code互換）
+    statusLangEl?.addEventListener("click", () => {
+        if (!activeTab) return;
+        const idx = LANG_ORDER.indexOf(currentLang);
+        const nextLang = LANG_ORDER[(idx + 1) % LANG_ORDER.length];
+        activeTab.forcedLang = nextLang;
+        applySyntaxHighlight(true);
+    });
+
+    // ステータスバーのエラー表示クリックで最初のエラー行へジャンプ
+    statusDiagEl?.addEventListener("click", () => {
+        if (!currentDiagnostics.length) return;
+        const first = currentDiagnostics[0];
+        const visualLine = Math.max(0, realLineToVisualLine(first.line) - 1);
+        const lines = textarea.value.split("\n");
+        let pos = 0;
+        for (let i = 0; i < Math.min(visualLine, lines.length); i++) {
+            pos += lines[i].length + 1;
+        }
+        textarea.focus();
+        textarea.setSelectionRange(pos, pos);
+        textarea.scrollTop = Math.max(0, visualLine * LINE_HEIGHT - 40);
+        updateActiveLine();
+    });
+    if (statusDiagEl) statusDiagEl.style.cursor = "pointer";
+
+    function updateStatusBar() {
+        if (!statusbarEl) return;
+        const start = textarea.selectionStart || 0;
+        const end = textarea.selectionEnd || 0;
+        const val = textarea.value;
+        const lastNl = val.lastIndexOf("\n", start - 1);
+        const realLineNum = cachedLineMap[currentActiveVisualLine] || (currentActiveVisualLine + 1);
+        const colNum = start - lastNl;
+
+        if (statusCursorEl) {
+            const selLen = Math.abs(end - start);
+            const foldCount = activeTab?.foldStore?.size || 0;
+            const foldInfo = foldCount > 0 ? ` [${foldCount} folded]` : "";
+            statusCursorEl.textContent = selLen > 0
+                ? `Ln ${realLineNum}, Col ${colNum} (${selLen} selected)${foldInfo}`
+                : `Ln ${realLineNum}, Col ${colNum}${foldInfo}`;
+        }
+        if (statusLangEl) {
+            statusLangEl.textContent = LANG_LABELS[currentLang] || "Plain Text";
+        }
+        if (statusDiagEl) {
+            if (currentDiagnostics.length > 0) {
+                const first = currentDiagnostics[0];
+                statusDiagEl.textContent = `✕ ${currentDiagnostics.length} エラー (Ln ${first.line}: ${first.message})`;
+                statusDiagEl.style.color = "#b71c1c";
+                statusDiagEl.style.fontWeight = "bold";
+            } else {
+                statusDiagEl.textContent = "✓ 問題なし";
+                statusDiagEl.style.color = "";
+                statusDiagEl.style.fontWeight = "normal";
+            }
+        }
+    }
+
+    // パフォーマンス用キャッシュ群（スクロール時の split / regex / canvas 生成を完全排除）
+    let visualLines = [""];
+    let linesVersion = 0;
+    let cachedCharWidth = 0;
+    let cachedPaddingLeft = 10;
+    let minimapRunsCache = [];
+    let minimapRunsVersion = -1;
+    let minimapRunsLang = "";
+    let lastGutterStart = -1;
+    let lastGutterEnd = -1;
+    let lastGutterActive = -1;
+    let lastGutterVersion = -1;
+    let lastGutterFoldSig = "";
+    let bracketLayer = null;
+
+    function syncVisualLinesCache() {
+        visualLines = textarea.value.split("\n");
+        linesVersion++;
+        rebuildLineMap();
+    }
+
+    function getCharMetrics() {
+        if (cachedCharWidth > 0) {
+            return { charWidth: cachedCharWidth, paddingLeft: cachedPaddingLeft };
+        }
         const computed = getComputedStyle(textarea);
-        const lineHeight = parseFloat(computed.lineHeight) || 20;
-        const paddingTop = parseFloat(computed.paddingTop) || 10;
+        cachedPaddingLeft = parseFloat(computed.paddingLeft) || 10;
+        const measureCanvas = document.createElement("canvas");
+        const measureCtx = measureCanvas.getContext("2d");
+        measureCtx.font = `${computed.fontWeight} ${computed.fontSize} ${computed.fontFamily}`;
+        cachedCharWidth = measureCtx.measureText("M").width || 8.4;
+        return { charWidth: cachedCharWidth, paddingLeft: cachedPaddingLeft };
+    }
 
-        const scrollTop = textarea.scrollTop;
-        const topPos = Math.round((currentLine * lineHeight) + paddingTop - scrollTop);
+    function countNewlinesBefore(str, pos) {
+        let count = 0;
+        const limit = Math.min(pos, str.length);
+        for (let i = 0; i < limit; i++) {
+            if (str.charCodeAt(i) === 10) count++;
+        }
+        return count;
+    }
 
-        // エディタ行の背景 (VS Code風の繊細なボーダーと背景)
-        activeLineBg.style.top = topPos + "px";
-        activeLineBg.style.height = Math.round(lineHeight) + "px";
-        activeLineBg.style.border = "1px solid rgba(255, 255, 255, 0.1)"; // VS Codeのアクティブ行ボーダー
-        activeLineBg.style.boxSizing = "border-box";
-        activeLineBg.style.display = "block";
+    function getVisualColumnOffset(line, colIndex) {
+        let cols = 0;
+        const limit = Math.min(colIndex, line.length);
+        for (let i = 0; i < limit; i++) {
+            cols += line.charCodeAt(i) === 9 ? 4 : 1;
+        }
+        return cols;
+    }
 
-        // 行番号のハイライト (O(1) でのDOM更新)
-        if (activeLineNumberHighlight) {
-            activeLineNumberHighlight.style.top = topPos + "px";
-            activeLineNumberHighlight.textContent = currentLine + 1;
-            activeLineNumberHighlight.style.display = "block";
+    /* =========================
+       対応括弧ハイライト（VS Code互換）
+    ========================== */
+    const BRACKET_OPEN_TO_CLOSE = { "(": ")", "[": "]", "{": "}" };
+    const BRACKET_CLOSE_TO_OPEN = { ")": "(", "]": "[", "}": "{" };
+
+    function updateBracketMatch() {
+        if (!bracketOverlay) return;
+        bracketOverlay.innerHTML = "";
+        bracketLayer = null;
+
+        if (!activeTab || textarea.selectionStart !== textarea.selectionEnd) return;
+
+        const text = textarea.value;
+        const pos = textarea.selectionStart;
+        let idx = -1;
+
+        if (BRACKET_OPEN_TO_CLOSE[text[pos]] || BRACKET_CLOSE_TO_OPEN[text[pos]]) {
+            idx = pos;
+        } else if (pos > 0 && (BRACKET_OPEN_TO_CLOSE[text[pos - 1]] || BRACKET_CLOSE_TO_OPEN[text[pos - 1]])) {
+            idx = pos - 1;
+        }
+        if (idx === -1) return;
+
+        const ch = text[idx];
+        const isOpen = Boolean(BRACKET_OPEN_TO_CLOSE[ch]);
+        const target = isOpen ? BRACKET_OPEN_TO_CLOSE[ch] : BRACKET_CLOSE_TO_OPEN[ch];
+        const step = isOpen ? 1 : -1;
+        const maxScan = 6000;
+        let depth = 0;
+        let matchIdx = -1;
+
+        for (let i = idx, steps = 0; i >= 0 && i < text.length && steps < maxScan; i += step, steps++) {
+            const c = text[i];
+            if (c === ch) depth++;
+            else if (c === target) {
+                depth--;
+                if (depth === 0) {
+                    matchIdx = i;
+                    break;
+                }
+            }
+        }
+        if (matchIdx === -1) return;
+
+        const { charWidth, paddingLeft } = getCharMetrics();
+        const inner = document.createElement("div");
+        bracketLayer = inner;
+        Object.assign(inner.style, {
+            position: "absolute",
+            top: "0",
+            left: "0",
+            width: "100%",
+            height: "100%",
+            pointerEvents: "none",
+            willChange: "transform",
+            transform: `translate3d(-${textarea.scrollLeft}px, -${textarea.scrollTop}px, 0)`
+        });
+
+        for (const p of [idx, matchIdx]) {
+            const lineIdx = countNewlinesBefore(text, p);
+            const lineStart = text.lastIndexOf("\n", p - 1) + 1;
+            const lineStr = visualLines[lineIdx] || "";
+            const visualCol = getVisualColumnOffset(lineStr, p - lineStart);
+            const box = document.createElement("div");
+            Object.assign(box.style, {
+                position: "absolute",
+                left: `${Math.round(paddingLeft + visualCol * charWidth)}px`,
+                top: `${PADDING_TOP + lineIdx * LINE_HEIGHT}px`,
+                width: `${Math.ceil(charWidth)}px`,
+                height: `${LINE_HEIGHT}px`,
+                background: "rgba(0, 122, 204, 0.28)",
+                outline: "1px solid rgba(136, 192, 208, 0.7)",
+                boxSizing: "border-box"
+            });
+            inner.appendChild(box);
+        }
+        bracketOverlay.appendChild(inner);
+    }
+
+    let currentActiveVisualLine = 0;
+
+    function updateActiveLine(isScrollOnly = false) {
+        if (!activeTab || !activeLineBg) return;
+
+        if (!isScrollOnly) {
+            const currentLine = countNewlinesBefore(textarea.value, textarea.selectionStart);
+            const lineChanged = currentActiveVisualLine !== currentLine;
+            currentActiveVisualLine = currentLine;
+            selectedSearchLine = currentLine;
+
+            if (lineChanged) {
+                renderGutter(false);
+            }
+            updateBracketMatch();
+            updateStatusBar();
         }
 
-        selectedSearchLine = currentLine;
+        const topPos = Math.round((currentActiveVisualLine * LINE_HEIGHT) + PADDING_TOP - textarea.scrollTop);
+        activeLineBg.style.top = topPos + "px";
+        activeLineBg.style.height = LINE_HEIGHT + "px";
+        activeLineBg.style.border = "1px solid rgba(255, 255, 255, 0.08)";
+        activeLineBg.style.boxSizing = "border-box";
+        activeLineBg.style.display = "block";
     }
 
     // ★追加: サイドバーの検索結果リストの選択状態を更新する関数
@@ -518,20 +1093,40 @@ export default function CodeEditor(root, options = {}) {
     }
 
 
-    // --- シンタックスハイライト適用メイン関数 ---
+    // --- シンタックスハイライト・折りたたみ範囲・非同期診断 Worker 連携 ---
     let highlightTask = null;
+    let syntaxRequestSeq = 0;
 
-    // 改善後: Web Workerを利用してメインスレッドをブロックしない
     const syntaxWorker = new Worker(new URL('./worker/syntax.worker.js', import.meta.url), { type: 'module' });
 
-    // Workerから計算結果を受け取るリスナー
     syntaxWorker.onmessage = (e) => {
-        if (typeof isDestroyed !== 'undefined' && isDestroyed) return;
+        if (isDestroyed) return;
+        const { requestId, html, errors, lang, foldRanges } = e.data || {};
 
-        // DOMへの反映（描画）のみをメインスレッドで行う
-        syntaxLayer.innerHTML = e.data.html;
+        // 古いリクエストの遅延レスポンスは無視して画面の巻き戻りを防止
+        if (requestId !== syntaxRequestSeq) return;
+
+        currentLang = lang || "plain";
+        currentFoldRanges = foldRanges || {};
+        currentDiagnostics = Array.isArray(errors) ? errors : [];
+
+        syntaxLayer.innerHTML = html || "";
         syntaxLayer.scrollTop = textarea.scrollTop;
         syntaxLayer.scrollLeft = textarea.scrollLeft;
+
+        // 折りたたみ可能アイコンを含めてガターを即時再描画
+        renderGutter();
+
+        if (currentDiagnostics.length > 0) {
+            const mappedErrors = currentDiagnostics.map(err => ({
+                ...err,
+                line: realLineToVisualLine(err.line || 1)
+            }));
+            showErrors(mappedErrors);
+        } else {
+            clearErrorHighlights();
+        }
+        updateStatusBar();
 
         if (!minimapUpdatePending) {
             minimapUpdatePending = true;
@@ -542,100 +1137,108 @@ export default function CodeEditor(root, options = {}) {
         }
     };
 
-    function applySyntaxHighlight() {
+    syntaxWorker.onerror = (err) => {
+        console.error("[CodeEditor] syntaxWorker error:", err);
+    };
+
+    function applySyntaxHighlight(runDiagnostics = true) {
+        if (isDestroyed) return;
+        const requestId = ++syntaxRequestSeq;
         const text = textarea.value;
+        const fullText = getFullText(activeTab);
         const currentPath = activeTab ? activeTab.path : "";
+        const forcedLang = activeTab?.forcedLang || null;
 
-        // 重いループ処理をWeb Workerへ丸投げする
-        syntaxWorker.postMessage({ text, currentPath });
-    }
-    // 行数を記録するための変数を関数の外側（CodeEditor関数内）に定義
-    let lastLineCount = 0;
-    function updateLineNumbers() {
-        const lines = textarea.value.split('\n').length;
-        if (lastLineCount === lines) return;
-        lastLineCount = lines;
-
-        // ★【高速化】ループ内での文字列結合を避け、配列を利用して一気に結合
-        lineNumbers.textContent = Array.from({ length: lines }, (_, i) => i + 1).join('\n') + '\n';
+        syntaxWorker.postMessage({ requestId, text, fullText, currentPath, forcedLang, runDiagnostics });
     }
 
+    // 互換用の呼び出し口（診断は Worker 側で並列実行）
     function runErrorCheck() {
-        if (!activeTab) {
-            clearErrorHighlights();
+        applySyntaxHighlight(true);
+    }
+
+    /* =========================
+         仮想スクロール・ガター描画（0px誤差・差分スキップでスクロール時DOM生成ゼロ）
+      ========================== */
+    function renderGutter(force = false) {
+        if (!lineNumbersContent || !textarea) return;
+
+        const scrollTop = textarea.scrollTop;
+        // GPU コンポジットで textarea の scrollTop と 0px 誤差同期
+        lineNumbersContent.style.transform = `translate3d(0, ${-scrollTop}px, 0)`;
+
+        const lineCount = visualLines.length;
+        const viewHeight = textarea.clientHeight || 400;
+
+        // 画面に見えている範囲（上下12行バッファ）
+        const startLine = Math.max(0, Math.floor((scrollTop - PADDING_TOP) / LINE_HEIGHT) - 12);
+        const endLine = Math.min(lineCount - 1, Math.ceil((scrollTop + viewHeight - PADDING_TOP) / LINE_HEIGHT) + 12);
+        const foldSig = `${Object.keys(currentFoldRanges).length}:${activeTab?.foldStore?.size || 0}`;
+
+        // 表示範囲・テキスト・アクティブ行・折りたたみ状態に変化がなければDOM操作を完全スキップ
+        if (
+            !force &&
+            startLine === lastGutterStart &&
+            endLine === lastGutterEnd &&
+            currentActiveVisualLine === lastGutterActive &&
+            linesVersion === lastGutterVersion &&
+            foldSig === lastGutterFoldSig
+        ) {
             return;
         }
 
-        const text = textarea.value;
-        const trimmedText = text.trim();
-        const path = (activeTab.path || "").toLowerCase();
+        lastGutterStart = startLine;
+        lastGutterEnd = endLine;
+        lastGutterActive = currentActiveVisualLine;
+        lastGutterVersion = linesVersion;
+        lastGutterFoldSig = foldSig;
 
-        // 拡張子または中身の傾向から、JSONかJSかを判定
-        const isJsonContent = path.endsWith('.json') || trimmedText.startsWith("{") || trimmedText.startsWith("[");
-        const isJsContent = path.endsWith('.js') || /\b(function|const|let|var|return|if|for|while|class)\b/.test(text);
+        const frag = document.createDocumentFragment();
+        for (let i = startLine; i <= endLine; i++) {
+            const row = document.createElement("div");
+            row.className = (i === currentActiveVisualLine) ? "gutter-row is-active" : "gutter-row";
+            row.style.top = `${PADDING_TOP + i * LINE_HEIGHT}px`;
 
-        // 1. JSONの構文チェック
-        if (isJsonContent) {
-            try {
-                JSON.parse(text);
-                clearErrorHighlights();
-            } catch (e) {
-                const match = e.message.match(/position\s(\d+)/i) ||
-                    e.message.match(/at position\s(\d+)/i) ||
-                    e.message.match(/line\s(\d+)\scolumn\s(\d+)/i);
+            const numSpan = document.createElement("span");
+            numSpan.className = "gutter-num";
+            numSpan.textContent = String(cachedLineMap[i] ?? (i + 1));
+            row.appendChild(numSpan);
 
-                if (match) {
-                    if (match[2]) {
-                        const line = parseInt(match[1], 10);
-                        const column = parseInt(match[2], 10);
-                        showErrors([{ line, column, length: 1 }]);
-                    } else {
-                        const pos = parseInt(match[1], 10);
-                        const textUpToPos = text.slice(0, pos);
-                        const line = textUpToPos.split('\n').length;
-                        const column = textUpToPos.split('\n').pop().length + 1;
-                        showErrors([{ line, column, length: 1 }]);
-                    }
-                } else {
-                    // 位置が取れない場合は1行目にエラー表示
-                    showErrors([{ line: 1, column: 1, length: Math.max(1, trimmedText.split('\n')[0].length) }]);
-                }
+            const isFolded = FOLD_TOKEN_SINGLE_RE.test(visualLines[i] || "");
+            const canFold = currentFoldRanges[i] !== undefined;
+
+            if (isFolded || canFold) {
+                const toggle = document.createElement("span");
+                toggle.className = isFolded ? "fold-toggle is-folded" : "fold-toggle";
+                toggle.dataset.foldLine = String(i);
+                toggle.title = isFolded ? "展開 (クリック)" : "折りたたむ (クリック)";
+                toggle.textContent = isFolded ? "›" : "⌄";
+                row.appendChild(toggle);
+            } else {
+                const spacer = document.createElement("span");
+                spacer.className = "fold-spacer";
+                row.appendChild(spacer);
             }
+
+            frag.appendChild(row);
         }
-        // 2. JavaScriptの構文チェック
-        else if (isJsContent) {
-            try {
-                // import文やexport文を安全に置換・除去してnew Functionを通す
-                const cleanText = text
-                    .replace(/^\s*import\b.*;?$/gm, '') // import文を削除
-                    .replace(/^\s*export\s+default\b/gm, 'const __default_export__ =') // export defaultを置換
-                    .replace(/^\s*export\s+(function|class|const|let|var)\b/gm, '$1') // export 宣言を通常宣言に
-                    .replace(/^\s*export\s*\{[^}]*\};?/gm, ''); // export { ... } を削除
 
-                new Function(cleanText);
-                clearErrorHighlights();
-            } catch (e) {
-                let line = 1;
-                let column = 1;
+        lineNumbersContent.replaceChildren(frag);
+    }
 
-                if (e.stack) {
-                    const match = e.stack.match(/:(\d+):(\d+)/);
-                    if (match) {
-                        line = Math.max(1, parseInt(match[1], 10) - 1);
-                        column = parseInt(match[2], 10);
-                    }
-                } else if (e.lineNumber) {
-                    line = Math.max(1, e.lineNumber - 1);
-                    column = e.columnNumber || 1;
-                }
-
-                const lines = text.split('\n');
-                const targetLineText = lines[line - 1] || "";
-                showErrors([{ line, column, length: Math.max(1, targetLineText.trim().length) }]);
-            }
-        } else {
-            clearErrorHighlights();
+    // ガター上の折りたたみボタンクリックをイベント委譲で処理
+    lineNumbers?.addEventListener("click", (e) => {
+        const btn = e.target.closest(".fold-toggle");
+        if (!btn) return;
+        const lineIdx = Number(btn.dataset.foldLine);
+        if (!Number.isNaN(lineIdx)) {
+            toggleFoldAtLine(lineIdx);
         }
+    });
+
+    function updateLineNumbers() {
+        syncVisualLinesCache();
+        renderGutter(true);
     }
 
     let highlightLayer = null;
@@ -644,42 +1247,29 @@ export default function CodeEditor(root, options = {}) {
         const top = textarea.scrollTop;
         const left = textarea.scrollLeft;
 
-        // 1. 同期が必要な要素をまとめて処理（DOMへのアクセスを最小限に）
-        lineNumbers.scrollTop = top;
+        // 1. 仮想ガターは差分スキップ付きで 0px 同期
+        renderGutter(false);
 
         if (syntaxLayer) {
             syntaxLayer.scrollTop = top;
             syntaxLayer.scrollLeft = left;
         }
 
-        // 2. 検索レイヤーの同期
+        // 2. 検索・エラー・対応括弧レイヤーをすべて translate3d で 0px 誤差同期
         if (highlightLayer) {
-            highlightLayer.scrollTop = top;
-            highlightLayer.scrollLeft = left;
+            highlightLayer.style.transform = `translate3d(-${left}px, -${top}px, 0)`;
         }
-
-        if (highlightOverlay) {
-            highlightOverlay.scrollTop = top;
-            highlightOverlay.scrollLeft = left;
-        }
-
-        // エラー波線レイヤーをシンタックスハイライト層と同様にスクロールへ正確に同期させる
         if (errorLayer) {
-            errorLayer.style.transform = `translate(-${left}px, -${top}px)`;
+            errorLayer.style.transform = `translate3d(-${left}px, -${top}px, 0)`;
         }
-        if (errorOverlay) {
-            errorOverlay.scrollTop = top;
-            errorOverlay.scrollLeft = left;
-        }
-
-        if (activeLineLayer) {
-            activeLineLayer.scrollTop = top;
+        if (bracketLayer) {
+            bracketLayer.style.transform = `translate3d(-${left}px, -${top}px, 0)`;
         }
 
-        updateActiveLine();
+        // スクロール時は行番号再計算せず activeLineBg のY座標だけ O(1) 更新
+        updateActiveLine(true);
 
-        // 3. ミニマップは「描画が必要な時だけ」呼ぶ
-        // すでに requestAnimationFrame が予約されていなければ予約する
+        // 3. ミニマップは1フレームに1回だけ更新
         if (!minimapUpdatePending) {
             minimapUpdatePending = true;
             requestAnimationFrame(() => {
@@ -687,7 +1277,7 @@ export default function CodeEditor(root, options = {}) {
                 minimapUpdatePending = false;
             });
         }
-    }, { passive: true }); // passive: true をつけるとスクロールが滑らかになります
+    }, { passive: true });
     /* =========================
          Minimap Logic (Fixed for Sync & Resize)
       ========================== */
@@ -700,24 +1290,41 @@ export default function CodeEditor(root, options = {}) {
     const CHAR_W_PX = 1;
     let isDraggingMinimap = false;
 
-    let cachedLines = null;
-    let cachedText = "";
+    function getMinimapLineRuns(lineIndex) {
+        if (minimapRunsVersion !== linesVersion || minimapRunsLang !== currentLang) {
+            minimapRunsCache = new Array(visualLines.length);
+            minimapRunsVersion = linesVersion;
+            minimapRunsLang = currentLang;
+        }
+        if (minimapRunsCache[lineIndex]) return minimapRunsCache[lineIndex];
+
+        const line = visualLines[lineIndex] || "";
+        const runs = [];
+        let x = 4;
+        const tokens = tokenize(line);
+
+        for (let j = 0; j < tokens.length; j++) {
+            const token = tokens[j];
+            if (!token) continue;
+            if (token.trim() === "") {
+                for (let k = 0; k < token.length; k++) {
+                    x += (token.charCodeAt(k) === 9 ? 4 : 1) * CHAR_W_PX;
+                }
+            } else {
+                const type = getTokenType(token, activeTab?.path, j, tokens);
+                const w = token.length * CHAR_W_PX;
+                runs.push([x, w, COLORS[type] || "#6db3d9"]);
+                x += w;
+            }
+        }
+        minimapRunsCache[lineIndex] = runs;
+        return runs;
+    }
 
     function updateMinimap() {
-        if (!textarea || typeof textarea.value !== "string" || (typeof isDestroyed !== 'undefined' && isDestroyed)) {
-            return;
-        }
+        if (!textarea || isDestroyed) return;
 
-        const text = textarea.value;
-
-        // テキストが変わっていなければ前回のデータを使い回す
-        if (text !== cachedText) {
-            cachedLines = text ? text.split("\n") : [""];
-            cachedText = text;
-        }
-        const lines = cachedLines || [""];
-        const lineCount = lines.length;
-
+        const lineCount = visualLines.length || 1;
         const containerW = minimapContainer.clientWidth;
         const containerH = minimapContainer.clientHeight;
         if (containerW === 0 || containerH === 0) return;
@@ -726,7 +1333,6 @@ export default function CodeEditor(root, options = {}) {
         if (minimapCanvas.width !== containerW * dpr || minimapCanvas.height !== containerH * dpr) {
             minimapCanvas.width = containerW * dpr;
             minimapCanvas.height = containerH * dpr;
-            // CSS側で100%指定済みのため、styleのwidth/heightの上書きは不要
         }
 
         minimapCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -744,32 +1350,17 @@ export default function CodeEditor(root, options = {}) {
             drawOffsetY = scrollRatio * (totalMinimapContentHeight - containerH);
         }
 
-        // ★【劇的軽量化】描画すべき行（見えている範囲）の開始・終了インデックスを計算
         const startIndex = Math.max(0, Math.floor(drawOffsetY / LINE_H_PX));
         const endIndex = Math.min(lineCount, Math.ceil((drawOffsetY + containerH) / LINE_H_PX));
 
-        // 必要な範囲だけをループ処理する
+        // スクロール時はキャッシュ済みスパンから fillRect のみ実行（正規表現ゼロ）
         for (let i = startIndex; i < endIndex; i++) {
-            const line = lines[i] || "";
             const y = (i * LINE_H_PX) - drawOffsetY;
-            let x = 4;
-
-            const tokens = tokenize(line);
-            for (let j = 0; j < tokens.length; j++) {
-                const token = tokens[j];
-                if (!token) continue;
-
-                if (token.trim() === "") {
-                    // ★ タブ文字を4スペース分に展開して正しい幅を計算し、右へのズレを防止
-                    const expanded = token.replace(/\t/g, '    ');
-                    x += expanded.length * CHAR_W_PX;
-                } else {
-                    const type = getTokenType(token, activeTab?.path, j, tokens);
-                    minimapCtx.fillStyle = COLORS[type] || "#6db3d9";
-                    const tokenWidth = token.length * CHAR_W_PX;
-                    minimapCtx.fillRect(x, y, tokenWidth, LINE_H_PX - 0.5);
-                    x += tokenWidth;
-                }
+            const runs = getMinimapLineRuns(i);
+            for (let r = 0; r < runs.length; r++) {
+                const run = runs[r];
+                minimapCtx.fillStyle = run[2];
+                minimapCtx.fillRect(run[0], y, run[1], LINE_H_PX - 0.5);
             }
         }
 
@@ -806,9 +1397,12 @@ export default function CodeEditor(root, options = {}) {
         textarea.scrollTop = scrollPercent * maxEditorScroll;
     };
 
-    // リサイズ監視（ウィンドウサイズが変わっても見切れないようにする）
+    // リサイズ監視（ウィンドウサイズ変更時にガター行番号とミニマップを同時再計算）
     const ro = new ResizeObserver(() => {
-        requestAnimationFrame(updateMinimap);
+        requestAnimationFrame(() => {
+            renderGutter(true);
+            updateMinimap();
+        });
     });
     ro.observe(minimapContainer);
     ro.observe(textarea); // エディタ側のサイズ変更も監視
@@ -932,9 +1526,27 @@ export default function CodeEditor(root, options = {}) {
             showConfirm(root,
                 `"${tab.name}" は未保存です。\n保存して閉じますか？`,
                 async () => {
-                    tab.node.content = tab.content;
-                    tab.dirty = false;
-                    closeTab(tab);
+                    try {
+                        if (tab === activeTab) {
+                            tab.content = textarea.value;
+                        }
+                        if (!tab.path) {
+                            const saved = await saveAs(tab);
+                            if (saved) closeTab(tab);
+                            return;
+                        }
+                        isSyncingFS = true;
+                        try {
+                            await writeFileSafe(tab.path, getFullText(tab));
+                        } finally {
+                            setTimeout(() => { isSyncingFS = false; }, 50);
+                        }
+                        tab.dirty = false;
+                        closeTab(tab);
+                    } catch (err) {
+                        console.error("[CodeEditor] Save on close failed:", err);
+                        window.nexser?.windowAPI.alertWindow(`保存に失敗しました: ${err.message}`, { title: "CodeEditor", parentWin: win });
+                    }
                 },
                 () => closeTab(tab)
             );
@@ -956,25 +1568,28 @@ export default function CodeEditor(root, options = {}) {
                 tabs[index - 1] ||
                 null;
 
+            currentFoldRanges = {};
             if (activeTab) {
+                textarea.readOnly = Boolean(activeTab.isBinary);
                 textarea.value = activeTab.content;
                 baseTitle = activeTab.name;
                 filePath = activeTab.path;
                 fileNode = activeTab.node;
             } else {
+                textarea.readOnly = false;
                 textarea.value = "";
                 baseTitle = "CodeEditor";
                 filePath = null;
                 fileNode = null;
             }
             updateLineNumbers();
-            applySyntaxHighlight(); // 閉じ終わった後の内容をハイライト
+            updateActiveLine();
+            applySyntaxHighlight(true);
             if (searchQuery) highlightSearchMatches(searchQuery);
             requestAnimationFrame(updateMinimap);
         }
 
-        // ★ 追加
-        dirty = activeTab?.dirty ?? false;
+        dirty = tabs.some(t => t.dirty);
 
         renderTabs();
         updateTitle();
@@ -1000,33 +1615,34 @@ export default function CodeEditor(root, options = {}) {
         }
         clearTimeout(highlightTimer);
 
-        // 2. 【重要】タブ切り替え時のみ、表示レイヤーをクリアする
-        // これにより、新しいファイルが解析されるまで前のファイルの内容が見えるのを防ぎます
+        // 2. タブ切り替え時は表示レイヤーのみクリア
         if (syntaxLayer) syntaxLayer.innerHTML = "";
-        if (lineNumbers) lineNumbers.innerHTML = "";
+        if (lineNumbersContent) lineNumbersContent.replaceChildren();
+        currentFoldRanges = {};
 
         activeTab = tab;
+        filePath = tab.path;
+        fileNode = tab.node;
         const pos = tab.scrollPos || { top: 0, left: 0 };
 
         // 3. 内容とスクロール位置の更新
+        textarea.readOnly = Boolean(tab.isBinary);
         textarea.value = tab.content;
         textarea.scrollTop = pos.top;
         textarea.scrollLeft = pos.left;
 
         // 4. UI状態の更新
-        dirty = tab.dirty;
+        dirty = tabs.some(t => t.dirty);
         renderTabs();
         updateTitle();
         updateLineNumbers();
+        updateActiveLine();
 
-        // 5. ハイライト処理を開始
-        // 前の回答で修正した「一気に反映するタイプ」の applySyntaxHighlight を呼び出す
-        applySyntaxHighlight();
-        runErrorCheck();
+        // 5. ハイライト＋折りたたみ範囲＋構文診断を Worker へ1回だけ送信
+        applySyntaxHighlight(true);
 
         // 6. スクロール位置の最終同期と表示の調整
         requestAnimationFrame(() => {
-            // 各要素のスクロール位置を強制的に合わせる
             textarea.scrollTop = pos.top;
             textarea.scrollLeft = pos.left;
 
@@ -1034,9 +1650,7 @@ export default function CodeEditor(root, options = {}) {
                 syntaxLayer.scrollTop = pos.top;
                 syntaxLayer.scrollLeft = pos.left;
             }
-            if (lineNumbers) {
-                lineNumbers.scrollTop = pos.top;
-            }
+            renderGutter();
 
             if (typeof updateMinimap === "function") updateMinimap();
         });
@@ -1060,16 +1674,101 @@ export default function CodeEditor(root, options = {}) {
     renderTabs();
     updateTitle();
 
+    function askModalInput(title, message, defaultValue = "") {
+        return new Promise(resolve => {
+            const content = window.nexser?.windowAPI.showModalWindow(title, message, {
+                parentWin: win,
+                silent: true,
+                buttons: [
+                    {
+                        label: "OK",
+                        onClick: () => {
+                            const inp = content?.querySelector(".modal-prompt-input");
+                            resolve(inp ? inp.value : defaultValue);
+                        }
+                    },
+                    { label: "キャンセル", onClick: () => resolve(null) }
+                ]
+            });
+            if (!content) { resolve(null); return; }
+
+            let promptInput = content.querySelector(".modal-prompt-input");
+            if (!promptInput) {
+                promptInput = document.createElement("input");
+                promptInput.className = "modal-prompt-input";
+                promptInput.type = "text";
+                promptInput.style.cssText = "width:100%;margin-top:8px;padding:4px;box-sizing:border-box;";
+                const btnContainer = content.querySelector(".button-container") || content.querySelector(".modal-button-container") || content.lastElementChild;
+                if (btnContainer) content.insertBefore(promptInput, btnContainer);
+                else content.appendChild(promptInput);
+            }
+            promptInput.value = defaultValue;
+            promptInput.onkeydown = (ev) => {
+                if (ev.key === "Enter") {
+                    ev.preventDefault();
+                    content.querySelector("button")?.click();
+                }
+            };
+            setTimeout(() => { promptInput.focus(); promptInput.select(); }, 10);
+        });
+    }
+
+    function createNewFileTab() {
+        const newTab = {
+            name: `Untitled-${Date.now().toString(36)}.txt`,
+            path: null,
+            node: null,
+            content: "",
+            isBinary: false,
+            foldStore: new Map(),
+            dirty: false
+        };
+        tabs.push(newTab);
+        switchTab(newTab);
+        textarea.focus();
+    }
+
+    async function goToLine() {
+        if (!activeTab) return;
+        const maxRealLine = cachedLineMap[cachedLineMap.length - 1] || visualLines.length;
+        const input = await askModalInput("行へ移動 (Ctrl+G)", `移動先の行番号を入力してください (1 〜 ${maxRealLine}):`, String(cachedLineMap[currentActiveVisualLine] || 1));
+        if (!input) return;
+
+        const targetReal = Math.max(1, Math.min(maxRealLine, parseInt(input.trim(), 10) || 1));
+        const visualIdx = Math.max(0, realLineToVisualLine(targetReal) - 1);
+        let pos = 0;
+        for (let i = 0; i < Math.min(visualIdx, visualLines.length); i++) {
+            pos += visualLines[i].length + 1;
+        }
+        textarea.focus();
+        textarea.setSelectionRange(pos, pos);
+        textarea.scrollTop = Math.max(0, visualIdx * LINE_HEIGHT - Math.floor((textarea.clientHeight || 300) / 3));
+        updateActiveLine(false);
+    }
+
+    statusCursorEl?.addEventListener("click", () => goToLine());
+
     /* =========================
-           Format Document (自動整形)
+           Format Document (折りたたみ自動展開＋JSON本格整形＋自動整形)
         ========================== */
     function formatDocument() {
-        if (!activeTab) return;
+        if (!activeTab || activeTab.isBinary) return;
+        if (activeTab.foldStore?.size > 0) {
+            unfoldAll();
+        }
         const text = textarea.value;
         const ext = activeTab.path ? activeTab.path.split('.').pop().toLowerCase() : '';
         let formatted = text;
 
-        if (ext === 'js' || ext === 'css' || ext === 'json') {
+        if (ext === "json" || currentLang === "json") {
+            try {
+                formatted = JSON.stringify(JSON.parse(text), null, "\t");
+            } catch (_) {
+                // 構文エラー時は下のインデント整形へフォールバック
+            }
+        }
+
+        if (formatted === text && (ext === 'js' || ext === 'ts' || ext === 'css' || ext === 'json' || currentLang === 'js' || currentLang === 'css')) {
             const lines = text.split("\n");
             let indentLevel = 0;
             formatted = lines.map(line => {
@@ -1084,7 +1783,7 @@ export default function CodeEditor(root, options = {}) {
                 indentLevel = Math.max(0, indentLevel);
                 return indented;
             }).join("\n");
-        } else if (ext === 'html' || ext === 'htm') {
+        } else if (ext === 'html' || ext === 'htm' || currentLang === 'html') {
             // コメントやタグの構造を考慮して安全に分割・整形するロジック
             let cleaned = text
                 .replace(/<!--[\s\S]*?-->/g, match => match) // コメントを保護
@@ -1132,38 +1831,107 @@ export default function CodeEditor(root, options = {}) {
     }
 
     /* =========================
-       Save (修正)
-    ========================== */
+        Save As / Save (syscall経由・新規保存＆折りたたみ展開保存対応)
+     ========================== */
+    async function saveAs(targetTab = activeTab) {
+        if (!targetTab || targetTab.isBinary) return false;
+        if (targetTab === activeTab) {
+            targetTab.content = textarea.value;
+        }
+
+        const defaultDir = (targetTab.path && getDirPath(targetTab.path))
+            || (sidebarRootDir && resolveFS(sidebarRootDir) ? sidebarRootDir : null)
+            || (resolveFS("C:/Programs/Documents") ? "C:/Programs/Documents" : "C:/Desktop");
+
+        const defaultFullPath = `${defaultDir.replace(/\/+$/, "")}/${targetTab.name || "untitled.txt"}`;
+        const inputPath = await askModalInput("名前を付けて保存", "保存先のパス（例: C:/Desktop/app.js）を入力してください:", defaultFullPath);
+        if (!inputPath || !inputPath.trim()) return false;
+
+        const cleanPath = inputPath.trim().replace(/\\/g, "/");
+        isSyncingFS = true;
+        try {
+            const fullSource = getFullText(targetTab);
+            await writeFileSafe(cleanPath, fullSource);
+
+            targetTab.path = cleanPath;
+            targetTab.name = cleanPath.split("/").pop();
+            targetTab.node = resolveFS(cleanPath);
+            targetTab.dirty = false;
+
+            if (targetTab === activeTab) {
+                filePath = targetTab.path;
+                fileNode = targetTab.node;
+                baseTitle = targetTab.name;
+                if (!sidebarRootDir) sidebarRootDir = getDirPath(cleanPath);
+            }
+
+            dirty = tabs.some(t => t.dirty);
+            renderTabs();
+            updateTitle();
+            applySyntaxHighlight(true);
+
+            if (previewWin && document.body.contains(previewWin)) {
+                await renderPreview();
+            }
+            return true;
+        } catch (err) {
+            console.error("[CodeEditor] Save As failed:", err);
+            window.nexser?.windowAPI.alertWindow(`保存に失敗しました: ${err.message}`, { title: "CodeEditor", parentWin: win });
+            return false;
+        } finally {
+            setTimeout(() => { isSyncingFS = false; }, 50);
+        }
+    }
+
     async function save() {
         if (activeTab) {
-            // 1. エディタの現在の値をタブのコンテンツに反映
+            if (activeTab.isBinary) return true;
             activeTab.content = textarea.value;
 
-            // 2. タブのノード（仮想FSのメモリ実体）にも反映
-            if (activeTab.node) {
-                activeTab.node.content = activeTab.content;
+            // 新規タブ（path未設定）の場合は「名前を付けて保存」へ誘導
+            if (!activeTab.path) {
+                return await saveAs(activeTab);
             }
         }
 
-        // 全てのタブの状態をクリーンにする
-        tabs.forEach(tab => {
-            if (tab.node) {
-                // 他のタブも一応同期
-                tab.node.content = tab.content;
+        // 他に未保存の新規タブがあれば順次「名前を付けて保存」を実行
+        const dirtyUntitledTabs = tabs.filter(tab => !tab.path && !tab.isBinary && tab.dirty);
+        for (const uTab of dirtyUntitledTabs) {
+            const saved = await saveAs(uTab);
+            if (!saved) return false;
+        }
+
+        const dirtyTabs = tabs.filter(tab => tab.path && !tab.isBinary && tab.dirty);
+        if (dirtyTabs.length === 0 && activeTab?.path && !activeTab.isBinary) {
+            dirtyTabs.push(activeTab);
+        }
+
+        isSyncingFS = true;
+        try {
+            for (const tab of dirtyTabs) {
+                const fullSource = getFullText(tab);
+                await writeFileSafe(tab.path, fullSource);
+                tab.node = resolveFS(tab.path);
                 tab.dirty = false;
             }
-        });
 
-        dirty = false;
-        renderTabs();
-        updateTitle();
+            dirty = tabs.some(t => t.dirty);
+            renderTabs();
+            updateTitle();
 
-        // 3. プレビューを即時実行
-        if (previewWin && document.body.contains(previewWin)) {
-            await renderPreview();
+            if (previewWin && document.body.contains(previewWin)) {
+                await renderPreview();
+            }
+            return true;
+        } catch (err) {
+            console.error("[CodeEditor] Save failed:", err);
+            window.nexser?.windowAPI.alertWindow(`保存に失敗しました: ${err.message}`, { title: "CodeEditor", parentWin: win });
+            return false;
+        } finally {
+            setTimeout(() => {
+                isSyncingFS = false;
+            }, 50);
         }
-
-        window.dispatchEvent(new Event("fs-updated"));
     }
 
     function highlightSearchMatches(query) {
@@ -1181,13 +1949,8 @@ export default function CodeEditor(root, options = {}) {
             return;
         }
 
-        const text = textarea.value;
-        const lines = text.split("\n");
-        const computed = getComputedStyle(textarea);
-
-        const lineHeight = parseFloat(computed.lineHeight);
-        const paddingTop = parseFloat(computed.paddingTop);
-        const paddingLeft = parseFloat(computed.paddingLeft);
+        const lines = visualLines;
+        const { charWidth, paddingLeft } = getCharMetrics();
         const tabSize = 4;
 
         const innerContainer = document.createElement("div");
@@ -1196,15 +1959,10 @@ export default function CodeEditor(root, options = {}) {
         Object.assign(innerContainer.style, {
             position: "absolute",
             top: "0", left: "0", height: "100%", width: "100%",
-            overflow: "hidden", pointerEvents: "none", willChange: "scroll-position"
+            overflow: "visible", pointerEvents: "none", willChange: "transform"
         });
 
-        const canvas = document.createElement("canvas");
-        const ctx = canvas.getContext("2d");
-        ctx.font = `${computed.fontWeight} ${computed.fontSize} ${computed.fontFamily}`;
-
-        const charWidth = ctx.measureText("M").width;
-        const lowerQuery = query.toLowerCase();
+        const targetQuery = searchMatchCase ? query : query.toLowerCase();
         const matchWidth = query.length * charWidth;
 
         let matchCount = 0;
@@ -1216,11 +1974,10 @@ export default function CodeEditor(root, options = {}) {
         const highlightFragment = document.createDocumentFragment();
         const listFragment = document.createDocumentFragment();
 
-        // 共通のスタイルテンプレートをループの外に定義してオブジェクト生成コストを削減
         const highlightStyleTpl = {
             position: "absolute",
             width: Math.round(matchWidth) + "px",
-            height: Math.round(lineHeight) + "px",
+            height: `${LINE_HEIGHT}px`,
             backgroundColor: "rgba(255, 255, 0, 0.4)",
             borderRadius: "2px"
         };
@@ -1228,10 +1985,10 @@ export default function CodeEditor(root, options = {}) {
         lines.forEach((line, i) => {
             let start = 0;
             let idx;
-            const lowerLine = line.toLowerCase();
-            const lineTop = Math.round((i * lineHeight) + paddingTop); // 行ごとのY座標を事前に計算
+            const targetLine = searchMatchCase ? line : line.toLowerCase();
+            const lineTop = Math.round((i * LINE_HEIGHT) + PADDING_TOP);
 
-            while ((idx = lowerLine.indexOf(lowerQuery, start)) !== -1) {
+            while ((idx = targetLine.indexOf(targetQuery, start)) !== -1) {
                 matchCount++;
                 const absoluteIdx = absoluteOffset + idx;
 
@@ -1301,12 +2058,11 @@ export default function CodeEditor(root, options = {}) {
             }
         }
 
-        // 2. errorOverlay ではなく highlightOverlay に追加する
+        highlightOverlay.style.overflow = "hidden";
         highlightOverlay.appendChild(innerContainer);
 
         if (highlightLayer) {
-            highlightLayer.scrollTop = textarea.scrollTop;
-            highlightLayer.scrollLeft = textarea.scrollLeft;
+            highlightLayer.style.transform = `translate3d(-${textarea.scrollLeft}px, -${textarea.scrollTop}px, 0)`;
         }
     }
 
@@ -1319,33 +2075,156 @@ export default function CodeEditor(root, options = {}) {
 
         textarea.scrollTop = lineNumber * lineHeight - paddingTop;
     }
+    function getMatchPositions(text, query) {
+        if (!query) return [];
+        const haystack = searchMatchCase ? text : text.toLowerCase();
+        const needle = searchMatchCase ? query : query.toLowerCase();
+        const positions = [];
+        let pos = 0;
+        while ((pos = haystack.indexOf(needle, pos)) !== -1) {
+            positions.push(pos);
+            pos += Math.max(1, needle.length);
+        }
+        return positions;
+    }
+
+    function updateFindCounter(positions = null) {
+        if (!findCountEl) return;
+        if (!searchQuery) {
+            findCountEl.textContent = "0/0";
+            return;
+        }
+        const list = positions || getMatchPositions(textarea.value, searchQuery);
+        if (list.length === 0) {
+            findCountEl.textContent = "0/0";
+            return;
+        }
+        const currentIdx = list.indexOf(searchIndex);
+        findCountEl.textContent = `${currentIdx === -1 ? 1 : currentIdx + 1}/${list.length}`;
+    }
+
+    function openFindWidget(showReplace = false) {
+        if (!findWidget || !findInput) return;
+        findWidget.style.display = "block";
+        if (replaceRow) replaceRow.style.display = showReplace ? "flex" : "none";
+
+        const selectedText = textarea.value.slice(textarea.selectionStart, textarea.selectionEnd);
+        if (selectedText && !selectedText.includes("\n")) {
+            findInput.value = selectedText;
+            searchQuery = selectedText;
+            highlightSearchMatches(searchQuery);
+        } else if (searchQuery) {
+            findInput.value = searchQuery;
+        }
+        updateFindCounter();
+        findInput.focus();
+        findInput.select();
+    }
+
+    function closeFindWidget() {
+        if (!findWidget) return;
+        findWidget.style.display = "none";
+        textarea.focus();
+    }
+
+    function replaceCurrentMatch() {
+        if (!searchQuery || !activeTab || activeTab.isBinary) return;
+        const replacement = replaceInput ? replaceInput.value : "";
+        const selStart = textarea.selectionStart;
+        const selEnd = textarea.selectionEnd;
+        const selected = textarea.value.slice(selStart, selEnd);
+        const isMatched = searchMatchCase
+            ? selected === searchQuery
+            : selected.toLowerCase() === searchQuery.toLowerCase();
+
+        if (isMatched) {
+            if (FOLD_TOKEN_SINGLE_RE.test(selected)) {
+                unfoldAll();
+            }
+            textarea.setRangeText(replacement, selStart, selEnd, "end");
+            searchIndex = selStart + replacement.length - 1;
+            textarea.dispatchEvent(new Event("input"));
+        }
+        findNext();
+    }
+
+    function replaceAllMatches() {
+        if (!searchQuery || !activeTab || activeTab.isBinary) return;
+        if (activeTab.foldStore?.size > 0) {
+            unfoldAll();
+        }
+        const replacement = replaceInput ? replaceInput.value : "";
+        const escaped = searchQuery.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const regex = new RegExp(escaped, searchMatchCase ? "g" : "gi");
+        const nextVal = textarea.value.replace(regex, replacement);
+        if (nextVal !== textarea.value) {
+            textarea.value = nextVal;
+            searchIndex = -1;
+            textarea.dispatchEvent(new Event("input"));
+        }
+        updateFindCounter();
+    }
+
+    findInput?.addEventListener("input", () => {
+        searchQuery = findInput.value;
+        searchIndex = -1;
+        highlightSearchMatches(searchQuery);
+        updateFindCounter();
+    });
+    findInput?.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+            e.preventDefault();
+            searchQuery = findInput.value;
+            if (e.shiftKey) findPrevious();
+            else findNext();
+        } else if (e.key === "Escape") {
+            e.preventDefault();
+            closeFindWidget();
+        }
+    });
+    replaceInput?.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+            e.preventDefault();
+            replaceCurrentMatch();
+        } else if (e.key === "Escape") {
+            e.preventDefault();
+            closeFindWidget();
+        }
+    });
+    findCaseBtn?.addEventListener("click", () => {
+        searchMatchCase = !searchMatchCase;
+        findCaseBtn.style.background = searchMatchCase ? "#0e639c" : "#333";
+        findCaseBtn.style.color = searchMatchCase ? "#fff" : "#aaa";
+        if (searchQuery) highlightSearchMatches(searchQuery);
+        updateFindCounter();
+    });
+    findPrevBtn?.addEventListener("click", () => findPrevious());
+    findNextBtn?.addEventListener("click", () => findNext());
+    findCloseBtn?.addEventListener("click", () => closeFindWidget());
+    replaceOneBtn?.addEventListener("click", () => replaceCurrentMatch());
+    replaceAllBtn?.addEventListener("click", () => replaceAllMatches());
+
     function findNext() {
         if (!searchQuery || !activeTab) return;
 
         const text = textarea.value;
-        // 【圧倒的軽量化】検索のたびに毎回全文を小文字変換するのを防ぐため、一度だけ変数に格納
-        const lowerText = text.toLowerCase();
-        const lowerQuery = searchQuery.toLowerCase();
+        const positions = getMatchPositions(text, searchQuery);
 
-        let startPos = searchIndex + 1;
-        if (startPos >= text.length) startPos = 0;
-
-        let index = lowerText.indexOf(lowerQuery, startPos);
-
-        if (index === -1) {
-            index = lowerText.indexOf(lowerQuery, 0);
-        }
-
-        if (index !== -1) {
-            textarea.setSelectionRange(index, index + searchQuery.length);
-            scrollToIndex(index);
-            searchIndex = index;
-            if (searchStatus) searchStatus.textContent = ""; // 見つかったのでクリア
-        } else {
+        if (positions.length === 0) {
             searchIndex = -1;
-            if (searchStatus) searchStatus.textContent = `"${searchQuery}" は見つかりません`; // 見つからない場合
+            if (searchStatus) searchStatus.textContent = `"${searchQuery}" は見つかりません`;
+            updateFindCounter(positions);
+            return;
         }
 
+        const nextPos = positions.find(p => p > searchIndex) ?? positions[0];
+        textarea.focus();
+        textarea.setSelectionRange(nextPos, nextPos + searchQuery.length);
+        scrollToIndex(nextPos);
+        searchIndex = nextPos;
+
+        if (searchStatus) searchStatus.textContent = "";
+        updateFindCounter(positions);
         updateActiveLine();
         updateSidebarSelection();
     }
@@ -1354,28 +2233,30 @@ export default function CodeEditor(root, options = {}) {
         if (!searchQuery || !activeTab) return;
 
         const text = textarea.value;
-        // 【圧倒的軽量化】こちらも同様に変数に格納して再利用
-        const lowerText = text.toLowerCase();
-        const lowerQuery = searchQuery.toLowerCase();
+        const positions = getMatchPositions(text, searchQuery);
 
-        let startPos = searchIndex - 1;
-        if (startPos < 0) startPos = text.length - 1;
-
-        let index = lowerText.lastIndexOf(lowerQuery, startPos);
-
-        if (index === -1) {
-            index = lowerText.lastIndexOf(lowerQuery, text.length);
-        }
-
-        if (index !== -1) {
-            textarea.setSelectionRange(index, index + searchQuery.length);
-            scrollToIndex(index);
-            searchIndex = index;
-            if (searchStatus) searchStatus.textContent = "";
-        } else {
+        if (positions.length === 0) {
             searchIndex = -1;
             if (searchStatus) searchStatus.textContent = `"${searchQuery}" は見つかりません`;
+            updateFindCounter(positions);
+            return;
         }
+
+        let prevPos = positions[positions.length - 1];
+        for (let i = positions.length - 1; i >= 0; i--) {
+            if (positions[i] < searchIndex) {
+                prevPos = positions[i];
+                break;
+            }
+        }
+
+        textarea.focus();
+        textarea.setSelectionRange(prevPos, prevPos + searchQuery.length);
+        scrollToIndex(prevPos);
+        searchIndex = prevPos;
+
+        if (searchStatus) searchStatus.textContent = "";
+        updateFindCounter(positions);
         updateActiveLine();
         updateSidebarSelection();
     }
@@ -1392,10 +2273,7 @@ export default function CodeEditor(root, options = {}) {
 
     function showErrors(errors = []) {
         clearErrorHighlights();
-        const computed = getComputedStyle(textarea);
-        const lineHeight = parseFloat(computed.lineHeight) || 20;
-        const paddingTop = parseFloat(computed.paddingTop) || 10;
-        const paddingLeft = parseFloat(computed.paddingLeft) || 10;
+        const { charWidth, paddingLeft } = getCharMetrics();
 
         const inner = document.createElement("div");
         errorLayer = inner;
@@ -1406,21 +2284,16 @@ export default function CodeEditor(root, options = {}) {
             willChange: "transform"
         });
 
-        const canvas = document.createElement("canvas");
-        const ctx = canvas.getContext("2d");
-        ctx.font = `${computed.fontWeight} ${computed.fontSize} ${computed.fontFamily}`;
-        const charWidth = ctx.measureText("M").width;
-
+        const allLines = visualLines;
         errors.forEach(err => {
-            const lines = textarea.value.split("\n");
             const lineIdx = Math.max(0, (err.line || 1) - 1);
-            const lineText = lines[lineIdx] || "";
+            const lineText = allLines[lineIdx] || "";
             const col = err.column ? err.column - 1 : 0;
             const length = err.length || Math.max(1, lineText.trim().length - col);
 
             const leftOffset = paddingLeft + (col * charWidth);
             const width = length * charWidth;
-            const topPos = (lineIdx * lineHeight) + paddingTop + lineHeight - 4;
+            const topPos = (lineIdx * LINE_HEIGHT) + PADDING_TOP + LINE_HEIGHT - 4;
 
             const svgWave = document.createElementNS("http://www.w3.org/2000/svg", "svg");
             const safeWidth = Math.max(10, width);
@@ -1449,19 +2322,18 @@ export default function CodeEditor(root, options = {}) {
 
         // スクロール位置と完全に同期させる
         if (errorLayer) {
-            errorLayer.style.transform = `translate(-${textarea.scrollLeft}px, -${textarea.scrollTop}px)`;
+            errorLayer.style.transform = `translate3d(-${textarea.scrollLeft}px, -${textarea.scrollTop}px, 0)`;
         }
     }
 
     // CodeEditor関数内の上部（変数定義エリア）にタイマー変数を追加
     let highlightTimer = null;
 
-    // --- 修正後の input イベント ---
+    // --- 最適化後の input イベント（Worker一括実行 + デバウンス） ---
     textarea.addEventListener("input", () => {
         if (!activeTab) return;
         activeTab.content = textarea.value;
 
-        // 軽い処理（フラグ変更や行番号更新）は即座に行う
         if (!activeTab.dirty) {
             activeTab.dirty = true;
             dirty = true;
@@ -1469,41 +2341,22 @@ export default function CodeEditor(root, options = {}) {
         }
         updateTitle();
         updateLineNumbers();
+        updateActiveLine();
 
         clearTimeout(highlightTimer);
         highlightTimer = setTimeout(() => {
-            // 1. シンタックスハイライト
-            applySyntaxHighlight();
-            runErrorCheck();
-            // 2. 【追加】JSONファイルなどの場合に簡易的な構文エラーチェックを行って波線を出す例
-            if (activeTab && activeTab.path && activeTab.path.endsWith('.json')) {
-                try {
-                    JSON.parse(textarea.value);
-                    clearErrorHighlights(); // エラーがなければ消す
-                } catch (e) {
-                    // エラーメッセージから位置を特定して波線を出す
-                    const match = e.message.match(/position\s(\d+)/i);
-                    if (match) {
-                        const pos = parseInt(match[1], 10);
-                        const textUpToPos = textarea.value.slice(0, pos);
-                        const line = textUpToPos.split('\n').length;
-                        const column = textUpToPos.split('\n').pop().length + 1;
-                        showErrors([{ line, column, length: 1 }]);
-                    }
-                }
-            }
+            // 1. シンタックスハイライト + 構文診断を Worker へ1回だけ送信
+            applySyntaxHighlight(true);
 
-            // 3. 検索ヒットのハイライト
+            // 2. 検索ヒットのハイライト
             if (searchQuery && searchQuery.trim() !== "") {
                 highlightSearchMatches(searchQuery);
+                updateFindCounter();
             } else {
                 if (highlightOverlay) highlightOverlay.innerHTML = "";
                 highlightLayer = null;
             }
-
-            // 4. ミニマップの更新
-            requestAnimationFrame(updateMinimap);
-        }, 0);
+        }, 24);
     });
 
     textarea.addEventListener("click", () => {
@@ -1511,7 +2364,17 @@ export default function CodeEditor(root, options = {}) {
         updateSidebarSelection();
     });
 
+    // マウスドラッグでの選択範囲変更もステータスバー・括弧ハイライトへ即座に反映
+    textarea.addEventListener("mouseup", () => {
+        updateActiveLine();
+    });
+
+    textarea.addEventListener("select", () => {
+        updateActiveLine();
+    });
+
     textarea.addEventListener("keyup", (e) => {
+        if (e.isComposing || e.keyCode === 229) return;
         // 十字キーなどのカーソル移動で行が変わった場合
         if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Home", "End", "PageUp", "PageDown"].includes(e.key)) {
             updateActiveLine();
@@ -1521,122 +2384,344 @@ export default function CodeEditor(root, options = {}) {
 
     textarea.addEventListener("focus", updateActiveLine);
 
-    textarea.addEventListener("keydown", (e) => {
-        if (e.key === "Tab") {
+    const AUTO_PAIRS = { "(": ")", "[": "]", "{": "}", '"': '"', "'": "'", "`": "`" };
+    const CLOSING_CHARS = new Set([")", "]", "}", '"', "'", "`"]);
+
+    // 折りたたみブロックを含む範囲をコピーした際、元の展開済みテキストをクリップボードへ渡す
+    textarea.addEventListener("copy", (e) => {
+        if (!activeTab?.foldStore || activeTab.foldStore.size === 0) return;
+        const sel = textarea.value.slice(textarea.selectionStart, textarea.selectionEnd);
+        if (sel && FOLD_TOKEN_SINGLE_RE.test(sel) && e.clipboardData) {
             e.preventDefault();
-            const start = textarea.selectionStart;
-            const end = textarea.selectionEnd;
-
-            // 選択範囲にタブ文字を挿入
-            textarea.setRangeText("\t", start, end, "end");
-
-            // 内容が変わったので input イベントを手動で発生させて dirty フラグを更新
-            textarea.dispatchEvent(new Event("input"));
+            e.clipboardData.setData("text/plain", expandFoldTokens(sel, activeTab.foldStore));
         }
-        if (e.key === "Enter") {
-            e.preventDefault(); // デフォルトの改行を一度止めて制御する
+    });
 
-            const start = textarea.selectionStart;
-            const end = textarea.selectionEnd;
-            const text = textarea.value;
+    textarea.addEventListener("keydown", (e) => {
+        // 日本語 IME 変換確定中（Enter 等）はブラウザの標準動作に任せる
+        if (e.isComposing || e.keyCode === 229) return;
 
-            // 現在のカーソル行のテキストを取得して、先頭のインデント（スペースやタブ）を抽出する
+        // プレビュー起動 (Ctrl+Enter) は改行させず即座にプレビューのみ実行
+        if (e.ctrlKey && !e.shiftKey && !e.altKey && e.key === "Enter") {
+            e.preventDefault();
+            e.stopPropagation();
+            openPreview();
+            return;
+        }
+
+        // VS Code風 フローティング検索 (Ctrl+F) / 置換 (Ctrl+H) / Esc / F3 は読み取り専用でも許可
+        if (e.ctrlKey && e.key.toLowerCase() === "f") {
+            e.preventDefault();
+            e.stopPropagation();
+            openFindWidget(false);
+            return;
+        }
+        if (e.ctrlKey && e.key.toLowerCase() === "h") {
+            e.preventDefault();
+            e.stopPropagation();
+            openFindWidget(true);
+            return;
+        }
+        if (e.key === "Escape" && findWidget && findWidget.style.display !== "none") {
+            e.preventDefault();
+            e.stopPropagation();
+            closeFindWidget();
+            return;
+        }
+        if (e.key === "F3") {
+            e.preventDefault();
+            if (e.shiftKey) findPrevious();
+            else findNext();
+            return;
+        }
+
+        // バイナリ表示中はすべての編集系ショートカットを遮断
+        if (activeTab?.isBinary) return;
+
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const text = textarea.value;
+
+        // VS Code互換 折りたたみショートカット (Ctrl+Shift+[ で折りたたむ / Ctrl+Shift+] で展開)
+        if (e.ctrlKey && e.shiftKey && (e.key === "[" || e.key === "{")) {
+            e.preventDefault();
+            const curLine = countNewlinesBefore(text, start);
+            foldBlockAtLine(curLine);
+            return;
+        }
+        if (e.ctrlKey && e.shiftKey && (e.key === "]" || e.key === "}")) {
+            e.preventDefault();
+            const curLine = countNewlinesBefore(text, start);
+            unfoldBlockAtLine(curLine);
+            return;
+        }
+
+        // 折りたたみトークン上にカーソルがある状態で編集キーを押した場合は自動展開してデータ破損を防止
+        if (activeTab?.foldStore?.size > 0 && !e.ctrlKey && !e.altKey && !e.metaKey && (e.key.length === 1 || e.key === "Backspace" || e.key === "Delete" || e.key === "Enter")) {
+            const curLineIdx = countNewlinesBefore(text, start);
+            const lineStartPos = text.lastIndexOf("\n", start - 1) + 1;
+            const lineEndIdx = text.indexOf("\n", start);
+            const curLineText = text.slice(lineStartPos, lineEndIdx === -1 ? text.length : lineEndIdx);
+            const tokenMatch = curLineText.match(FOLD_TOKEN_SINGLE_RE);
+            if (tokenMatch) {
+                const tokenStartAbs = lineStartPos + tokenMatch.index;
+                if (end >= tokenStartAbs) {
+                    unfoldBlockAtLine(curLineIdx);
+                    return;
+                }
+            }
+        }
+
+        // 1. Tab / Shift+Tab（単一行・複数行一括インデント & アンインデント）
+        if (e.key === "Tab" && !e.ctrlKey && !e.altKey && !e.metaKey) {
+            e.preventDefault();
+            const hasMultiLineSelection = text.slice(start, end).includes("\n");
+
+            if (e.shiftKey || hasMultiLineSelection) {
+                const lineStart = text.lastIndexOf("\n", start - 1) + 1;
+                const lineEndIdx = text.indexOf("\n", end);
+                const lineEnd = lineEndIdx === -1 ? text.length : lineEndIdx;
+                const block = text.slice(lineStart, lineEnd);
+                const lines = block.split("\n");
+
+                let firstLineDelta = 0;
+                const updated = lines.map((line, i) => {
+                    if (e.shiftKey) {
+                        if (line.startsWith("\t")) {
+                            if (i === 0) firstLineDelta = -1;
+                            return line.slice(1);
+                        }
+                        const spaces = line.match(/^ {1,4}/);
+                        if (spaces) {
+                            if (i === 0) firstLineDelta = -spaces[0].length;
+                            return line.slice(spaces[0].length);
+                        }
+                        return line;
+                    } else {
+                        if (i === 0) firstLineDelta = 1;
+                        return "\t" + line;
+                    }
+                }).join("\n");
+
+                const totalDelta = updated.length - block.length;
+                textarea.setRangeText(updated, lineStart, lineEnd, "preserve");
+                textarea.setSelectionRange(
+                    Math.max(lineStart, start + firstLineDelta),
+                    Math.max(lineStart, end + totalDelta)
+                );
+            } else {
+                textarea.setRangeText("\t", start, end, "end");
+            }
+            textarea.dispatchEvent(new Event("input"));
+            return;
+        }
+
+        // 2. 自動括弧・クォート補完 / 選択テキストの囲み / 閉じ文字スキップ
+        if (!e.ctrlKey && !e.altKey && !e.metaKey) {
+            if (AUTO_PAIRS[e.key]) {
+                const closeChar = AUTO_PAIRS[e.key];
+                const nextChar = text[end] || "";
+
+                // 同一クォートの直前なら上書きスキップ（Overtype）
+                if (start === end && e.key === closeChar && nextChar === closeChar) {
+                    e.preventDefault();
+                    textarea.setSelectionRange(start + 1, start + 1);
+                    updateActiveLine();
+                    return;
+                }
+
+                // 選択範囲がある場合は選択文字列を括弧で囲む
+                if (start !== end) {
+                    e.preventDefault();
+                    const selected = text.slice(start, end);
+                    textarea.setRangeText(e.key + selected + closeChar, start, end, "preserve");
+                    textarea.setSelectionRange(start + 1, end + 1);
+                    textarea.dispatchEvent(new Event("input"));
+                    return;
+                }
+
+                // 単語の直前でない場合のみ自動閉じを挿入
+                if (!/[\w$]/.test(nextChar)) {
+                    e.preventDefault();
+                    textarea.setRangeText(e.key + closeChar, start, end, "preserve");
+                    textarea.setSelectionRange(start + 1, start + 1);
+                    textarea.dispatchEvent(new Event("input"));
+                    return;
+                }
+            } else if (CLOSING_CHARS.has(e.key) && start === end && text[start] === e.key) {
+                e.preventDefault();
+                textarea.setSelectionRange(start + 1, start + 1);
+                updateActiveLine();
+                return;
+            }
+        }
+
+        // 3. 空ペアの Backspace 同時削除（例: `(|)` -> Backspace で両方消す）
+        if (e.key === "Backspace" && !e.ctrlKey && !e.altKey && !e.metaKey && start === end && start > 0) {
+            const prevChar = text[start - 1];
+            const nextChar = text[start];
+            if (AUTO_PAIRS[prevChar] === nextChar) {
+                e.preventDefault();
+                textarea.setRangeText("", start - 1, start + 1, "end");
+                textarea.dispatchEvent(new Event("input"));
+                return;
+            }
+        }
+
+        // 4. Smart Enter（括弧展開 `{|}` と自動インデント増加 — 修飾キーなしのみ反応）
+        if (e.key === "Enter" && !e.ctrlKey && !e.altKey && !e.metaKey) {
+            e.preventDefault();
             const textUpToCursor = text.slice(0, start);
             const currentLineStart = textUpToCursor.lastIndexOf("\n") + 1;
             const currentLine = text.slice(currentLineStart, start);
             const indentMatch = currentLine.match(/^[\t ]*/);
             const indent = indentMatch ? indentMatch[0] : "";
 
-            // 改行文字と、抽出したインデントを合わせて挿入
-            const insertText = "\n" + indent;
-            textarea.setRangeText(insertText, start, end, "end");
+            const prevNonSpace = currentLine.trimEnd().slice(-1);
+            const nextChar = text[end] || "";
+            const isBracketExpand =
+                (prevNonSpace === "{" && nextChar === "}") ||
+                (prevNonSpace === "[" && nextChar === "]") ||
+                (prevNonSpace === "(" && nextChar === ")");
 
-            // 内容が変わったため input イベントを手動で発火して dirty やハイライトを更新
+            if (isBracketExpand) {
+                const insertText = `\n${indent}\t\n${indent}`;
+                textarea.setRangeText(insertText, start, end, "preserve");
+                const newPos = start + 1 + indent.length + 1;
+                textarea.setSelectionRange(newPos, newPos);
+            } else {
+                const extraIndent = /[\{\[\(:]$/.test(currentLine.trimEnd()) ? "\t" : "";
+                const insertText = "\n" + indent + extraIndent;
+                textarea.setRangeText(insertText, start, end, "end");
+            }
+
             textarea.dispatchEvent(new Event("input"));
-
             requestAnimationFrame(() => {
                 updateActiveLine();
                 updateSidebarSelection();
             });
+            return;
         }
+
+        // 5. 行の上下移動 (Alt + ↑/↓) & 行複製 (Shift + Alt + ↑/↓)
+        if (e.altKey && (e.key === "ArrowUp" || e.key === "ArrowDown")) {
+            e.preventDefault();
+            const lines = text.split("\n");
+            const startLine = text.slice(0, start).split("\n").length - 1;
+            const endLine = text.slice(0, end).split("\n").length - 1;
+
+            if (e.shiftKey) {
+                // 行の複製
+                const block = lines.slice(startLine, endLine + 1);
+                const insertAt = e.key === "ArrowUp" ? startLine : endLine + 1;
+                lines.splice(insertAt, 0, ...block);
+                textarea.value = lines.join("\n");
+                const offset = e.key === "ArrowDown" ? block.join("\n").length + 1 : 0;
+                textarea.setSelectionRange(start + offset, end + offset);
+                textarea.dispatchEvent(new Event("input"));
+                return;
+            }
+
+            // 行の移動
+            if (e.key === "ArrowUp" && startLine > 0) {
+                const moving = lines.splice(startLine, endLine - startLine + 1);
+                const swappedLineLen = lines[startLine - 1].length + 1;
+                lines.splice(startLine - 1, 0, ...moving);
+                textarea.value = lines.join("\n");
+                textarea.setSelectionRange(Math.max(0, start - swappedLineLen), Math.max(0, end - swappedLineLen));
+                textarea.dispatchEvent(new Event("input"));
+            } else if (e.key === "ArrowDown" && endLine < lines.length - 1) {
+                const moving = lines.splice(startLine, endLine - startLine + 1);
+                const swappedLineLen = lines[startLine].length + 1;
+                lines.splice(startLine + 1, 0, ...moving);
+                textarea.value = lines.join("\n");
+                textarea.setSelectionRange(start + swappedLineLen, end + swappedLineLen);
+                textarea.dispatchEvent(new Event("input"));
+            }
+            return;
+        }
+
+        // 6. 現在行の削除 (Ctrl + Shift + K)
+        if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "k") {
+            e.preventDefault();
+            const lines = text.split("\n");
+            const startLine = text.slice(0, start).split("\n").length - 1;
+            const endLine = text.slice(0, end).split("\n").length - 1;
+            lines.splice(startLine, endLine - startLine + 1);
+            const nextVal = lines.join("\n");
+            const lineStartPos = lines.slice(0, Math.min(startLine, lines.length)).join("\n").length;
+            textarea.value = nextVal;
+            const caret = Math.min(nextVal.length, startLine > 0 ? lineStartPos + 1 : 0);
+            textarea.setSelectionRange(caret, caret);
+            textarea.dispatchEvent(new Event("input"));
+            return;
+        }
+
         if (e.key === "Backspace" || e.key === "Delete") {
             requestAnimationFrame(() => {
                 updateActiveLine();
                 updateSidebarSelection();
             });
         }
+
         if (e.shiftKey && e.altKey && e.key.toLowerCase() === "f") {
             e.preventDefault();
             formatDocument();
+            return;
         }
-        // 【追加】コメントアウト機能 (Ctrl + /)
+
+        // 多言語コメントアウト機能 (Ctrl + /)
         if (e.ctrlKey && e.key === "/") {
             e.preventDefault();
-            const start = textarea.selectionStart;
-            const end = textarea.selectionEnd;
-            const text = textarea.value;
             const lines = text.split("\n");
+            const startLine = countNewlinesBefore(text, start);
+            const endLine = countNewlinesBefore(text, end);
 
-            // カーソルが含まれる行範囲を特定（- 1 を正しく記述）
-            const startLine = text.slice(0, start).split("\n").length - 1;
-            const endLine = text.slice(0, end).split("\n").length - 1;
-
-            const ext = activeTab?.path ? activeTab.path.split('.').pop().toLowerCase() : '';
-            const isHtml = ext === 'html' || ext === 'htm';
+            const isBlockHtml = currentLang === "html" || currentLang === "xml";
+            const isBlockCss = currentLang === "css";
+            const linePrefix = (currentLang === "python" || currentLang === "shell" || currentLang === "yaml" || currentLang === "ini")
+                ? "#"
+                : (currentLang === "sql" ? "--" : "//");
 
             let allCommented = true;
             for (let i = startLine; i <= endLine; i++) {
-                const line = lines[i].trim();
-                if (isHtml) {
-                    if (!line.startsWith("<!--") || !line.endsWith("-->")) { allCommented = false; break; }
+                const trimmed = lines[i].trim();
+                if (isBlockHtml) {
+                    if (!trimmed.startsWith("<!--") || !trimmed.endsWith("-->")) { allCommented = false; break; }
+                } else if (isBlockCss) {
+                    if (!trimmed.startsWith("/*") || !trimmed.endsWith("*/")) { allCommented = false; break; }
                 } else {
-                    if (!line.startsWith("//")) { allCommented = false; break; }
+                    if (!trimmed.startsWith(linePrefix)) { allCommented = false; break; }
                 }
             }
 
+            const escapedPrefix = linePrefix.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+            const removeLineRe = new RegExp(`^([\\t ]*)${escapedPrefix} ?`);
+
             for (let i = startLine; i <= endLine; i++) {
-                if (isHtml) {
-                    if (allCommented) {
-                        lines[i] = lines[i].replace(/^\s*<!--\s?/, "").replace(/\s?-->\s*$/, "");
-                    } else {
-                        lines[i] = "<!-- " + lines[i] + " -->";
-                    }
+                const indentMatch = lines[i].match(/^[\t ]*/);
+                const indent = indentMatch ? indentMatch[0] : "";
+                const body = lines[i].slice(indent.length);
+
+                if (isBlockHtml) {
+                    lines[i] = allCommented
+                        ? lines[i].replace(/^([\t ]*)<!--\s?/, "$1").replace(/\s?-->\s*$/, "")
+                        : `${indent}<!-- ${body} -->`;
+                } else if (isBlockCss) {
+                    lines[i] = allCommented
+                        ? lines[i].replace(/^([\t ]*)\/\*\s?/, "$1").replace(/\s?\*\/\s*$/, "")
+                        : `${indent}/* ${body} */`;
                 } else {
-                    if (allCommented) {
-                        lines[i] = lines[i].replace(/^\s*\/\/\s?/, "");
-                    } else {
-                        // インデントを維持してコメント化
-                        const indentMatch = lines[i].match(/^[\t ]*/);
-                        const indent = indentMatch ? indentMatch[0] : "";
-                        const content = lines[i].trim();
-                        lines[i] = content ? indent + "// " + content : indent + "//";
-                    }
+                    lines[i] = allCommented
+                        ? lines[i].replace(removeLineRe, "$1")
+                        : (body ? `${indent}${linePrefix} ${body}` : `${indent}${linePrefix}`);
                 }
             }
 
             textarea.value = lines.join("\n");
-
-            // 選択範囲の維持（文書の最後まで選択させない）
             textarea.setSelectionRange(start, end);
-
             textarea.dispatchEvent(new Event("input"));
             return;
-        }
-
-        if (e.ctrlKey && e.key === "f") {
-            e.preventDefault();
-
-            const q = prompt("検索");
-            if (!q) return;
-
-            searchQuery = q;
-            searchIndex = -1;
-            findNext();
-        }
-
-        if (e.key === "F3") {
-            e.preventDefault();
-            findNext();
         }
     });
 
@@ -1674,25 +2759,23 @@ export default function CodeEditor(root, options = {}) {
         const fsFiles = collectFilesRecursive(baseDir);
         if (!fsFiles.size) return;
 
-        // エディタのタブにある最新の内容を最優先で反映
+        // エディタのタブにある最新の内容（折りたたみ展開済み）を最優先で反映
         tabs.forEach(t => {
-            if (fsFiles.has(t.path)) {
-                fsFiles.set(t.path, t.content);
+            if (!t.isBinary && fsFiles.has(t.path)) {
+                fsFiles.set(t.path, getFullText(t));
             }
         });
 
         previewBlobMap.clear();
 
-        // 外部データ(__EXTERNAL_DATA__)の非同期ロード
+        // 外部データ(__EXTERNAL_DATA__)の非同期ロード（syscall経由・FSメモリへ書き戻さない）
         const loadPromises = [];
         for (const [fullPath, content] of fsFiles.entries()) {
             if (content === "__EXTERNAL_DATA__") {
                 loadPromises.push(
-                    getFileContent(fullPath).then(realContent => {
+                    readFileSafe(fullPath).then(realContent => {
                         if (isDestroyed) return;
-                        const node = resolveFS(fullPath);
-                        if (node) node.content = realContent;
-                        fsFiles.set(fullPath, realContent);
+                        fsFiles.set(fullPath, realContent ?? "");
                     }).catch(e => {
                         console.error(`Preview load error: ${fullPath}`, e);
                         fsFiles.set(fullPath, "");
@@ -1834,7 +2917,7 @@ export default function CodeEditor(root, options = {}) {
     /* =========================
        Sidebar
     ========================== */
-    let sidebarRootDir = getDirPath(filePath) || filePath.split("/")[0];
+    let sidebarRootDir = (filePath ? (getDirPath(filePath) || filePath.split("/")[0]) : null) || "C:/Programs/Documents";
 
     function renderSidebar() {
         sidebar.innerHTML = "";
@@ -1902,18 +2985,19 @@ export default function CodeEditor(root, options = {}) {
             searchQuery = searchInput.value;
             selectedSearchLine = -1;
 
-            // 入力欄が空になったら、表示もハイライトも即座に消す
+            // 入力欄が空になったら、検索ハイライトのみ消去（構文エラー波線は維持）
             if (!searchQuery || searchQuery.trim() === "") {
-                clearErrorHighlights();
+                if (highlightOverlay) highlightOverlay.innerHTML = "";
                 if (searchStatus) searchStatus.textContent = "";
-                // ★追加: 検索リストも非表示にしてクリアする
                 if (searchResultsList) {
                     searchResultsList.innerHTML = "";
                     searchResultsList.style.display = "none";
                 }
                 highlightLayer = null;
+                updateFindCounter();
             } else {
                 highlightSearchMatches(searchQuery);
+                updateFindCounter();
             }
         });
         if (!sidebarRootDir) return;
@@ -1944,25 +3028,34 @@ export default function CodeEditor(root, options = {}) {
             li.style.cursor = treeNode.type === "file" ? "pointer" : "default";
 
             if (treeNode.type === "file") {
-                li.onclick = async e => { // asyncを追加
+                li.onclick = async e => {
                     e.stopPropagation();
                     let tab = tabs.find(t => t.path === treeNode.path);
                     if (!tab) {
                         const node = resolveFS(treeNode.path);
                         if (!node) return;
 
-                        // ★ ここで実体を取得
-                        let content = node.content;
-                        if (content === "__EXTERNAL_DATA__") {
-                            try {
-                                content = await getFileContent(treeNode.path);
-                                node.content = content; // キャッシュに書き戻す
-                            } catch (err) {
-                                content = "Error loading file.";
-                            }
+                        let decoded = { text: "", isBinary: false };
+                        try {
+                            const raw = await readFileSafe(treeNode.path);
+                            decoded = await decodeFileDataToText(raw, treeNode.name);
+                        } catch (err) {
+                            console.error("[CodeEditor] Sidebar load error:", err);
+                            decoded = { text: "Error loading file.", isBinary: false };
                         }
+                        if (isDestroyed) return;
 
-                        tab = { name: treeNode.name, path: treeNode.path, node, content: String(content ?? ""), dirty: false };
+                        tab = {
+                            name: treeNode.name,
+                            path: treeNode.path,
+                            node,
+                            content: decoded.isBinary
+                                ? `// [Binary File] '${treeNode.name}' はバイナリ形式のためテキスト編集できません。`
+                                : decoded.text,
+                            isBinary: decoded.isBinary,
+                            foldStore: new Map(),
+                            dirty: false
+                        };
                         tabs.push(tab);
                     }
                     switchTab(tab);
@@ -2048,15 +3141,26 @@ export default function CodeEditor(root, options = {}) {
         setupRibbon(win, () => filePath, null, [
             {
                 title: "File", items: [
-                    { label: "Save", action: save },
-                    { label: "Format Document", action: formatDocument },
-                    { label: "Preview", action: openPreview },
+                    { label: "New File (Ctrl+N)", action: createNewFileTab },
+                    { label: "Save (Ctrl+S)", action: save },
+                    { label: "Save As... (Ctrl+Shift+S)", action: () => saveAs(activeTab) },
+                    { label: "Preview (Ctrl+Enter)", action: openPreview },
                     { label: "Reload Preview", action: reloadPreview }
                 ]
             },
             {
+                title: "Edit", items: [
+                    { label: "Find (Ctrl+F)", action: () => openFindWidget(false) },
+                    { label: "Replace (Ctrl+H)", action: () => openFindWidget(true) },
+                    { label: "Go to Line... (Ctrl+G)", action: goToLine },
+                    { label: "Format Document (Shift+Alt+F)", action: formatDocument }
+                ]
+            },
+            {
                 title: "View", items: [
-                    { label: "Toggle Sidebar (Search)", action: toggleSidebarWithSearch }
+                    { label: "Toggle Sidebar (Search)", action: toggleSidebarWithSearch },
+                    { label: "Fold All", action: foldAll },
+                    { label: "Unfold All", action: unfoldAll }
                 ]
             }
         ]);
@@ -2077,31 +3181,42 @@ export default function CodeEditor(root, options = {}) {
         try {
             let activeTabWasUpdated = false;
 
-            // 【修正】tabs.length 1 のタイポを tabs.length - 1 に修正
             for (let i = tabs.length - 1; i >= 0; i--) {
                 const tab = tabs[i];
+                // 未保存の新規タブ (path === null) は FS 同期で削除しない
+                if (!tab.path) continue;
+
                 const node = resolveFS(tab.path);
 
                 if (node) {
-                    if (activeTab && tab.path === activeTab.path) {
-                        // nodeの内容がメモリ上のタブ内容と異なる場合、同期してフラグを立てる
-                        if (activeTab.content !== node.content) {
-                            activeTab.content = String(node.content ?? "");
-                            textarea.value = activeTab.content;
+                    tab.node = node;
+
+                    // 外部保存マーカー・バイナリ・編集中（dirty）タブは上書きしない
+                    if (node.content === "__EXTERNAL_DATA__" || tab.dirty || tab.isBinary) {
+                        continue;
+                    }
+
+                    const nextContent = String(node.content ?? "");
+                    // 折りたたみ展開後の完全テキストと比較し、本当に外部変更があった場合のみ反映
+                    if (getFullText(tab) !== nextContent) {
+                        tab.foldStore?.clear();
+                        tab.content = nextContent;
+                        if (activeTab && tab.path === activeTab.path) {
+                            textarea.value = nextContent;
+                            updateLineNumbers();
                             activeTabWasUpdated = true;
                         }
                     }
-                    tab.node = node;
-                    tab.content = String(node.content ?? "");
                 } else {
                     if (activeTab === tab) activeTab = null;
                     tabs.splice(i, 1);
-                    activeTabWasUpdated = true; // タブが消滅した場合もUI更新が必要
+                    activeTabWasUpdated = true;
                 }
             }
 
             if (!activeTab && tabs.length) {
                 activeTab = tabs[0];
+                textarea.readOnly = Boolean(activeTab.isBinary);
                 textarea.value = activeTab.content;
                 updateLineNumbers();
                 baseTitle = activeTab.name;
@@ -2111,16 +3226,13 @@ export default function CodeEditor(root, options = {}) {
             renderTabs();
             updateTitle();
 
-            // ★ ハイライトの更新
+            // ハイライトと検索のみ更新（構文エラー波線は Worker の診断に任せる）
             if (activeTabWasUpdated) {
-                // シンタックスハイライトの再適用
-                applySyntaxHighlight();
+                updateActiveLine();
+                applySyntaxHighlight(true);
 
-                // 検索中のワードがあれば、新しい内容に対してハイライトを再描画
                 if (searchQuery && searchQuery.trim() !== "") {
                     highlightSearchMatches(searchQuery);
-                } else {
-                    clearErrorHighlights();
                 }
 
                 // プレビューの更新
@@ -2157,13 +3269,14 @@ export default function CodeEditor(root, options = {}) {
                 {
                     label: "保存",
                     onClick: async () => {
-                        await save();
-                        closeWin();
+                        const saved = await save();
+                        if (saved) closeWin();
                     }
                 },
                 {
                     label: "保存しない",
                     onClick: () => {
+                        tabs.forEach(t => { t.dirty = false; });
                         dirty = false; // 破棄フラグ
                         renderTabs();
                         updateTitle();
@@ -2198,22 +3311,36 @@ export default function CodeEditor(root, options = {}) {
         requestClose();
     }, true);
 
-    win?.addEventListener("keydown", e => {
-        if (e.altKey && e.key === "F4") { e.preventDefault(); requestClose(); }
-        if (e.ctrlKey && e.key.toLowerCase() === "s") { e.preventDefault(); save(); }
-        if (e.ctrlKey && e.key === "Enter") { e.preventDefault(); openPreview(); }
-        if (e.ctrlKey && e.key.toLowerCase() === "r") {
+    const handleWinKeyDown = (e) => {
+        const lowerKey = e.key.toLowerCase();
+        if (e.altKey && e.key === "F4") { e.preventDefault(); requestClose(); return; }
+        if (e.ctrlKey && e.shiftKey && lowerKey === "s") { e.preventDefault(); saveAs(activeTab); return; }
+        if (e.ctrlKey && lowerKey === "s") { e.preventDefault(); save(); return; }
+        if (e.ctrlKey && lowerKey === "n") { e.preventDefault(); createNewFileTab(); return; }
+        if (e.ctrlKey && lowerKey === "g") { e.preventDefault(); goToLine(); return; }
+        if (e.ctrlKey && lowerKey === "f") { e.preventDefault(); openFindWidget(false); return; }
+        if (e.ctrlKey && lowerKey === "h") { e.preventDefault(); openFindWidget(true); return; }
+        if (e.ctrlKey && e.key === "Enter") { e.preventDefault(); openPreview(); return; }
+        if (e.ctrlKey && lowerKey === "r") {
             e.preventDefault();
             if (previewWin && document.body.contains(previewWin)) {
                 renderPreview();
             }
         }
-    });
+    };
+    win?.addEventListener("keydown", handleWinKeyDown);
 
     // クリーンアップ処理を関数化（kernelの killProcess から呼び出されます）
     const cleanup = () => {
         if (isDestroyed) return;
         isDestroyed = true;
+
+        win?.removeEventListener("keydown", handleWinKeyDown);
+
+        // 1. Web Worker を確実に終了（開閉ごとのゾンビWorkerリークを防止）
+        try {
+            syntaxWorker.terminate();
+        } catch (_) { }
 
         // 2. cleanup (dispose) 時にドラッグ中であれば強制解除
         if (minimapMouseMoveHandler) window.removeEventListener("mousemove", minimapMouseMoveHandler);
@@ -2226,6 +3353,11 @@ export default function CodeEditor(root, options = {}) {
             try { URL.revokeObjectURL(url); } catch { }
         }
         previewBlobMap.clear();
+
+        if (lastHtmlBlobUrl) {
+            try { URL.revokeObjectURL(lastHtmlBlobUrl); } catch { }
+            lastHtmlBlobUrl = null;
+        }
 
         tabs.length = 0;
         activeTab = null;
@@ -2244,62 +3376,122 @@ export default function CodeEditor(root, options = {}) {
     };
 
     /* =========================
-          実体取得を含む初期化処理
-       ========================== */
+             実体取得を含む初期化処理 (syscall.readFile経由・多形式対応)
+          ========================== */
     async function init() {
-        if (!filePath || !fileNode) return;
+        const isAppLaunch = !filePath || !fileNode || fileNode.type === "app" || filePath.toLowerCase().endsWith("codeeditor.app");
 
-        // 1. メインファイルの実体を取得
-        if (fileNode.content === "__EXTERNAL_DATA__") {
-            try {
-                const realContent = await getFileContent(filePath);
-                if (isDestroyed) return; // ⭐ 既にエディタが閉じられていれば破棄
+        if (isAppLaunch) {
+            if (tabs.length === 0) {
+                const untitledTab = {
+                    name: `Untitled-${untitledId}.txt`,
+                    path: null,
+                    node: null,
+                    content: "",
+                    isBinary: false,
+                    foldStore: new Map(),
+                    dirty: false
+                };
+                tabs.push(untitledTab);
+                activeTab = untitledTab;
+                textarea.value = "";
+            }
+            renderTabs();
+            updateTitle();
+            updateLineNumbers();
+            updateActiveLine();
+            applySyntaxHighlight(true);
+            requestAnimationFrame(updateMinimap);
+            return;
+        }
 
-                fileNode.content = realContent;
-                if (activeTab && activeTab.path === filePath) {
-                    activeTab.content = String(realContent ?? "");
-                    textarea.value = activeTab.content;
-                    updateLineNumbers();
-                    applySyntaxHighlight();
-                    requestAnimationFrame(updateMinimap);
-                }
-            } catch (e) { console.error("Load error:", e); }
+        // 開いた対象ファイルが拡張子フィルタ外であっても必ずタブに含める（任意形式対応）
+        if (!tabs.some(t => t.path === filePath)) {
+            const openedTab = {
+                name: filePath.split("/").pop(),
+                path: filePath,
+                node: fileNode,
+                content: "",
+                isBinary: false,
+                foldStore: new Map(),
+                dirty: false
+            };
+            tabs.unshift(openedTab);
+            activeTab = openedTab;
+        }
+
+        // 1. メインファイルの実体を syscall 経由で透過的に取得
+        let mainContent = "";
+        try {
+            const rawContent = await readFileSafe(filePath);
+            if (isDestroyed) return;
+
+            const decoded = await decodeFileDataToText(rawContent, filePath.split("/").pop());
+            if (isDestroyed) return;
+
+            mainContent = decoded.isBinary
+                ? `// [Binary File] '${filePath.split("/").pop()}' はバイナリ形式のためテキスト編集できません。`
+                : decoded.text;
+
+            if (activeTab && activeTab.path === filePath) {
+                activeTab.content = mainContent;
+                activeTab.isBinary = decoded.isBinary;
+                activeTab.foldStore = activeTab.foldStore || new Map();
+                textarea.readOnly = decoded.isBinary;
+                textarea.value = mainContent;
+                updateLineNumbers();
+                updateActiveLine();
+                applySyntaxHighlight(true);
+                requestAnimationFrame(updateMinimap);
+            }
+        } catch (e) {
+            console.error("[CodeEditor] Load error:", e);
         }
 
         // 2. リンクされているファイルを再帰的に検索して tabs に追加
-        const dirPath = getDirPath(filePath);
-        addLinkedFilesToTabs(dirPath, fileNode.content);
+        if (!activeTab?.isBinary) {
+            const dirPath = getDirPath(filePath);
+            addLinkedFilesToTabs(dirPath, mainContent);
+        }
 
-        // 3. 全てのタブをチェックし、__EXTERNAL_DATA__ が残っていれば取得
+        // 3. 全てのタブをチェックし、__EXTERNAL_DATA__ が残っていれば syscall 経由で取得
         await Promise.all(tabs.map(async (tab) => {
-            if (tab.node && tab.node.content === "__EXTERNAL_DATA__") {
+            tab.foldStore = tab.foldStore || new Map();
+            if (tab.content === "__EXTERNAL_DATA__" || tab.node?.content === "__EXTERNAL_DATA__") {
                 try {
-                    const content = await getFileContent(tab.path);
-                    tab.node.content = content;
-                    tab.content = content;
+                    const raw = await readFileSafe(tab.path);
+                    if (isDestroyed) return;
+
+                    const decoded = await decodeFileDataToText(raw, tab.name);
+                    if (isDestroyed) return;
+
+                    tab.isBinary = decoded.isBinary;
+                    tab.content = decoded.isBinary
+                        ? `// [Binary File] '${tab.name}' はバイナリ形式のためテキスト編集できません。`
+                        : decoded.text;
 
                     if (activeTab === tab) {
-                        textarea.value = content;
+                        textarea.readOnly = decoded.isBinary;
+                        textarea.value = tab.content;
                         updateLineNumbers();
                     }
                 } catch (e) {
-                    console.error(`Failed to load: ${tab.path}`, e);
+                    console.error(`[CodeEditor] Failed to load: ${tab.path}`, e);
                 }
             }
         }));
 
+        if (isDestroyed) return;
+
         renderTabs();
         updateTitle();
-        // ★追加: すべての初期化処理が終わった後、確実に行番号を最新にする
         updateLineNumbers();
+        updateActiveLine();
         renderPreview();
-        applySyntaxHighlight();
-        runErrorCheck();
+        applySyntaxHighlight(true);
         requestAnimationFrame(updateMinimap);
     }
 
-    // 実行
-    window.addEventListener("fs-updated", syncTabsWithFS);
     init();
     requestAnimationFrame(() => {
         updateMinimap();
@@ -2314,46 +3506,60 @@ export default function CodeEditor(root, options = {}) {
             const newNode = resolveFS(newFilePath);
             if (!newNode || newNode.type !== "file") return;
 
-            // すでにタブが開いているか確認
             const existingTab = tabs.find(t => t.path === newFilePath);
             if (existingTab) {
-                // すでに開いていればそのタブを選択
-                activeTab = existingTab;
-            } else {
-                // 新しいタブとして追加
-                const newTab = {
-                    name: newFilePath.split("/").pop(),
-                    path: newFilePath,
-                    content: newNode.content,
-                    node: newNode,
-                    isModified: false
-                };
-
-                // もし content が "__EXTERNAL_DATA__" なら実体を取得
-                if (newNode.content === "__EXTERNAL_DATA__") {
-                    try {
-                        const realContent = await getFileContent(newFilePath);
-                        newTab.content = realContent;
-                        newNode.content = realContent;
-                    } catch (e) {
-                        console.error("Failed to load external data for new tab:", e);
-                    }
-                }
-
-                tabs.push(newTab);
-                activeTab = newTab;
+                switchTab(existingTab);
+                window.nexser?.windowAPI.bringToFront(win);
+                return;
             }
 
-            // UIを更新
-            textarea.value = activeTab.content;
+            const fileName = newFilePath.split("/").pop();
+            let decoded = { text: "", isBinary: false };
+            try {
+                const raw = await readFileSafe(newFilePath);
+                decoded = await decodeFileDataToText(raw, fileName);
+            } catch (e) {
+                console.error("[CodeEditor] Failed to load data for new tab:", e);
+            }
+            if (isDestroyed) return;
+
+            const newTab = {
+                name: fileName,
+                path: newFilePath,
+                content: decoded.isBinary
+                    ? `// [Binary File] '${fileName}' はバイナリ形式のためテキスト編集できません。`
+                    : decoded.text,
+                isBinary: decoded.isBinary,
+                node: newNode,
+                foldStore: new Map(),
+                dirty: false
+            };
+
+            tabs.push(newTab);
+            switchTab(newTab);
+            window.nexser?.windowAPI.bringToFront(win);
+        },
+        /**
+         * エクスプローラー等でのファイル/フォルダ改名をタブ状態へ安全同期
+         */
+        onRename: ({ oldPath, newPath }) => {
+            if (!oldPath || !newPath) return;
+            const replacePrefix = (p) => (p === oldPath ? newPath : (p?.startsWith(oldPath + "/") ? newPath + p.slice(oldPath.length) : p));
+
+            tabs.forEach(tab => {
+                if (tab.path && (tab.path === oldPath || tab.path.startsWith(oldPath + "/"))) {
+                    tab.path = replacePrefix(tab.path);
+                    tab.name = tab.path.split("/").pop();
+                    tab.node = resolveFS(tab.path);
+                }
+            });
+            if (filePath && (filePath === oldPath || filePath.startsWith(oldPath + "/"))) {
+                filePath = replacePrefix(filePath);
+                fileNode = resolveFS(filePath);
+            }
             renderTabs();
             updateTitle();
-            updateLineNumbers();
-            renderPreview();
-            applySyntaxHighlight();
-            requestAnimationFrame(updateMinimap);
-            // ウィンドウを前面に持ってくる（kernel側でも行っていますが念のため）
-            window.nexser?.windowAPI.bringToFront(win);
+            applySyntaxHighlight(true);
         },
         dispose: cleanup
     }

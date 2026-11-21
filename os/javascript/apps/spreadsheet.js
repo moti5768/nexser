@@ -591,12 +591,17 @@ const SCOPED_CSS = `
     z-index: 3;
 }
 
-/* 左・中央・右揃えのはみ出し描画（Excel準拠の方向展開＆隣接セル境界クリップ） */
+/* 左・中央・右揃えおよび縦書きのはみ出し描画（Excel準拠の方向展開＆隣接セル境界クリップ） */
 .nexser-spreadsheet-app .ss-table td .ss-overflow-wrap {
     display: flex;
     width: 100%;
     pointer-events: none;
-    clip-path: inset(-4px calc(-1 * var(--ov-right, 0px)) -4px calc(-1 * var(--ov-left, 0px)));
+    clip-path: inset(
+        calc(-1 * var(--ov-top, 4px))
+        calc(-1 * var(--ov-right, 0px))
+        calc(-1 * var(--ov-bottom, 4px))
+        calc(-1 * var(--ov-left, 0px))
+    );
 }
 .nexser-spreadsheet-app .ss-table td .ss-overflow-wrap.ss-ov-left {
     justify-content: flex-start;
@@ -606,6 +611,31 @@ const SCOPED_CSS = `
 }
 .nexser-spreadsheet-app .ss-table td .ss-overflow-wrap.ss-ov-right {
     justify-content: flex-end;
+}
+.nexser-spreadsheet-app .ss-table td .ss-overflow-wrap.ss-ov-vertical {
+    position: absolute;
+    inset: 0;
+    width: auto;
+    height: auto;
+    padding: 2px 4px;
+}
+.nexser-spreadsheet-app .ss-table td .ss-overflow-wrap.ss-ov-v-top {
+    justify-content: flex-start;
+}
+.nexser-spreadsheet-app .ss-table td .ss-overflow-wrap.ss-ov-v-middle {
+    justify-content: center;
+}
+.nexser-spreadsheet-app .ss-table td .ss-overflow-wrap.ss-ov-v-bottom {
+    justify-content: flex-end;
+}
+.nexser-spreadsheet-app .ss-table td .ss-overflow-wrap.ss-ov-vh-right {
+    align-items: flex-start;
+}
+.nexser-spreadsheet-app .ss-table td .ss-overflow-wrap.ss-ov-vh-center {
+    align-items: center;
+}
+.nexser-spreadsheet-app .ss-table td .ss-overflow-wrap.ss-ov-vh-left {
+    align-items: flex-end;
 }
 .nexser-spreadsheet-app .ss-table td .ss-overflow-text {
     flex: 0 0 auto;
@@ -693,6 +723,18 @@ const SCOPED_CSS = `
 
 .nexser-spreadsheet-app .ss-table td.active-cell {
     z-index: 5;
+}
+
+.nexser-spreadsheet-app .ss-table td.ss-text-overflow,
+.nexser-spreadsheet-app .ss-table td.ss-text-overflow.selected,
+.nexser-spreadsheet-app .ss-table td.ss-text-overflow.active-cell {
+    z-index: 6;
+}
+
+.nexser-spreadsheet-app .ss-table td.ss-has-content:not(.ss-text-overflow),
+.nexser-spreadsheet-app .ss-table td.ss-has-content:not(.ss-text-overflow).selected,
+.nexser-spreadsheet-app .ss-table td.ss-has-content:not(.ss-text-overflow).active-cell {
+    z-index: 7;
 }
 
 .nexser-spreadsheet-app .ss-table td.active-cell::after {
@@ -1233,7 +1275,24 @@ const SCOPED_CSS = `
     display: block;
 }
 
-/* Excel風コピー選択アニメーション */
+/* Excel風コピー選択アニメーション（範囲全体を囲む1枚の外周枠＋非連続時の個別フォールバック） */
+.nexser-spreadsheet-app .ss-copy-ants-box {
+    position: absolute;
+    display: none;
+    pointer-events: none;
+    z-index: 25;
+    box-sizing: border-box;
+    background-image:
+        linear-gradient(90deg, #107c41 50%, transparent 50%),
+        linear-gradient(90deg, #107c41 50%, transparent 50%),
+        linear-gradient(0deg, #107c41 50%, transparent 50%),
+        linear-gradient(0deg, #107c41 50%, transparent 50%);
+    background-repeat: repeat-x, repeat-x, repeat-y, repeat-y;
+    background-size: 8px 2px, 8px 2px, 2px 8px, 2px 8px;
+    background-position: 0 0, 0 100%, 0 0, 100% 0;
+    animation: ss-marching-ants 0.4s linear infinite;
+}
+
 .nexser-spreadsheet-app .copy-marching-ants {
     background-image:
         linear-gradient(90deg, #107c41 50%, transparent 50%),
@@ -1404,6 +1463,16 @@ const SCOPED_CSS = `
 .nexser-spreadsheet-app .ss-table td.ss-frozen-row.active-cell,
 .nexser-spreadsheet-app .ss-table td.ss-frozen-col.active-cell {
     z-index: 10;
+}
+
+.nexser-spreadsheet-app .ss-table td.ss-frozen-row.ss-text-overflow,
+.nexser-spreadsheet-app .ss-table td.ss-frozen-col.ss-text-overflow {
+    z-index: 11;
+}
+
+.nexser-spreadsheet-app .ss-table td.ss-frozen-row.ss-has-content:not(.ss-text-overflow),
+.nexser-spreadsheet-app .ss-table td.ss-frozen-col.ss-has-content:not(.ss-text-overflow) {
+    z-index: 12;
 }
 
 .nexser-spreadsheet-app .ss-table tbody th.row_number.ss-frozen-row {
@@ -1618,7 +1687,100 @@ function parseExcelDate(input) {
 }
 
 function flattenArray(arr) {
+    if (!Array.isArray(arr)) return [arr];
     return arr.reduce((acc, val) => acc.concat(Array.isArray(val) ? flattenArray(val) : val), []);
+}
+
+function to2DArray(val) {
+    if (!Array.isArray(val)) return [[val]];
+    if (val.length === 0) return [[]];
+    return Array.isArray(val[0]) ? val : val.map(v => [v]);
+}
+
+function coerceExcelNum(v) {
+    const uv = unwrapBlank(v);
+    if (typeof uv === "boolean") return uv ? 1 : 0;
+    if (uv === "" || uv == null) return 0;
+    const n = Number(uv);
+    return isNaN(n) ? NaN : n;
+}
+
+function excelUnaryOp(op, a) {
+    const applyOne = (v) => {
+        if (typeof v === "string" && EXCEL_ERROR_RE.test(v.trim())) return v.trim();
+        if (op === "!") return !Boolean(unwrapBlank(v));
+        const n = coerceExcelNum(v);
+        if (Number.isNaN(n)) return "#VALUE!";
+        if (op === "-") return -n;
+        if (op === "+") return +n;
+        return n;
+    };
+    if (Array.isArray(a)) {
+        return to2DArray(a).map(row => row.map(applyOne));
+    }
+    return applyOne(a);
+}
+
+function excelBinaryOp(op, a, b) {
+    const applyOne = (va, vb) => {
+        if (typeof va === "string" && EXCEL_ERROR_RE.test(va.trim())) return va.trim();
+        if (typeof vb === "string" && EXCEL_ERROR_RE.test(vb.trim())) return vb.trim();
+        if (op === "==") return excelOpEquals(va, vb);
+        if (op === "!=") return !excelOpEquals(va, vb);
+        if (op === "<" || op === "<=" || op === ">" || op === ">=") {
+            const ua = unwrapBlank(va);
+            const ub = unwrapBlank(vb);
+            const na = (ua === "" || ua == null) ? 0 : (typeof ua === "number" ? ua : NaN);
+            const nb = (ub === "" || ub == null) ? 0 : (typeof ub === "number" ? ub : NaN);
+            let cmp;
+            if (!Number.isNaN(na) && !Number.isNaN(nb)) {
+                cmp = na - nb;
+            } else if (typeof ua === "string" && typeof ub === "string") {
+                const la = ua.toLowerCase();
+                const lb = ub.toLowerCase();
+                cmp = la < lb ? -1 : (la > lb ? 1 : 0);
+            } else {
+                const rank = (x) => typeof x === "boolean" ? 3 : (typeof x === "string" && x !== "" ? 2 : 1);
+                cmp = rank(ua) - rank(ub);
+            }
+            if (op === "<") return cmp < 0;
+            if (op === "<=") return cmp <= 0;
+            if (op === ">") return cmp > 0;
+            return cmp >= 0;
+        }
+        const na = coerceExcelNum(va);
+        const nb = coerceExcelNum(vb);
+        if (Number.isNaN(na) || Number.isNaN(nb)) return "#VALUE!";
+        if (op === "+") return na + nb;
+        if (op === "-") return na - nb;
+        if (op === "*") return na * nb;
+        if (op === "/") return nb === 0 ? "#DIV/0!" : na / nb;
+        if (op === "**") return Math.pow(na, nb);
+        return "#VALUE!";
+    };
+
+    if (!Array.isArray(a) && !Array.isArray(b)) {
+        return applyOne(a, b);
+    }
+    const ma = to2DArray(a);
+    const mb = to2DArray(b);
+    const rows = Math.max(ma.length, mb.length);
+    const cols = Math.max(ma[0]?.length || 1, mb[0]?.length || 1);
+    const out = [];
+    for (let r = 0; r < rows; r++) {
+        const row = [];
+        for (let c = 0; c < cols; c++) {
+            const va = ma[ma.length === 1 ? 0 : r]?.[ma[0].length === 1 ? 0 : c];
+            const vb = mb[mb.length === 1 ? 0 : r]?.[mb[0].length === 1 ? 0 : c];
+            if (va === undefined || vb === undefined) {
+                row.push("#N/A");
+            } else {
+                row.push(applyOne(va, vb));
+            }
+        }
+        out.push(row);
+    }
+    return out;
 }
 
 function buildWildcardRegex(pattern) {
@@ -2598,12 +2760,25 @@ const FORMULA_FUNCTIONS = {
         return "#N/A";
     },
     SUMPRODUCT(...arrays) {
-        const flats = arrays.map(a => flattenArray(a).map(v => Number(unwrapBlank(v)) || 0));
-        if (!flats.length) return 0;
+        if (!arrays.length) return 0;
+        const flats = [];
+        for (const a of arrays) {
+            const flat = flattenArray(a);
+            const nums = [];
+            for (const raw of flat) {
+                const v = unwrapBlank(raw);
+                if (typeof v === "string" && EXCEL_ERROR_RE.test(v.trim())) return v.trim();
+                nums.push(typeof v === "number" && Number.isFinite(v) ? v : 0);
+            }
+            flats.push(nums);
+        }
         const len = flats[0].length;
+        if (flats.some(arr => arr.length !== len)) return "#VALUE!";
         let total = 0;
         for (let i = 0; i < len; i++) {
-            total += flats.reduce((prod, arr) => prod * (arr[i] ?? 0), 1);
+            let prod = 1;
+            for (let j = 0; j < flats.length; j++) prod *= flats[j][i];
+            total += prod;
         }
         return total;
     },
@@ -4316,6 +4491,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
             }
             scheduleTextOverflowUpdate();
             syncCellDropdownButtonPosition();
+            syncCopyAntsBoxPosition();
         }
     }
 
@@ -4514,7 +4690,9 @@ export default async function initSpreadsheetApp(content, options = {}) {
         } else {
             refreshVisibleRows();
         }
+        scheduleTextOverflowUpdate();
         syncCellDropdownButtonPosition();
+        syncCopyAntsBoxPosition();
     }
 
     const baseColResizeHandle = document.createElement("div");
@@ -4586,7 +4764,9 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 moved = true;
                 const newHeight = Math.max(20, startHeight + (eMove.clientY - startY));
                 tr.style.height = `${newHeight}px`;
+                scheduleTextOverflowUpdate();
                 syncCellDropdownButtonPosition();
+                syncCopyAntsBoxPosition();
                 updateResizeTooltip(eMove.clientX, eMove.clientY, `${newHeight}px`);
             };
             const onUp = () => {
@@ -5165,7 +5345,9 @@ export default async function initSpreadsheetApp(content, options = {}) {
     }
 
     function setCellFormattedValue(cell, rawVal) {
-        const rawStr = String(rawVal ?? "");
+        const rawStr = typeof rawVal === "boolean"
+            ? (rawVal ? "TRUE" : "FALSE")
+            : String(rawVal ?? "");
         if (rawStr === "") {
             delete cell.dataset.rawValue;
             delete cell.dataset.valueType;
@@ -5477,8 +5659,8 @@ export default async function initSpreadsheetApp(content, options = {}) {
                     const lhs = convertAmp(cmpSegments[0].text).trim();
                     const rhs = convertAmp(cmpSegments[1].text).trim();
                     if (lhs !== "" && rhs !== "") {
-                        if (op === "=" || op === "==") return `__XL_EQ(${lhs}, ${rhs})`;
-                        if (op === "<>" || op === "!=") return `(!__XL_EQ(${lhs}, ${rhs}))`;
+                        if (op === "=" || op === "==") return `__XL_OP("==", ${lhs}, ${rhs})`;
+                        if (op === "<>" || op === "!=") return `__XL_OP("!=", ${lhs}, ${rhs})`;
                     }
                 }
 
@@ -5524,6 +5706,60 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 .replace(/\bCOLUMN\s*\(\s*\)/g, () => String((evalCoord?.col ?? 0) + 1))
                 .replace(/\bROW\s*\(\s*(?:(?:'[^']+'|[A-Za-z0-9_\u3040-\u30FF\u4E00-\u9FAF]+)!)?\$?[A-Za-z]+\$?(\d+)(?::\$?[A-Za-z]+\$?\d+)?\s*\)/g, (_, r) => String(parseInt(r, 10)))
                 .replace(/\bCOLUMN\s*\(\s*(?:(?:'[^']+'|[A-Za-z0-9_\u3040-\u30FF\u4E00-\u9FAF]+)!)?\$?([A-Za-z]+)\$?\d+(?::\$?[A-Za-z]+\$?\d+)?\s*\)/g, (_, colL) => String(columnLettersToIndex(colL) + 1));
+
+            // OFFSET の第1引数がセル/範囲参照の場合、値展開される前に座標オブジェクト __XL_REF(...) へ変換
+            const rewriteOffsetFirstArg = (src) => {
+                let out = "";
+                let i = 0;
+                while (i < src.length) {
+                    const rest = src.slice(i);
+                    const m = rest.match(/^OFFSET\s*\(/);
+                    if (m && (i === 0 || !/[A-Za-z0-9_$]/.test(src[i - 1]))) {
+                        const openEnd = i + m[0].length;
+                        let pos = openEnd;
+                        let depth = 1;
+                        let firstComma = -1;
+                        while (pos < src.length && depth > 0) {
+                            const ch = src[pos];
+                            if (ch === "(") depth++;
+                            else if (ch === ")") depth--;
+                            else if (ch === "," && depth === 1 && firstComma === -1) firstComma = pos;
+                            pos++;
+                        }
+                        if (depth !== 0) {
+                            out += src[i++];
+                            continue;
+                        }
+                        const argEnd = firstComma !== -1 ? firstComma : pos - 1;
+                        const firstArg = src.slice(openEnd, argEnd).trim();
+                        const tail = src.slice(argEnd, pos);
+
+                        const refMatch = firstArg.match(
+                            /^(?:(?:'([^']+)'|([A-Za-z0-9_\u3040-\u30FF\u4E00-\u9FAF]+))!)?\$?([A-Za-z]+)\$?(\d+)(?::\$?([A-Za-z]+)\$?(\d+))?$/
+                        );
+                        if (refMatch) {
+                            const sName = refMatch[1] ?? refMatch[2];
+                            const sIdx = sName ? sheets.findIndex(s => s.name === sName) : contextSheetIdx;
+                            const c1 = columnLettersToIndex(refMatch[3]);
+                            const r1 = parseInt(refMatch[4], 10);
+                            const c2 = refMatch[5] ? columnLettersToIndex(refMatch[5]) : c1;
+                            const r2 = refMatch[6] ? parseInt(refMatch[6], 10) : r1;
+                            const minR = Math.min(r1, r2), maxR = Math.max(r1, r2);
+                            const minC = Math.min(c1, c2), maxC = Math.max(c1, c2);
+                            out += `OFFSET(__XL_REF(${sIdx},${minR},${minC},${maxR},${maxC})${rewriteOffsetFirstArg(tail)}`;
+                        } else {
+                            out += `OFFSET(${rewriteOffsetFirstArg(firstArg)}${rewriteOffsetFirstArg(tail)}`;
+                        }
+                        i = pos;
+                    } else {
+                        out += src[i++];
+                    }
+                }
+                return out;
+            };
+            if (/\bOFFSET\s*\(/.test(expr)) {
+                expr = rewriteOffsetFirstArg(expr);
+            }
 
             // 他シート範囲参照（例: Sheet2!A1:C5 / '売上表'!A1:C5）
             expr = expr.replace(CROSS_SHEET_RANGE_REGEX, (_, qName, plainName, sRef, eRef) => {
@@ -5574,8 +5810,159 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 return toJSValueLiteral(val, true, stringLiterals);
             });
 
+            // 配列同士・配列とスカラーの四則/比較/単項演算を要素ごと演算 (__XL_OP / __XL_U) に書き換え
+            const rewriteArrayOps = (src) => {
+                const tokens = [];
+                const tokenRe = /\s*(?:(\d+(?:\.\d+)?(?:[eE][+-]?\d+)?|\.\d+(?:[eE][+-]?\d+)?)|([A-Za-z_$][A-Za-z0-9_$]*)|("(?:\\.|[^"\\])*")|(\*\*|<=|>=|==|!=|[()[\],+\-*/<>!]))/y;
+                let lastIdx = 0;
+                while (lastIdx < src.length) {
+                    const restWs = src.slice(lastIdx).match(/^\s+$/);
+                    if (restWs) break;
+                    tokenRe.lastIndex = lastIdx;
+                    const m = tokenRe.exec(src);
+                    if (!m) return src;
+                    if (m[1] !== undefined) tokens.push({ type: "num", val: m[1] });
+                    else if (m[2] !== undefined) tokens.push({ type: "id", val: m[2] });
+                    else if (m[3] !== undefined) tokens.push({ type: "str", val: m[3] });
+                    else tokens.push({ type: "op", val: m[4] });
+                    lastIdx = tokenRe.lastIndex;
+                }
+                if (!tokens.length) return src;
+
+                let idx = 0;
+                let failed = false;
+                const peek = () => tokens[idx] || null;
+                const consume = () => tokens[idx++];
+
+                const parseExpr = () => parseComparison();
+
+                const parseComparison = () => {
+                    let left = parseAdditive();
+                    while (peek() && peek().type === "op" && ["==", "!=", "<", "<=", ">", ">="].includes(peek().val)) {
+                        const op = consume().val;
+                        const right = parseAdditive();
+                        left = `__XL_OP("${op}",${left},${right})`;
+                    }
+                    return left;
+                };
+
+                const parseAdditive = () => {
+                    let left = parseMultiplicative();
+                    while (peek() && peek().type === "op" && (peek().val === "+" || peek().val === "-")) {
+                        const op = consume().val;
+                        const right = parseMultiplicative();
+                        left = `__XL_OP("${op}",${left},${right})`;
+                    }
+                    return left;
+                };
+
+                const parseMultiplicative = () => {
+                    let left = parsePower();
+                    while (peek() && peek().type === "op" && (peek().val === "*" || peek().val === "/")) {
+                        const op = consume().val;
+                        const right = parsePower();
+                        left = `__XL_OP("${op}",${left},${right})`;
+                    }
+                    return left;
+                };
+
+                const parsePower = () => {
+                    let left = parseUnary();
+                    if (peek() && peek().type === "op" && peek().val === "**") {
+                        consume();
+                        const right = parsePower();
+                        return `__XL_OP("**",${left},${right})`;
+                    }
+                    return left;
+                };
+
+                const parseUnary = () => {
+                    if (peek() && peek().type === "op" && (peek().val === "-" || peek().val === "+" || peek().val === "!")) {
+                        const op = consume().val;
+                        const operand = parseUnary();
+                        return `__XL_U("${op}",${operand})`;
+                    }
+                    return parsePrimary();
+                };
+
+                const parsePrimary = () => {
+                    const tok = peek();
+                    if (!tok) {
+                        failed = true;
+                        return "";
+                    }
+                    let node = "";
+                    if (tok.type === "num" || tok.type === "id" || tok.type === "str") {
+                        node = consume().val;
+                    } else if (tok.type === "op" && tok.val === "(") {
+                        consume();
+                        const inner = parseExpr();
+                        if (!peek() || peek().val !== ")") {
+                            failed = true;
+                            return "";
+                        }
+                        consume();
+                        node = `(${inner})`;
+                    } else if (tok.type === "op" && tok.val === "[") {
+                        consume();
+                        const elems = [];
+                        if (peek() && peek().val !== "]") {
+                            while (true) {
+                                elems.push(parseExpr());
+                                if (peek() && peek().val === ",") {
+                                    consume();
+                                    continue;
+                                }
+                                break;
+                            }
+                        }
+                        if (!peek() || peek().val !== "]") {
+                            failed = true;
+                            return "";
+                        }
+                        consume();
+                        node = `[${elems.join(",")}]`;
+                    } else {
+                        failed = true;
+                        return "";
+                    }
+
+                    // 関数呼び出し（LAMBDA(...)(10, 25) のような連続呼び出しにも対応）
+                    while (peek() && peek().type === "op" && peek().val === "(") {
+                        consume();
+                        const args = [];
+                        if (peek() && peek().val !== ")") {
+                            while (true) {
+                                if (peek() && (peek().val === "," || peek().val === ")")) {
+                                    args.push("undefined");
+                                } else {
+                                    args.push(parseExpr());
+                                }
+                                if (peek() && peek().val === ",") {
+                                    consume();
+                                    continue;
+                                }
+                                break;
+                            }
+                        }
+                        if (!peek() || peek().val !== ")") {
+                            failed = true;
+                            return "";
+                        }
+                        consume();
+                        node = `${node}(${args.join(",")})`;
+                    }
+                    return node;
+                };
+
+                const parsed = parseExpr();
+                if (failed || idx !== tokens.length) return src;
+                return parsed;
+            };
+            expr = rewriteArrayOps(expr);
+
             // LET / LAMBDA を安全なネスト式へ展開（Excel準拠：変数名の大文字小文字非区別）
-            const BUILTIN_FN_SET = new Set(FORMULA_FN_NAMES);
+            const BUILTIN_FN_SET = new Set(["INDIRECT", "OFFSET", ...FORMULA_FN_NAMES]);
             const splitTopLevelArgs = (inner) => {
                 const args = [];
                 let buf = "";
@@ -5670,7 +6057,10 @@ export default async function initSpreadsheetApp(content, options = {}) {
             }
 
             // 文字列リテラル復元前に、許可された識別子のみであることを検証（任意JS実行防止 & #NAME? 判定）
-            const ALLOWED_IDENTIFIERS = new Set(["EXCEL_BLANK_CELL", "__XL_EQ", "true", "false", ...FORMULA_FN_NAMES]);
+            const ALLOWED_IDENTIFIERS = new Set([
+                "EXCEL_BLANK_CELL", "__XL_EQ", "__XL_OP", "__XL_U", "__XL_REF",
+                "INDIRECT", "OFFSET", "true", "false", "undefined", ...FORMULA_FN_NAMES
+            ]);
             const unsafeIdentMatch = expr.match(/\b[A-Za-z_$][A-Za-z0-9_$]*\b/g);
             if (unsafeIdentMatch) {
                 for (const ident of unsafeIdentMatch) {
@@ -5683,17 +6073,147 @@ export default async function initSpreadsheetApp(content, options = {}) {
 
             expr = expr.replace(/__STR_LIT_(\d+)__/g, (_, idx) => stringLiterals[Number(idx)]);
 
+            const makeXlRef = (sheetIdx, r1, c1, r2, c2) => ({ __isXlRef: true, sheetIdx, r1, c1, r2, c2 });
+
+            const runtimeIndirect = (refText, a1 = true) => {
+                const raw = String(unwrapBlank(refText) ?? "").trim();
+                if (!raw) return "#REF!";
+                const isA1 = typeof a1 === "string"
+                    ? !["FALSE", "0"].includes(a1.trim().toUpperCase())
+                    : Boolean(a1);
+                if (!isA1) return "#REF!";
+
+                const sheetSplit = raw.match(/^(?:(?:'([^']+)'|([A-Za-z0-9_\u3040-\u30FF\u4E00-\u9FAF]+))!)?(.+)$/);
+                if (!sheetSplit) return "#REF!";
+                const sName = sheetSplit[1] ?? sheetSplit[2];
+                const targetSIdx = sName ? sheets.findIndex(s => s.name === sName) : contextSheetIdx;
+                if (targetSIdx < 0 || !sheets[targetSIdx]) return "#REF!";
+
+                const body = sheetSplit[3].trim();
+                let maxR = rowCount - 1;
+                let maxC = currentColumns - 1;
+                if (targetSIdx !== activeSheetIndex && Array.isArray(sheets[targetSIdx]?.cells)) {
+                    for (const item of sheets[targetSIdx].cells) {
+                        const ir = Number(item.r) || 0;
+                        const ic = Number(item.c) || 0;
+                        if (ir > maxR) maxR = ir;
+                        if (ic > maxC) maxC = ic;
+                    }
+                }
+
+                const buildMat = (r1, c1, r2, c2) => {
+                    const rs = Math.min(r1, r2), re = Math.min(Math.max(r1, r2), maxR);
+                    const cs = Math.min(c1, c2), ce = Math.min(Math.max(c1, c2), maxC);
+                    const mat = [];
+                    for (let r = rs; r <= re; r++) {
+                        const rowVals = [];
+                        for (let c = cs; c <= ce; c++) {
+                            rowVals.push(getSheetCellValue(targetSIdx, r, c, visited));
+                        }
+                        mat.push(rowVals);
+                    }
+                    return mat;
+                };
+
+                const rangeM = body.match(/^\$?([A-Za-z]+)\$?(\d+):\$?([A-Za-z]+)\$?(\d+)$/);
+                if (rangeM) {
+                    return buildMat(
+                        parseInt(rangeM[2], 10),
+                        columnLettersToIndex(rangeM[1]),
+                        parseInt(rangeM[4], 10),
+                        columnLettersToIndex(rangeM[3])
+                    );
+                }
+
+                const colRangeM = body.match(/^\$?([A-Za-z]+):\$?([A-Za-z]+)$/);
+                if (colRangeM) {
+                    return buildMat(1, columnLettersToIndex(colRangeM[1]), maxR, columnLettersToIndex(colRangeM[2]));
+                }
+
+                const rowRangeM = body.match(/^\$?(\d+):\$?(\d+)$/);
+                if (rowRangeM) {
+                    return buildMat(parseInt(rowRangeM[1], 10), 0, parseInt(rowRangeM[2], 10), maxC);
+                }
+
+                const cellM = body.match(/^\$?([A-Za-z]+)\$?(\d+)$/);
+                if (cellM) {
+                    const v = getSheetCellValue(targetSIdx, parseInt(cellM[2], 10), columnLettersToIndex(cellM[1]), visited);
+                    return isBlankVal(v) ? EXCEL_BLANK_CELL : v;
+                }
+
+                return "#REF!";
+            };
+
+            const runtimeOffset = (refObj, rowOff, colOff, height = null, width = null) => {
+                if (!refObj || !refObj.__isXlRef) return "#VALUE!";
+                if (refObj.sheetIdx < 0 || !sheets[refObj.sheetIdx]) return "#REF!";
+                const dr = Math.trunc(Number(unwrapBlank(rowOff)));
+                const dc = Math.trunc(Number(unwrapBlank(colOff)));
+                if (Number.isNaN(dr) || Number.isNaN(dc)) return "#VALUE!";
+
+                const baseH = refObj.r2 - refObj.r1 + 1;
+                const baseW = refObj.c2 - refObj.c1 + 1;
+                const h = (height == null || isBlankVal(height)) ? baseH : Math.trunc(Number(unwrapBlank(height)));
+                const w = (width == null || isBlankVal(width)) ? baseW : Math.trunc(Number(unwrapBlank(width)));
+                if (Number.isNaN(h) || Number.isNaN(w)) return "#VALUE!";
+                if (h === 0 || w === 0) return "#REF!";
+
+                const anchorR = refObj.r1 + dr;
+                const anchorC = refObj.c1 + dc;
+                const rStart = h > 0 ? anchorR : anchorR + h + 1;
+                const rEnd = h > 0 ? anchorR + h - 1 : anchorR;
+                const cStart = w > 0 ? anchorC : anchorC + w + 1;
+                const cEnd = w > 0 ? anchorC + w - 1 : anchorC;
+                if (rStart < 1 || cStart < 0) return "#REF!";
+
+                if (rStart === rEnd && cStart === cEnd) {
+                    const v = getSheetCellValue(refObj.sheetIdx, rStart, cStart, visited);
+                    return isBlankVal(v) ? EXCEL_BLANK_CELL : v;
+                }
+                const out = [];
+                for (let r = rStart; r <= rEnd; r++) {
+                    const rowVals = [];
+                    for (let c = cStart; c <= cEnd; c++) {
+                        rowVals.push(getSheetCellValue(refObj.sheetIdx, r, c, visited));
+                    }
+                    out.push(rowVals);
+                }
+                return out;
+            };
+
             let evaluator = compiledFormulaCache.get(expr);
             if (!evaluator) {
-                evaluator = new Function("EXCEL_BLANK_CELL", "__XL_EQ", ...FORMULA_FN_NAMES, `"use strict"; return (${expr});`);
+                evaluator = new Function(
+                    "EXCEL_BLANK_CELL",
+                    "__XL_EQ",
+                    "__XL_OP",
+                    "__XL_U",
+                    "__XL_REF",
+                    "INDIRECT",
+                    "OFFSET",
+                    ...FORMULA_FN_NAMES,
+                    `"use strict"; return (${expr});`
+                );
                 if (compiledFormulaCache.size > 2000) compiledFormulaCache.clear();
                 compiledFormulaCache.set(expr, evaluator);
             }
-            const rawEval = evaluator(EXCEL_BLANK_CELL, excelOpEquals, ...FORMULA_FN_VALUES);
-            const result = unwrapBlank(rawEval);
+            const rawEval = evaluator(
+                EXCEL_BLANK_CELL,
+                (a, b) => excelBinaryOp("==", a, b),
+                excelBinaryOp,
+                excelUnaryOp,
+                makeXlRef,
+                runtimeIndirect,
+                runtimeOffset,
+                ...FORMULA_FN_VALUES
+            );
+            let result = unwrapBlank(rawEval);
             if (typeof result === "number") {
                 if (Number.isNaN(result)) return "#VALUE!";
                 if (!Number.isFinite(result)) return "#DIV/0!";
+                // Excel準拠：15桁有効数字で浮動小数点誤差（例: 1650.0000000000002 → 1650）を正規化
+                result = Number(result.toPrecision(15));
+                if (Object.is(result, -0)) result = 0;
             }
             if (result instanceof Date && !isNaN(result.getTime())) {
                 return formatDate(result);
@@ -5761,7 +6281,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
         wrap.remove();
     }
 
-    function wrapOverflowSpan(td, align, leftSpace, rightSpace) {
+    function wrapOverflowSpan(td, align, leftSpace, rightSpace, opts = {}) {
         let wrap = td.querySelector(":scope > .ss-overflow-wrap");
         if (!wrap) {
             wrap = document.createElement("span");
@@ -5781,9 +6301,22 @@ export default async function initSpreadsheetApp(content, options = {}) {
             wrap.appendChild(inner);
             td.insertBefore(wrap, td.firstChild);
         }
-        wrap.className = `ss-overflow-wrap ss-ov-${align}`;
-        wrap.style.setProperty("--ov-left", `${Math.max(0, Math.round(leftSpace))}px`);
-        wrap.style.setProperty("--ov-right", `${Math.max(0, Math.round(rightSpace))}px`);
+
+        if (opts.vertical) {
+            const vAlign = opts.vAlign || "top";
+            const hAlign = opts.hAlign || "right";
+            wrap.className = `ss-overflow-wrap ss-ov-vertical ss-ov-v-${vAlign} ss-ov-vh-${hAlign}`;
+            wrap.style.setProperty("--ov-top", `${Math.max(0, Math.round(opts.topSpace || 0))}px`);
+            wrap.style.setProperty("--ov-bottom", `${Math.max(0, Math.round(opts.bottomSpace || 0))}px`);
+            wrap.style.setProperty("--ov-left", `${Math.max(0, Math.round(leftSpace || 0))}px`);
+            wrap.style.setProperty("--ov-right", `${Math.max(0, Math.round(rightSpace || 0))}px`);
+        } else {
+            wrap.className = `ss-overflow-wrap ss-ov-${align}`;
+            wrap.style.setProperty("--ov-top", "4px");
+            wrap.style.setProperty("--ov-bottom", "4px");
+            wrap.style.setProperty("--ov-left", `${Math.max(0, Math.round(leftSpace || 0))}px`);
+            wrap.style.setProperty("--ov-right", `${Math.max(0, Math.round(rightSpace || 0))}px`);
+        }
     }
 
     let overflowUpdateRaf = 0;
@@ -5824,10 +6357,17 @@ export default async function initSpreadsheetApp(content, options = {}) {
             }
         }
 
+        const allRows = tbody.rows;
+        const getRowHeightPx = (rTr) => (rTr ? (parseInt(rTr.style.height, 10) || rTr.offsetHeight || 30) : 30);
+        const occupiedVerticalCells = new Set();
+
         for (const tr of rowsToScan) {
             if (!tr) continue;
+            const rowIdx = tr.sectionRowIndex;
             const cells = tr.cells;
             const colCount = cells.length - 1;
+            const occupiedCols = new Set();
+
             for (let c = 0; c < colCount; c++) {
                 const td = cells[c + 1];
                 if (!td || td.style.display === "none") continue;
@@ -5841,8 +6381,139 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 td.classList.add("ss-has-content");
 
                 const isVertical = td.style.writingMode === "vertical-rl" || td.style.writingMode === "vertical-lr";
-                if (td.style.whiteSpace === "pre-wrap" || isVertical || isCellEditing(td) || td.dataset.cfIcon) {
+                if (td.style.whiteSpace === "pre-wrap" || isCellEditing(td) || td.dataset.cfIcon) {
                     unwrapOverflowSpan(td);
+                    continue;
+                }
+
+                if (isVertical) {
+                    const rowSpan = parseInt(td.getAttribute("rowspan") || "1", 10);
+                    const colSpan = parseInt(td.getAttribute("colspan") || "1", 10);
+                    let cellTotalH = 0;
+                    for (let k = 0; k < rowSpan; k++) {
+                        const spanTr = allRows[rowIdx + k];
+                        if (spanTr && spanTr.style.display !== "none") {
+                            cellTotalH += getRowHeightPx(spanTr);
+                        }
+                    }
+                    let cellTotalW = 0;
+                    for (let k = 0; k < colSpan; k++) {
+                        cellTotalW += getColumnWidth(c + k);
+                    }
+                    const cellInnerH = Math.max(8, cellTotalH - 4);
+                    const cellInnerW = Math.max(8, cellTotalW - 8);
+
+                    const fSizeNum = parseFloat(td.style.fontSize || "14px") || 14;
+                    const lines = text.split("\n");
+                    let maxChars = 0;
+                    for (let i = 0; i < lines.length; i++) {
+                        const len = Array.from(lines[i]).length;
+                        if (len > maxChars) maxChars = len;
+                    }
+                    const estTextH = Math.ceil(maxChars * fSizeNum * 1.15);
+                    const estTextW = Math.ceil(lines.length * fSizeNum * 1.35);
+
+                    if (estTextH <= cellInnerH && estTextW <= cellInnerW) {
+                        unwrapOverflowSpan(td);
+                        continue;
+                    }
+
+                    const vAlign = td.style.verticalAlign === "bottom"
+                        ? "bottom"
+                        : (td.style.verticalAlign === "middle" ? "middle" : "top");
+                    const hAlign = td.style.textAlign === "center"
+                        ? "center"
+                        : (td.style.textAlign === "left" ? "left" : "right");
+                    const isRowFrozen = td.classList.contains("ss-frozen-row");
+                    const isColFrozen = td.classList.contains("ss-frozen-col");
+
+                    const isRowSliceEmpty = (targetRowIdx) => {
+                        const targetTr = allRows[targetRowIdx];
+                        if (!targetTr || targetTr.style.display === "none") return false;
+                        for (let k = 0; k < colSpan; k++) {
+                            const targetTd = targetTr.cells[c + k + 1];
+                            if (!targetTd || targetTd.style.display === "none" || targetTd.textContent !== "") return false;
+                            if (occupiedVerticalCells.has(`${targetRowIdx},${c + k}`)) return false;
+                            if (isRowFrozen !== targetTd.classList.contains("ss-frozen-row")) return false;
+                        }
+                        return true;
+                    };
+
+                    const overflowH = Math.max(0, estTextH - cellInnerH) + 12;
+                    let topSpace = 0;
+                    if (estTextH > cellInnerH && (vAlign === "bottom" || vAlign === "middle")) {
+                        const needT = vAlign === "middle" ? Math.ceil(overflowH / 2) : overflowH;
+                        for (let ur = rowIdx - 1; ur >= 0 && topSpace < needT; ur--) {
+                            if (!isRowSliceEmpty(ur)) break;
+                            topSpace += getRowHeightPx(allRows[ur]);
+                        }
+                    }
+
+                    let bottomSpace = 0;
+                    const usedBottomRows = [];
+                    if (estTextH > cellInnerH && (vAlign === "top" || vAlign === "middle")) {
+                        const needB = vAlign === "middle" ? Math.ceil(overflowH / 2) : overflowH;
+                        for (let dr = rowIdx + rowSpan; dr < allRows.length && bottomSpace < needB; dr++) {
+                            if (!isRowSliceEmpty(dr)) break;
+                            bottomSpace += getRowHeightPx(allRows[dr]);
+                            usedBottomRows.push(dr);
+                        }
+                    }
+
+                    // 改行付き縦書き（vertical-rl）が横幅を超えた場合は左隣の空白列へ展開
+                    let leftSpace = 0;
+                    if (estTextW > cellInnerW) {
+                        const needL = Math.ceil(estTextW - cellInnerW) + 8;
+                        for (let lc = c - 1; lc >= 0 && leftSpace < needL; lc--) {
+                            if (occupiedCols.has(lc)) break;
+                            let colClear = true;
+                            for (let k = 0; k < rowSpan; k++) {
+                                const prevTd = allRows[rowIdx + k]?.cells[lc + 1];
+                                if (!prevTd || prevTd.style.display === "none" || prevTd.textContent !== "") {
+                                    colClear = false;
+                                    break;
+                                }
+                                if (!isColFrozen && prevTd.classList.contains("ss-frozen-col")) {
+                                    colClear = false;
+                                    break;
+                                }
+                            }
+                            if (!colClear) break;
+                            leftSpace += getColumnWidth(lc);
+                        }
+                    }
+
+                    if (topSpace > 0 || bottomSpace > 0 || leftSpace > 0) {
+                        usedBottomRows.forEach(dr => {
+                            for (let k = 0; k < colSpan; k++) {
+                                occupiedVerticalCells.add(`${dr},${c + k}`);
+                            }
+                        });
+                        td.classList.add("ss-text-overflow");
+                        wrapOverflowSpan(
+                            td,
+                            "left",
+                            leftSpace > 0 ? Math.max(0, leftSpace - 2) : 0,
+                            0,
+                            {
+                                vertical: true,
+                                vAlign,
+                                hAlign,
+                                topSpace: topSpace > 0 ? Math.max(0, topSpace - 2) : 0,
+                                bottomSpace: bottomSpace > 0 ? Math.max(0, bottomSpace - 2) : 0
+                            }
+                        );
+                    } else if (vAlign === "bottom" || vAlign === "middle") {
+                        wrapOverflowSpan(td, "left", 0, 0, {
+                            vertical: true,
+                            vAlign,
+                            hAlign,
+                            topSpace: 0,
+                            bottomSpace: 0
+                        });
+                    } else {
+                        unwrapOverflowSpan(td);
+                    }
                     continue;
                 }
 
@@ -5890,6 +6561,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 if (align === "right" || align === "center") {
                     const needL = align === "center" ? Math.ceil(overflowNeeded / 2) : overflowNeeded;
                     for (let lc = c - 1; lc >= 0 && leftSpace < needL; lc--) {
+                        if (occupiedCols.has(lc)) break;
                         const prevTd = cells[lc + 1];
                         if (!prevTd || prevTd.style.display === "none" || prevTd.textContent !== "") break;
                         if (!isColFrozen && prevTd.classList.contains("ss-frozen-col")) break;
@@ -5898,18 +6570,23 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 }
 
                 let rightSpace = 0;
+                const usedRightCols = [];
                 if (align === "left" || align === "center") {
                     const needR = align === "center" ? Math.ceil(overflowNeeded / 2) : overflowNeeded;
                     for (let rc = c + colSpan; rc < colCount && rightSpace < needR; rc++) {
                         const nextTd = cells[rc + 1];
                         if (!nextTd || nextTd.style.display === "none" || nextTd.textContent !== "") break;
                         rightSpace += getColumnWidth(rc);
+                        usedRightCols.push(rc);
                     }
                 }
 
                 if (leftSpace > 0 || rightSpace > 0) {
+                    usedRightCols.forEach(rc => occupiedCols.add(rc));
                     td.classList.add("ss-text-overflow");
-                    wrapOverflowSpan(td, align, leftSpace, rightSpace);
+                    const safeLeft = leftSpace > 0 ? Math.max(0, leftSpace - 2) : 0;
+                    const safeRight = rightSpace > 0 ? Math.max(0, rightSpace - 2) : 0;
+                    wrapOverflowSpan(td, align, safeLeft, safeRight);
                 } else if (align === "right" || align === "center") {
                     // 隣接セルに阻まれてはみ出せない場合も、右揃え・中央揃えの基準位置を崩さず自セル内でクリップ
                     wrapOverflowSpan(td, align, 0, 0);
@@ -7364,6 +8041,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
         appRoot.querySelectorAll("[data-numfmt]").forEach(btn => {
             btn.classList.toggle("selected", btn.dataset.numfmt === numFmt);
         });
+        syncFilterButtonState(target);
     }
 
     function updateSelectedCellsDisplay() {
@@ -8390,6 +9068,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
         delete formulaBarInput.dataset.manualHeight;
         autoResizeFormulaBar();
         updateHeaderSelectionHighlights(Array.from(tbody.querySelectorAll("td.selected")));
+        syncFilterButtonState(activeCell);
     }
 
     const SEL_EDGE_CLASSES = ["sel-edge-top", "sel-edge-bottom", "sel-edge-left", "sel-edge-right"];
@@ -8764,21 +9443,101 @@ export default async function initSpreadsheetApp(content, options = {}) {
         const lines = text.split("\n");
         const isWrapped = cell.style.whiteSpace === "pre-wrap";
 
-        // 縦書きセル（writing-mode: vertical-rl）専用レイアウト計算
+        // 縦書きセル（writing-mode: vertical-rl / vertical-lr）専用レイアウト計算
         if (m.isVertical) {
-            const maxCharsInLine = Math.max(1, ...lines.map(l => Array.from(l).length));
-            const charAdvance = Math.ceil(m.fSizeNum * 1.15);
-            const neededH = Math.max(m.minH, maxCharsInLine * charAdvance + 14);
-            const neededW = Math.max(m.cellW, lines.length * m.lineHeightPx + 14);
+            const vAlign = cell.style.verticalAlign === "bottom"
+                ? "bottom"
+                : (cell.style.verticalAlign === "middle" ? "middle" : "top");
+            const hAlign = cell.style.textAlign === "center"
+                ? "center"
+                : (cell.style.textAlign === "left" ? "left" : "right");
 
-            cellEditor.style.left = `${m.left}px`;
+            // 縦書きでは text-align が上下（インライン方向）を制御する
+            cellEditor.style.textAlign = vAlign === "bottom"
+                ? "end"
+                : (vAlign === "middle" ? "center" : "start");
+
+            const theadHeight = theadRow.offsetHeight || 30;
+            const rowHeaderWidth = parseInt(colgroup.children[0]?.style.width, 10) || 54;
+            const tableRight = Math.max(table.offsetWidth, cachedTableWidth, m.left + m.cellW);
+            const tableBottom = Math.max(table.offsetHeight, m.top + m.cellH);
+            const charAdvance = Math.ceil(m.fSizeNum * 1.15);
+
+            let targetTop = m.top;
+            let targetH = m.minH;
+
+            if (!isWrapped) {
+                const maxCharsInLine = Math.max(1, ...lines.map(l => Array.from(l).length));
+                const neededH = Math.max(m.minH, maxCharsInLine * charAdvance + 14);
+                if (vAlign === "bottom") {
+                    const maxH = Math.max(m.minH, (m.top + m.cellH) - theadHeight);
+                    targetH = Math.min(neededH, maxH);
+                    targetTop = (m.top + m.cellH) - targetH;
+                } else if (vAlign === "middle") {
+                    const maxH = Math.max(m.minH, tableBottom - theadHeight);
+                    targetH = Math.min(neededH, maxH);
+                    const centerY = m.top + m.cellH / 2;
+                    targetTop = Math.round(centerY - targetH / 2);
+                    if (targetTop < theadHeight) targetTop = theadHeight;
+                    if (targetTop + targetH > tableBottom) targetTop = Math.max(theadHeight, tableBottom - targetH);
+                } else {
+                    const maxH = Math.max(m.minH, tableBottom - m.top);
+                    targetH = Math.min(neededH, maxH);
+                    targetTop = m.top;
+                }
+            }
+
+            let visualCols = lines.length;
+            if (isWrapped) {
+                const innerH = Math.max(16, targetH - 12);
+                const charsPerCol = Math.max(1, Math.floor(innerH / charAdvance));
+                visualCols = 0;
+                for (let i = 0; i < lines.length; i++) {
+                    const len = Array.from(lines[i]).length;
+                    visualCols += Math.max(1, Math.ceil((len || 1) / charsPerCol));
+                }
+            }
+
+            const textBlockW = visualCols * m.lineHeightPx;
+            const neededW = Math.max(m.cellW, textBlockW + 14);
+            let targetW = m.cellW;
+            let targetLeft = m.left;
+
+            if (m.writingMode === "vertical-lr") {
+                const maxW = Math.max(m.cellW, tableRight - m.left);
+                targetW = Math.min(neededW, maxW);
+                targetLeft = m.left;
+            } else {
+                // vertical-rl は右から左へ列が増えるため、セル右端を基準に左方向へ拡張
+                const maxW = Math.max(m.cellW, (m.left + m.cellW) - rowHeaderWidth);
+                targetW = Math.min(neededW, maxW);
+                targetLeft = (m.left + m.cellW) - targetW;
+            }
+
+            const padY = 4;
+            const innerBoxW = Math.max(0, targetW - 4);
+            let padRight = 4;
+            let padLeft = 4;
+            if (!isWrapped && textBlockW < innerBoxW - 8) {
+                if (hAlign === "center") {
+                    const offsetPad = Math.max(4, Math.floor((innerBoxW - textBlockW) / 2));
+                    if (m.writingMode === "vertical-lr") padLeft = offsetPad;
+                    else padRight = offsetPad;
+                } else if (hAlign === "left" && m.writingMode !== "vertical-lr") {
+                    padRight = Math.max(4, innerBoxW - textBlockW - 4);
+                } else if (hAlign === "right" && m.writingMode === "vertical-lr") {
+                    padLeft = Math.max(4, innerBoxW - textBlockW - 4);
+                }
+            }
+
+            cellEditor.style.left = `${targetLeft}px`;
+            cellEditor.style.top = `${targetTop}px`;
+            cellEditor.style.width = `${targetW}px`;
+            cellEditor.style.height = `${targetH}px`;
             cellEditor.style.whiteSpace = isWrapped ? "pre-wrap" : "pre";
-            cellEditor.style.padding = "4px 4px";
-            cellEditor.style.width = `${neededW}px`;
-            cellEditor.style.height = `${isWrapped ? Math.max(m.minH, cellEditor.scrollHeight + 4) : neededH}px`;
+            cellEditor.style.padding = `${padY}px ${padRight}px ${padY}px ${padLeft}px`;
             return;
         }
-
         if (measureCtx) {
             measureCtx.font = `${m.fStyle} ${m.fWeight} ${m.fSize} ${m.fFamily}`;
         }
@@ -9222,7 +9981,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
         if (e.key === "Enter" || e.key === "Tab") {
             e.preventDefault();
             e.stopPropagation();
-            if (e.key === "Enter" && clipboardData && tbody.querySelector(".copy-marching-ants")) {
+            if (e.key === "Enter" && clipboardData && isCopyAnimationActive()) {
                 void pasteClipboardData("all");
                 return;
             }
@@ -9304,6 +10063,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
     }
 
     function closeCellEditor() {
+        const prevEditing = editingCell;
         editingCell = null;
         editingRichRuns = null;
         editorMetricsCache = null;
@@ -9313,6 +10073,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
         cellEditor.style.textOrientation = "";
         cellEditor.value = "";
         isComposing = false;
+        if (prevEditing) scheduleTextOverflowUpdate();
         if (activeCell) attachCellDropdownButton(activeCell);
     }
 
@@ -9339,6 +10100,8 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 }
             }
         }
+        unwrapOverflowSpan(cell);
+        cell.classList.remove("ss-text-overflow");
         editingCell = cell;
         cell.dataset.editBy = editBy;
         updateOSStatusBar(["type", "ime", "backspace"].includes(editBy) ? "入力" : "編集");
@@ -10746,7 +11509,35 @@ export default async function initSpreadsheetApp(content, options = {}) {
     // =========================================================
     // コピー・切り取り＆貼り付け（値のみ貼り付け対応）
     // =========================================================
+    const copyAntsBox = document.createElement("div");
+    copyAntsBox.className = "ss-copy-ants-box";
+    spreadsheetContent.appendChild(copyAntsBox);
+    let copyAntsBounds = null;
+
+    function isCopyAnimationActive() {
+        return copyAntsBox.style.display !== "none" || Boolean(tbody.querySelector(".copy-marching-ants"));
+    }
+
+    function syncCopyAntsBoxPosition() {
+        if (!copyAntsBounds) {
+            copyAntsBox.style.display = "none";
+            return;
+        }
+        const rect = getMovePreviewLocalRect(copyAntsBounds);
+        if (!rect || rect.right <= rect.left || rect.bottom <= rect.top) {
+            copyAntsBox.style.display = "none";
+            return;
+        }
+        copyAntsBox.style.left = `${rect.left}px`;
+        copyAntsBox.style.top = `${rect.top}px`;
+        copyAntsBox.style.width = `${Math.max(4, rect.right - rect.left)}px`;
+        copyAntsBox.style.height = `${Math.max(4, rect.bottom - rect.top)}px`;
+        copyAntsBox.style.display = "block";
+    }
+
     function clearCopyAnimation() {
+        copyAntsBounds = null;
+        copyAntsBox.style.display = "none";
         tbody.querySelectorAll(".copy-marching-ants").forEach(c => c.classList.remove("copy-marching-ants"));
     }
 
@@ -10810,7 +11601,6 @@ export default async function initSpreadsheetApp(content, options = {}) {
         clearCopyAnimation();
         const selectedCells = Array.from(tbody.querySelectorAll("td.selected"));
         if (!selectedCells.length) return;
-        selectedCells.forEach(c => c.classList.add("copy-marching-ants"));
 
         let minRow = Infinity, maxRow = -Infinity, minCol = Infinity, maxCol = -Infinity;
         let coveredCount = 0;
@@ -10825,6 +11615,12 @@ export default async function initSpreadsheetApp(content, options = {}) {
             coveredCount += rs * cs;
         });
         const isContiguous = coveredCount === (maxRow - minRow + 1) * (maxCol - minCol + 1);
+        if (isContiguous) {
+            copyAntsBounds = { minRow, maxRow, minCol, maxCol };
+            syncCopyAntsBoxPosition();
+        } else {
+            selectedCells.forEach(c => c.classList.add("copy-marching-ants"));
+        }
         const tsvText = buildTSVFromRange(minRow, maxRow, minCol, maxCol);
 
         const snapshotCell = (cell) => ({
@@ -12639,15 +13435,16 @@ export default async function initSpreadsheetApp(content, options = {}) {
         target.freezeRows = freezeRows;
         target.freezeCols = freezeCols;
         target.textboxes = textboxes;
-        target.autoFilter = autoFilterState
-            ? {
-                headerRow: autoFilterState.headerRow,
-                minCol: autoFilterState.minCol,
-                maxCol: autoFilterState.maxCol,
-                maxRow: autoFilterState.maxRow,
-                filters: Array.from(autoFilterState.filters.entries()).map(([col, set]) => [col, Array.from(set)])
-            }
-            : null;
+        target.autoFilters = autoFilterStates.map(af => ({
+            id: af.id,
+            tableId: af.tableId || null,
+            headerRow: af.headerRow,
+            minCol: af.minCol,
+            maxCol: af.maxCol,
+            maxRow: af.maxRow,
+            filters: Array.from(af.filters.entries()).map(([col, set]) => [col, Array.from(set)])
+        }));
+        target.autoFilter = null;
         target.activeCoord = activeCell
             ? { row: parseInt(activeCell.dataset.row, 10), col: parseInt(activeCell.dataset.col, 10) }
             : { row: 1, col: 0 };
@@ -12716,6 +13513,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
         spreadsheetContent.querySelectorAll(".floating-textbox").forEach(b => removeFloatingObject(b)); // ★ここを変更
         closeCellDropdownList();
         hideCellDropdownButton();
+        clearCopyAnimation();
         clearAllAutoFilters();
         setFreezePanes(0, 0, { silent: true });
         if (resetHistory) {
@@ -12902,31 +13700,20 @@ export default async function initSpreadsheetApp(content, options = {}) {
             });
         }
 
-        if (sheetData.autoFilter) {
-            const af = sheetData.autoFilter;
-            autoFilterState = {
+        const rawAutoFilters = Array.isArray(sheetData.autoFilters)
+            ? sheetData.autoFilters
+            : (sheetData.autoFilter ? [sheetData.autoFilter] : []);
+        if (rawAutoFilters.length > 0) {
+            autoFilterStates = rawAutoFilters.map((af, idx) => ({
+                id: af.id || `af_restored_${Date.now()}_${idx}`,
+                tableId: af.tableId || null,
                 headerRow: af.headerRow,
                 minCol: af.minCol,
                 maxCol: af.maxCol,
                 maxRow: af.maxRow,
                 filters: new Map((af.filters || []).map(([col, vals]) => [Number(col), new Set(vals)]))
-            };
-            for (let c = af.minCol; c <= af.maxCol; c++) {
-                const headerCell = getVisibleCell(af.headerRow, c);
-                if (!headerCell) continue;
-                const arrow = document.createElement("span");
-                arrow.className = "ss-filter-arrow";
-                arrow.dataset.filterCol = String(c);
-                arrow.textContent = "";
-                arrow.title = "フィルターと並べ替え";
-                arrow.addEventListener("mousedown", (e) => {
-                    e.stopPropagation();
-                    e.preventDefault();
-                    openFilterDropdownMenu(c, arrow);
-                }, { signal });
-                headerCell.appendChild(arrow);
-            }
-            appRoot.querySelector(".ss-toggle-filter-btn")?.classList.add("selected");
+            }));
+            renderAutoFilterArrows();
             applyAutoFilterRows();
         }
 
@@ -14142,36 +14929,36 @@ export default async function initSpreadsheetApp(content, options = {}) {
             }
         });
 
-        // オートフィルターの座標・対象列番号も行列の挿入・削除に追従
-        if (snap.autoFilter) {
-            const af = snap.autoFilter;
-            if (mode === "insert-row") {
-                if (af.headerRow >= targetRow) af.headerRow += 1;
-                if (af.maxRow >= targetRow) af.maxRow += 1;
-            } else if (mode === "delete-row") {
-                if (af.headerRow === targetRow) {
-                    snap.autoFilter = null;
-                } else {
-                    if (af.headerRow > targetRow) af.headerRow -= 1;
-                    if (af.maxRow >= targetRow) af.maxRow -= 1;
+        // 全オートフィルターの座標・対象列番号を行列の挿入・削除に追従
+        if (Array.isArray(snap.autoFilters) && snap.autoFilters.length > 0) {
+            snap.autoFilters = snap.autoFilters.map(af => {
+                const next = { ...af, filters: Array.isArray(af.filters) ? [...af.filters] : [] };
+                if (mode === "insert-row") {
+                    if (next.headerRow >= targetRow) next.headerRow += 1;
+                    if (next.maxRow >= targetRow) next.maxRow += 1;
+                } else if (mode === "delete-row") {
+                    if (next.headerRow === targetRow) return null;
+                    if (next.headerRow > targetRow) next.headerRow -= 1;
+                    if (next.maxRow >= targetRow) next.maxRow -= 1;
+                } else if (mode === "insert-col") {
+                    if (next.minCol >= targetCol) next.minCol += 1;
+                    if (next.maxCol >= targetCol) next.maxCol += 1;
+                    next.filters = next.filters.map(([col, vals]) => [col >= targetCol ? col + 1 : col, vals]);
+                } else if (mode === "delete-col") {
+                    if (targetCol >= next.minCol && targetCol <= next.maxCol) {
+                        next.maxCol -= 1;
+                        next.filters = next.filters
+                            .filter(([col]) => col !== targetCol)
+                            .map(([col, vals]) => [col > targetCol ? col - 1 : col, vals]);
+                        if (next.maxCol < next.minCol) return null;
+                    } else if (targetCol < next.minCol) {
+                        next.minCol -= 1;
+                        next.maxCol -= 1;
+                        next.filters = next.filters.map(([col, vals]) => [col - 1, vals]);
+                    }
                 }
-            } else if (mode === "insert-col") {
-                if (af.minCol >= targetCol) af.minCol += 1;
-                if (af.maxCol >= targetCol) af.maxCol += 1;
-                af.filters = af.filters.map(([col, vals]) => [col >= targetCol ? col + 1 : col, vals]);
-            } else if (mode === "delete-col") {
-                if (targetCol >= af.minCol && targetCol <= af.maxCol) {
-                    af.maxCol -= 1;
-                    af.filters = af.filters
-                        .filter(([col]) => col !== targetCol)
-                        .map(([col, vals]) => [col > targetCol ? col - 1 : col, vals]);
-                    if (af.maxCol < af.minCol) snap.autoFilter = null;
-                } else if (targetCol < af.minCol) {
-                    af.minCol -= 1;
-                    af.maxCol -= 1;
-                    af.filters = af.filters.map(([col, vals]) => [col - 1, vals]);
-                }
-            }
+                return next;
+            }).filter(Boolean);
         }
 
         // 条件付き書式の適用範囲も行列の挿入・削除に追従
@@ -14320,9 +15107,13 @@ export default async function initSpreadsheetApp(content, options = {}) {
 
         if (maxR <= minR) return;
 
-        // オートフィルター適用中は見出し行を自動的にソート対象外へ保護
-        if (autoFilterState && minR <= autoFilterState.headerRow && maxR > autoFilterState.headerRow) {
-            minR = autoFilterState.headerRow + 1;
+        // オートフィルター適用中は対象範囲に重なる見出し行を自動的にソート対象外へ保護
+        const matchedFilter = autoFilterStates.find(af =>
+            minR <= af.headerRow && maxR > af.headerRow &&
+            !(af.maxCol < minC || af.minCol > maxC)
+        );
+        if (matchedFilter) {
+            minR = matchedFilter.headerRow + 1;
         } else if (autoDetectedTable && maxR - minR >= 1) {
             // 自動検出時、1行目が見出し行（太字/背景色あり、または1行目が文字列で2行目が数値）なら除外
             const firstRowCells = [];
@@ -14482,7 +15273,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
 
         updateAllFormulas();
         applyConditionalFormats();
-        if (autoFilterState) applyAutoFilterRows();
+        if (autoFilterStates.length) applyAutoFilterRows();
         updateFillHandle();
         updateSelectedCellsDisplay();
         setDirtyState(true);
@@ -14728,7 +15519,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
 
         updateAllFormulas();
         applyConditionalFormats();
-        if (autoFilterState) applyAutoFilterRows();
+        if (autoFilterStates.length) applyAutoFilterRows();
         updateFillHandle();
         updateSelectedCellsDisplay();
         setDirtyState(true);
@@ -15282,6 +16073,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
         }
 
         applyConditionalFormats();
+        scheduleTextOverflowUpdate();
         updateToolbarState();
         setDirtyState(true);
         debouncedSaveState();
@@ -15502,17 +16294,15 @@ export default async function initSpreadsheetApp(content, options = {}) {
         tables.push(tbl);
         applyStructuredTableVisuals(tbl);
 
-        // オートフィルターも自動付与
-        if (useHeader && !autoFilterState) {
-            clearSelection();
-            const anchor = getVisibleCell(minRow, minCol);
-            if (anchor) setActiveCell(anchor, false);
-            for (let r = minRow; r <= maxRow; r++) {
-                for (let c = minCol; c <= maxCol; c++) {
-                    getVisibleCell(r, c)?.classList.add("selected");
-                }
-            }
-            toggleAutoFilter();
+        // 各テーブルごとに独立したオートフィルターを自動付与
+        if (useHeader) {
+            addAutoFilterForRange({
+                headerRow: minRow,
+                minCol,
+                maxCol,
+                maxRow,
+                tableId: tbl.id
+            });
         }
 
         statusBarState.stateText = `${tableName} を作成しました（構造化参照: ${tableName}[列名] 対応）`;
@@ -15546,6 +16336,8 @@ export default async function initSpreadsheetApp(content, options = {}) {
             }
             tbl.maxRow -= 1;
             tbl.hasTotalRow = false;
+            const tblFilter = getAutoFilterByTableId(tbl.id);
+            if (tblFilter) tblFilter.maxRow = tbl.maxRow;
             applyStructuredTableVisuals(tbl);
         } else {
             // 集計行を1行下に追加
@@ -15573,6 +16365,8 @@ export default async function initSpreadsheetApp(content, options = {}) {
                     }
                 }
             }
+            const tblFilter = getAutoFilterByTableId(tbl.id);
+            if (tblFilter) tblFilter.maxRow = dataEndR;
             applyStructuredTableVisuals(tbl);
         }
 
@@ -15643,6 +16437,10 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 }
             }
 
+            const tblFilter = getAutoFilterByTableId(tbl.id);
+            if (tblFilter) {
+                tblFilter.maxRow = tbl.hasTotalRow ? tbl.maxRow - 1 : tbl.maxRow;
+            }
             applyStructuredTableVisuals(tbl);
             break;
         }
@@ -16117,9 +16915,9 @@ export default async function initSpreadsheetApp(content, options = {}) {
 
 
     // =========================================================
-    // Excel 365準拠 オートフィルター機能
+    // Excel 365準拠 オートフィルター機能（複数テーブル／複数範囲対応）
     // =========================================================
-    let autoFilterState = null; // { headerRow, minCol, maxCol, maxRow, filters: Map<col, Set<string>> }
+    let autoFilterStates = []; // Array<{ id, tableId, headerRow, minCol, maxCol, maxRow, filters: Map<col, Set<string>> }>
     let activeFilterDropdownEl = null;
 
     function closeFilterDropdown() {
@@ -16127,43 +16925,155 @@ export default async function initSpreadsheetApp(content, options = {}) {
         activeFilterDropdownEl.remove();
         activeFilterDropdownEl = null;
     }
+
+    function getAutoFilterById(filterId) {
+        return autoFilterStates.find(af => af.id === filterId) || null;
+    }
+
+    function getAutoFilterByTableId(tableId) {
+        if (!tableId) return null;
+        return autoFilterStates.find(af => af.tableId === tableId) || null;
+    }
+
+    function getAutoFilterAtCoord(row, col) {
+        return autoFilterStates.find(
+            af => row >= af.headerRow && row <= af.maxRow && col >= af.minCol && col <= af.maxCol
+        ) || null;
+    }
+
+    function findActiveAutoFilterForCell(cell = null) {
+        const target = cell || activeCell || tbody.querySelector("td.selected");
+        if (!target || !target.dataset) return null;
+        const r = parseInt(target.dataset.row, 10);
+        const c = parseInt(target.dataset.col, 10);
+        if (Number.isNaN(r) || Number.isNaN(c)) return null;
+        const direct = getAutoFilterAtCoord(r, c);
+        if (direct) return direct;
+        const tbl = findTableAtCoord(r, c);
+        return tbl ? getAutoFilterByTableId(tbl.id) : null;
+    }
+
+    function syncFilterButtonState(cell = null) {
+        const isInFilteredArea = Boolean(findActiveAutoFilterForCell(cell));
+        appRoot.querySelector(".ss-toggle-filter-btn")?.classList.toggle("selected", isInFilteredArea);
+    }
+
+    function renderAutoFilterArrows() {
+        tbody.querySelectorAll(".ss-filter-arrow").forEach(el => el.remove());
+        autoFilterStates.forEach(af => {
+            for (let c = af.minCol; c <= af.maxCol; c++) {
+                const headerCell = getVisibleCell(af.headerRow, c);
+                if (!headerCell) continue;
+                headerCell.querySelectorAll(".ss-filter-arrow").forEach(el => el.remove());
+                const arrow = document.createElement("span");
+                arrow.className = "ss-filter-arrow";
+                arrow.dataset.filterId = af.id;
+                arrow.dataset.filterCol = String(c);
+                arrow.textContent = "";
+                arrow.title = "フィルターと並べ替え";
+                arrow.classList.toggle("filtered", af.filters.has(c));
+                arrow.addEventListener("mousedown", (e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    openFilterDropdownMenu(af.id, c, arrow);
+                }, { signal });
+                headerCell.appendChild(arrow);
+            }
+        });
+        syncFilterButtonState();
+    }
+
+    function addAutoFilterForRange({ headerRow, minCol, maxCol, maxRow, tableId = null, filters = null }) {
+        // 同じ見出し行・列帯に重なる既存フィルターがあれば置き換え（別テーブルのフィルターは保持）
+        autoFilterStates = autoFilterStates.filter(af => {
+            if (tableId && af.tableId === tableId) return false;
+            const overlapsHeader = af.headerRow === headerRow && !(af.maxCol < minCol || af.minCol > maxCol);
+            return !overlapsHeader;
+        });
+
+        const af = {
+            id: `af_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+            tableId,
+            headerRow,
+            minCol,
+            maxCol,
+            maxRow,
+            filters: filters instanceof Map ? filters : new Map()
+        };
+        autoFilterStates.push(af);
+        renderAutoFilterArrows();
+        applyAutoFilterRows();
+        return af;
+    }
+
+    function removeAutoFilterById(filterId) {
+        const beforeLen = autoFilterStates.length;
+        autoFilterStates = autoFilterStates.filter(af => af.id !== filterId);
+        if (autoFilterStates.length === beforeLen) return false;
+        closeFilterDropdown();
+        renderAutoFilterArrows();
+        applyAutoFilterRows();
+        return true;
+    }
+
     function applyAutoFilterRows() {
-        if (!autoFilterState) {
-            Array.from(tbody.rows).forEach(tr => { tr.style.display = ""; });
+        const totalRows = tbody.rows.length;
+        if (!autoFilterStates.length) {
+            for (let i = 0; i < totalRows; i++) {
+                tbody.rows[i].style.display = "";
+            }
+            syncFilterButtonState();
+            refreshVisibleRows();
+            syncCopyAntsBoxPosition();
+            updateAllFormulas();
             return;
         }
-        const { headerRow, maxRow, filters } = autoFilterState;
-        for (let r = headerRow + 1; r <= maxRow; r++) {
-            const tr = getRow(r);
-            if (!tr) continue;
-            let visible = true;
-            for (const [colIdx, allowedSet] of filters.entries()) {
-                const cell = getVisibleCell(r, colIdx);
-                const val = (cell?.textContent ?? "").trim();
-                if (!allowedSet.has(val)) {
-                    visible = false;
-                    break;
+
+        const hiddenRows = new Set();
+        for (const af of autoFilterStates) {
+            if (!af.filters || af.filters.size === 0) continue;
+            const startR = af.headerRow + 1;
+            const endR = Math.min(af.maxRow, totalRows);
+            for (let r = startR; r <= endR; r++) {
+                if (hiddenRows.has(r)) continue;
+                for (const [colIdx, allowedSet] of af.filters.entries()) {
+                    const cell = getVisibleCell(r, colIdx);
+                    const val = (cell?.textContent ?? "").trim();
+                    if (!allowedSet.has(val)) {
+                        hiddenRows.add(r);
+                        break;
+                    }
                 }
             }
-            tr.style.display = visible ? "" : "none";
         }
+
+        for (let r = 1; r <= totalRows; r++) {
+            const tr = getRow(r);
+            if (!tr) continue;
+            tr.style.display = hiddenRows.has(r) ? "none" : "";
+        }
+
         tbody.querySelectorAll(".ss-filter-arrow").forEach(arrow => {
+            const af = getAutoFilterById(arrow.dataset.filterId);
             const c = Number(arrow.dataset.filterCol);
-            arrow.classList.toggle("filtered", autoFilterState.filters.has(c));
+            arrow.classList.toggle("filtered", Boolean(af && af.filters.has(c)));
         });
+        syncFilterButtonState();
         refreshVisibleRows();
+        syncCopyAntsBoxPosition();
         updateAllFormulas();
     }
 
-    function openFilterDropdownMenu(colIdx, anchorEl) {
+    function openFilterDropdownMenu(filterId, colIdx, anchorEl) {
         const existing = document.querySelector(".ss-filter-dropdown");
-        if (existing && existing.dataset.filterCol === String(colIdx)) {
+        if (existing && existing.dataset.filterId === filterId && existing.dataset.filterCol === String(colIdx)) {
             closeFilterDropdown();
             return;
         }
         closeFilterDropdown();
-        if (!autoFilterState) return;
-        const { headerRow, maxRow, filters } = autoFilterState;
+        const af = getAutoFilterById(filterId);
+        if (!af) return;
+        const { headerRow, maxRow, filters } = af;
 
         const uniqueValues = new Set();
         for (let r = headerRow + 1; r <= maxRow; r++) {
@@ -16182,8 +17092,10 @@ export default async function initSpreadsheetApp(content, options = {}) {
         const rect = anchorEl.getBoundingClientRect();
         const dropdown = document.createElement("div");
         dropdown.className = "ss-filter-dropdown";
+        dropdown.dataset.filterId = filterId;
         dropdown.dataset.filterCol = String(colIdx);
-        dropdown.style.left = `${Math.min(window.innerWidth - 230, Math.max(8, rect.left - 180))}px`; dropdown.style.top = `${Math.min(window.innerHeight - 280, rect.bottom + 2)}px`;
+        dropdown.style.left = `${Math.min(window.innerWidth - 230, Math.max(8, rect.left - 180))}px`;
+        dropdown.style.top = `${Math.min(window.innerHeight - 280, rect.bottom + 2)}px`;
 
         dropdown.innerHTML = `
             <div style="display:flex; gap:4px;">
@@ -16230,25 +17142,27 @@ export default async function initSpreadsheetApp(content, options = {}) {
             });
         });
 
-        dropdown.querySelector(".ss-flt-sort-asc").addEventListener("click", () => {
+        const sortThisFilterRange = (asc) => {
             closeFilterDropdown();
-            const targetCell = getVisibleCell(headerRow + 1, colIdx);
-            if (targetCell) {
-                clearSelection();
-                setActiveCell(targetCell, false);
-                sortSelectedRange(true);
+            const dataStartR = af.headerRow + 1;
+            const dataEndR = af.maxRow;
+            if (dataEndR < dataStartR) return;
+            clearSelection();
+            for (let r = dataStartR; r <= dataEndR; r++) {
+                for (let c = af.minCol; c <= af.maxCol; c++) {
+                    const cell = getVisibleCell(r, c);
+                    if (cell && cell.style.display !== "none") cell.classList.add("selected");
+                }
             }
-        });
+            const targetCell = getVisibleCell(dataStartR, colIdx);
+            if (targetCell) {
+                setActiveCell(targetCell, false);
+                sortSelectedRange(asc);
+            }
+        };
 
-        dropdown.querySelector(".ss-flt-sort-desc").addEventListener("click", () => {
-            closeFilterDropdown();
-            const targetCell = getVisibleCell(headerRow + 1, colIdx);
-            if (targetCell) {
-                clearSelection();
-                setActiveCell(targetCell, false);
-                sortSelectedRange(false);
-            }
-        });
+        dropdown.querySelector(".ss-flt-sort-asc").addEventListener("click", () => sortThisFilterRange(true));
+        dropdown.querySelector(".ss-flt-sort-desc").addEventListener("click", () => sortThisFilterRange(false));
 
         dropdown.querySelector(".ss-flt-ok").addEventListener("click", () => {
             const checkedVals = new Set(itemChks.filter(c => c.checked).map(c => c.value));
@@ -16270,26 +17184,47 @@ export default async function initSpreadsheetApp(content, options = {}) {
     function clearAllAutoFilters() {
         closeFilterDropdown();
         tbody.querySelectorAll(".ss-filter-arrow").forEach(el => el.remove());
-        autoFilterState = null;
+        autoFilterStates = [];
         Array.from(tbody.rows).forEach(tr => { tr.style.display = ""; });
-        appRoot.querySelector(".ss-toggle-filter-btn")?.classList.remove("selected");
+        syncFilterButtonState();
         refreshVisibleRows();
+        syncCopyAntsBoxPosition();
         updateAllFormulas();
     }
 
     function toggleAutoFilter() {
-        if (autoFilterState) {
-            clearAllAutoFilters();
-            return;
-        }
         const bounds = getSelectedRangeBounds();
         if (!bounds) return;
+
+        // 選択中のセルが既存のフィルター範囲内（テーブルの集計行含む）にある場合は、そのフィルターだけを解除する
+        const activeFilter = findActiveAutoFilterForCell(activeCell) || getAutoFilterAtCoord(bounds.minRow, bounds.minCol);
+        if (activeFilter) {
+            removeAutoFilterById(activeFilter.id);
+            setDirtyState(true);
+            debouncedSaveState();
+            return;
+        }
 
         let { minRow, maxRow, minCol, maxCol } = bounds;
         const isFilled = (r, c) => {
             const cell = getVisibleCell(r, c);
             return Boolean(cell && (cell.dataset.formula || (cell.dataset.rawValue ?? cell.textContent).trim() !== ""));
         };
+
+        // 構造化テーブル内ならテーブル範囲に合わせてフィルターを付与（集計行は除外）
+        const tbl = findTableAtCoord(minRow, minCol);
+        if (tbl && tbl.hasHeader) {
+            addAutoFilterForRange({
+                headerRow: tbl.minRow,
+                minCol: tbl.minCol,
+                maxCol: tbl.maxCol,
+                maxRow: tbl.hasTotalRow ? tbl.maxRow - 1 : tbl.maxRow,
+                tableId: tbl.id
+            });
+            setDirtyState(true);
+            debouncedSaveState();
+            return;
+        }
 
         // 単一セル選択時は連続するデータテーブル範囲を自動検出
         if (minRow === maxRow && minCol === maxCol) {
@@ -16303,30 +17238,15 @@ export default async function initSpreadsheetApp(content, options = {}) {
             while (maxCol < currentColumns - 1 && isFilled(minRow, maxCol + 1)) maxCol++;
         }
 
-        autoFilterState = {
+        addAutoFilterForRange({
             headerRow: minRow,
             minCol,
             maxCol,
             maxRow,
-            filters: new Map()
-        };
-
-        for (let c = minCol; c <= maxCol; c++) {
-            const headerCell = getVisibleCell(minRow, c);
-            if (!headerCell) continue;
-            const arrow = document.createElement("span");
-            arrow.className = "ss-filter-arrow";
-            arrow.dataset.filterCol = String(c);
-            arrow.textContent = "";
-            arrow.title = "フィルターと並べ替え";
-            arrow.addEventListener("mousedown", (e) => {
-                e.stopPropagation();
-                e.preventDefault();
-                openFilterDropdownMenu(c, arrow);
-            }, { signal });
-            headerCell.appendChild(arrow);
-        }
-        appRoot.querySelector(".ss-toggle-filter-btn")?.classList.add("selected");
+            tableId: null
+        });
+        setDirtyState(true);
+        debouncedSaveState();
     }
 
     document.addEventListener("mousedown", (e) => {
@@ -16721,6 +17641,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
                     setCellFormattedValue(c, raw);
                 });
                 applyConditionalFormats();
+                scheduleTextOverflowUpdate();
                 updateToolbarState();
                 setDirtyState(true);
                 debouncedSaveState();
@@ -16756,15 +17677,20 @@ export default async function initSpreadsheetApp(content, options = {}) {
                             rule.minCol >= clearBounds.minCol && rule.maxCol <= clearBounds.maxCol
                         ));
                     }
-                    // オートフィルターの見出し行が選択範囲と重なる場合はフィルターも解除
-                    if (
-                        autoFilterState &&
-                        autoFilterState.headerRow >= clearBounds.minRow &&
-                        autoFilterState.headerRow <= clearBounds.maxRow &&
-                        autoFilterState.maxCol >= clearBounds.minCol &&
-                        autoFilterState.minCol <= clearBounds.maxCol
-                    ) {
-                        clearAllAutoFilters();
+                    // 選択範囲と重なるオートフィルターのみ解除（他テーブルのフィルターは保持）
+                    if (autoFilterStates.length > 0) {
+                        const prevLen = autoFilterStates.length;
+                        autoFilterStates = autoFilterStates.filter(af => !(
+                            af.headerRow >= clearBounds.minRow &&
+                            af.headerRow <= clearBounds.maxRow &&
+                            af.maxCol >= clearBounds.minCol &&
+                            af.minCol <= clearBounds.maxCol
+                        ));
+                        if (autoFilterStates.length !== prevLen) {
+                            closeFilterDropdown();
+                            renderAutoFilterArrows();
+                            applyAutoFilterRows();
+                        }
                     }
                 }
                 clearTargetCellsContent();
@@ -17278,6 +18204,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
         getTargetCells().forEach(c => {
             c.style.fontFamily = e.target.value;
         });
+        scheduleTextOverflowUpdate();
         updateToolbarState();
         setDirtyState(true);
         debouncedSaveState();
@@ -17292,6 +18219,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
             if (tr) affectedRows.add(tr);
         });
         affectedRows.forEach(tr => autoFitRow(tr));
+        scheduleTextOverflowUpdate();
         setDirtyState(true);
         debouncedSaveState();
         restoreCellFocusAfterToolbar();
@@ -17307,6 +18235,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
             if (c.dataset?.cfApplied) c.dataset.cfOrigWeight = nextVal;
         });
         applyConditionalFormats();
+        scheduleTextOverflowUpdate();
         updateToolbarState();
         setDirtyState(true);
         debouncedSaveState();
@@ -17322,6 +18251,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
             if (c.dataset?.cfApplied) c.dataset.cfOrigItalic = nextVal;
         });
         applyConditionalFormats();
+        scheduleTextOverflowUpdate();
         updateToolbarState();
         setDirtyState(true);
         debouncedSaveState();
@@ -17374,6 +18304,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
         });
         if (allVertical) affectedRows.forEach(tr => autoFitRow(tr));
         else if (freezeRows > 0) applyFreezePanes();
+        scheduleTextOverflowUpdate();
         updateToolbarState();
         setDirtyState(true);
         debouncedSaveState();
@@ -17390,18 +18321,21 @@ export default async function initSpreadsheetApp(content, options = {}) {
 
     appRoot.querySelector(".ss-valign-top").addEventListener("click", () => {
         getTargetCells().forEach(c => { c.style.verticalAlign = c.style.verticalAlign === "top" ? "" : "top"; });
+        scheduleTextOverflowUpdate();
         updateToolbarState();
         setDirtyState(true);
         debouncedSaveState();
     }, { signal });
     appRoot.querySelector(".ss-valign-middle").addEventListener("click", () => {
         getTargetCells().forEach(c => { c.style.verticalAlign = c.style.verticalAlign === "middle" ? "" : "middle"; });
+        scheduleTextOverflowUpdate();
         updateToolbarState();
         setDirtyState(true);
         debouncedSaveState();
     }, { signal });
     appRoot.querySelector(".ss-valign-bottom").addEventListener("click", () => {
         getTargetCells().forEach(c => { c.style.verticalAlign = c.style.verticalAlign === "bottom" ? "" : "bottom"; });
+        scheduleTextOverflowUpdate();
         updateToolbarState();
         setDirtyState(true);
         debouncedSaveState();
@@ -17625,7 +18559,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
         if (!rawCell || !tbody.contains(rawCell)) return null;
         if (rawCell.classList.contains("ss-text-overflow")) {
             const rect = rawCell.getBoundingClientRect();
-            if (e.clientX > rect.right || e.clientX < rect.left) {
+            if (e.clientX > rect.right || e.clientX < rect.left || e.clientY > rect.bottom || e.clientY < rect.top) {
                 const prevPointerEvents = rawCell.style.pointerEvents;
                 rawCell.style.pointerEvents = "none";
                 const underneath = document.elementFromPoint(e.clientX, e.clientY)?.closest("td");
@@ -18067,7 +19001,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
 
         updateAllFormulas();
         applyConditionalFormats();
-        if (autoFilterState) applyAutoFilterRows();
+        if (autoFilterStates.length) applyAutoFilterRows();
         refreshVisibleFloatingObjects();
         updateSelectedCellsDisplay();
         updateFillHandle();
@@ -18093,17 +19027,16 @@ export default async function initSpreadsheetApp(content, options = {}) {
             applyStructuredTableVisuals(tbl);
         });
 
-        // 2. オートフィルターの座標・対象列・▼ボタンを移動先へ追従
-        if (autoFilterState) {
-            const af = autoFilterState;
-            const isFilterHeaderMoved =
-                af.headerRow >= srcBounds.minRow && af.headerRow <= srcBounds.maxRow &&
-                af.minCol >= srcBounds.minCol && af.maxCol <= srcBounds.maxCol;
-            if (isFilterHeaderMoved) {
-                // 移動前の非表示行が残らないようにいったん全行表示へ戻す
-                Array.from(tbody.rows).forEach(tr => { tr.style.display = ""; });
-                tbody.querySelectorAll(".ss-filter-arrow").forEach(el => el.remove());
+        // 2. 移動範囲内に含まれるすべてのオートフィルターの座標・対象列・▼ボタンを移動先へ追従
+        if (autoFilterStates.length > 0) {
+            let filterMoved = false;
+            autoFilterStates.forEach(af => {
+                const isFilterHeaderMoved =
+                    af.headerRow >= srcBounds.minRow && af.headerRow <= srcBounds.maxRow &&
+                    af.minCol >= srcBounds.minCol && af.maxCol <= srcBounds.maxCol;
+                if (!isFilterHeaderMoved) return;
 
+                filterMoved = true;
                 af.headerRow = Math.max(1, af.headerRow + rowDelta);
                 af.maxRow = Math.max(af.headerRow, af.maxRow + rowDelta);
                 af.minCol = Math.max(0, af.minCol + colDelta);
@@ -18114,22 +19047,10 @@ export default async function initSpreadsheetApp(content, options = {}) {
                     shiftedFilters.set(Math.max(0, colIdx + colDelta), vals);
                 });
                 af.filters = shiftedFilters;
+            });
 
-                for (let c = af.minCol; c <= af.maxCol; c++) {
-                    const headerCell = getVisibleCell(af.headerRow, c);
-                    if (!headerCell) continue;
-                    const arrow = document.createElement("span");
-                    arrow.className = "ss-filter-arrow";
-                    arrow.dataset.filterCol = String(c);
-                    arrow.textContent = "";
-                    arrow.title = "フィルターと並べ替え";
-                    arrow.addEventListener("mousedown", (e) => {
-                        e.stopPropagation();
-                        e.preventDefault();
-                        openFilterDropdownMenu(c, arrow);
-                    }, { signal });
-                    headerCell.appendChild(arrow);
-                }
+            if (filterMoved) {
+                renderAutoFilterArrows();
                 applyAutoFilterRows();
             }
         }
@@ -18748,6 +19669,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 formatPainterSnapshot = null;
                 appRoot.querySelector(".ss-format-painter-btn")?.classList.remove("selected");
                 applyConditionalFormats();
+                scheduleTextOverflowUpdate();
                 updateToolbarState();
                 statusBarState.stateText = "書式を適用しました";
                 renderWindowStatusBar();
@@ -19308,7 +20230,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
         // Enter処理（コピー中なら貼り付け、通常時は選択範囲内ループ／上下移動）
         if (e.key === "Enter" && activeCell) {
             e.preventDefault();
-            if (clipboardData && tbody.querySelector(".copy-marching-ants")) {
+            if (clipboardData && isCopyAnimationActive()) {
                 void pasteClipboardData("all");
                 return;
             }
