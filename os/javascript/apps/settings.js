@@ -39,6 +39,9 @@ async function getStorageInfo() {
 
 
 export async function saveSetting(key, value) {
+    if (window.nexser?.kernelAPI?.getSystemState?.()?.isSystemDead) {
+        return false;
+    }
     try {
         const db = await getDB();
 
@@ -154,19 +157,115 @@ loadSetting("windowAnimationEnabled").then(v => {
     window.nexser?.windowAPI.setAnimationEnabled(v ?? true);
 });
 
-loadSetting("widgetTool_isPreviewEnabled").then(v => {
-    const val = v ?? true;
-    if (typeof window.setWindowPreviewEnabled === 'function') {
-        window.setWindowPreviewEnabled(val);
+
+
+
+
+
+// kvストア内の全パッケージアプリ設定（app_setting:<アプリ名>:<settingKey>）から該当キーを検索
+async function findAppSettingInKV(settingKey) {
+    try {
+        const db = await getDB();
+        if (!db.objectStoreNames.contains("kv")) return undefined;
+
+        const suffix = `:${settingKey}`;
+        return await new Promise((resolve) => {
+            const tx = db.transaction("kv", "readonly");
+            const store = tx.objectStore("kv");
+            const range = IDBKeyRange.bound("app_setting:", "app_setting:\uffff");
+            const req = store.openCursor(range);
+            let matched = undefined;
+
+            req.onsuccess = (e) => {
+                const cursor = e.target.result;
+                if (!cursor) {
+                    resolve(matched);
+                    return;
+                }
+                const key = String(cursor.primaryKey);
+                if (key.endsWith(suffix)) {
+                    matched = cursor.value;
+                }
+                cursor.continue();
+            };
+            req.onerror = () => resolve(matched);
+        });
+    } catch (err) {
+        console.warn(`[Settings] Failed to scan kv setting (${settingKey}):`, err);
+        return undefined;
+    }
+}
+
+// 外部パッケージアプリ（日本語名含む任意の名前空間）および旧設定からプレビュー設定を統合復元
+export async function syncWidgetToolPackageSettings() {
+    try {
+        const { dbGet } = await import("../fs-db.js");
+
+        const [lastWinKey, lastTbKey, legacyWin, legacyTb] = await Promise.all([
+            loadSetting("widgetTool_lastWindowPreviewKey"),
+            loadSetting("widgetTool_lastTaskbarPreviewKey"),
+            loadSetting("widgetTool_isPreviewEnabled"),
+            loadSetting("widgetTool_isTaskbarPreviewEnabled")
+        ]);
+
+        let winPreview = lastWinKey ? await dbGet(lastWinKey, "kv") : undefined;
+        if (winPreview === undefined) {
+            winPreview = await findAppSettingInKV("isPreviewEnabled");
+        }
+        if (winPreview === undefined && legacyWin !== null) {
+            winPreview = legacyWin;
+        }
+
+        let tbPreview = lastTbKey ? await dbGet(lastTbKey, "kv") : undefined;
+        if (tbPreview === undefined) {
+            tbPreview = await findAppSettingInKV("isTaskbarPreviewEnabled");
+        }
+        if (tbPreview === undefined && legacyTb !== null) {
+            tbPreview = legacyTb;
+        }
+
+        const finalWin = winPreview !== undefined ? (winPreview !== false) : true;
+        const finalTb = tbPreview !== undefined ? (tbPreview !== false) : true;
+
+        if (typeof window.setWindowPreviewEnabled === "function") {
+            window.setWindowPreviewEnabled(finalWin);
+        }
+        if (typeof window.setTaskbarPreviewEnabled === "function") {
+            window.setTaskbarPreviewEnabled(finalTb);
+        }
+    } catch (err) {
+        console.warn("[Settings] Failed to sync WidgetTool package settings:", err);
+    }
+}
+
+syncWidgetToolPackageSettings();
+window.addEventListener("desktop-ready", syncWidgetToolPackageSettings);
+
+// 外部アプリの syscall.saveSetting 実行時にリアルタイムで即反映＆最終キーを記録
+window.addEventListener("app-setting-changed", async (e) => {
+    const { key, fullKey, value } = e.detail || {};
+    if (key === "isPreviewEnabled") {
+        const enabled = value !== false;
+        if (typeof window.setWindowPreviewEnabled === "function") {
+            window.setWindowPreviewEnabled(enabled);
+        }
+        if (fullKey) {
+            await saveSetting("widgetTool_lastWindowPreviewKey", fullKey);
+        }
+        await saveSetting("widgetTool_isPreviewEnabled", enabled);
+    } else if (key === "isTaskbarPreviewEnabled") {
+        const enabled = value !== false;
+        if (typeof window.setTaskbarPreviewEnabled === "function") {
+            window.setTaskbarPreviewEnabled(enabled);
+        }
+        if (fullKey) {
+            await saveSetting("widgetTool_lastTaskbarPreviewKey", fullKey);
+        }
+        await saveSetting("widgetTool_isTaskbarPreviewEnabled", enabled);
     }
 });
 
-loadSetting("widgetTool_isTaskbarPreviewEnabled").then(v => {
-    const val = v ?? true;
-    if (typeof window.setTaskbarPreviewEnabled === 'function') {
-        window.setTaskbarPreviewEnabled(val);
-    }
-});
+
 
 
 
@@ -1309,7 +1408,7 @@ export default async function SettingsApp(content) {
 
                     // --- UIの更新 ---
                     applyDesktopBackground();
-                    window.nexser?.windowAPI.setWindowAnimationEnabled(true);
+                    window.nexser?.windowAPI.setAnimationEnabled(true);
                     window.nexser?.windowAPI.refreshTopWindow();
                     window.dispatchEvent(new Event("recent-updated"));
 

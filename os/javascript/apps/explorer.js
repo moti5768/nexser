@@ -17,16 +17,66 @@ import {
     clearFSClipboard,
     isPathCutInClipboard
 } from "../fs-utils.js";
-import { FS, forceSave, markDefaultDeleted, unmarkDefaultDeleted, setBulkUpdating } from "../fs.js";
+import { FS, forceSave, markDefaultDeleted, unmarkDefaultDeleted, setBulkUpdating, isFSReadOnly } from "../fs.js";
 import { copyFileContent, moveFileContent, deleteFileContentRecursive } from "../fs-db.js";
 import { attachContextMenu } from "../context-menu.js";
 import { resolveAppByPath, getIcon, getDisplayFileName, renderIconHTML, applyIconToElement } from "../file-associations.js";
 import { addRecent } from "../recent.js";
 import { setupRibbon } from "../ribbon.js";
-import { saveSetting, loadSetting } from "./settings.js";
+import { saveSetting as rawSaveSetting, loadSetting as rawLoadSetting } from "./settings.js";
 
 // プロパティウィンドウの重複チェック用
 const propertyWindows = {};
+
+function escapeHTML(str) {
+    return String(str ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+}
+
+function escapeSelectorAttr(val) {
+    const str = String(val ?? "");
+    return typeof CSS !== "undefined" && typeof CSS.escape === "function"
+        ? CSS.escape(str)
+        : str.replace(/["\\]/g, "\\$&");
+}
+
+function isKernelHaltedOrLoggingOff() {
+    const state = window.nexser?.kernelAPI?.getSystemState?.();
+    if (state) {
+        return Boolean(state.isSystemDead || state.isLoggingOff || !state.isGuiActive);
+    }
+    return Boolean(window.nexser?.isLoggingOff);
+}
+
+function assertWritableFS(notify = true) {
+    if (isKernelHaltedOrLoggingOff()) return false;
+    if (typeof isFSReadOnly === "function" && isFSReadOnly()) {
+        if (notify) {
+            window.nexser?.windowAPI?.alertWindow("ファイルシステムは現在読み取り専用のため変更できません。", { title: "システム保護" });
+        }
+        return false;
+    }
+    return true;
+}
+
+async function loadSetting(key) {
+    if (typeof window.nexser?.kernelAPI?.settings?.load === "function") {
+        return await window.nexser.kernelAPI.settings.load(key, null);
+    }
+    return await rawLoadSetting(key);
+}
+
+async function saveSetting(key, value) {
+    if (isKernelHaltedOrLoggingOff()) return false;
+    if (typeof window.nexser?.kernelAPI?.settings?.save === "function") {
+        return await window.nexser.kernelAPI.settings.save(key, value);
+    }
+    return await rawSaveSetting(key, value);
+}
 
 export function hasExtension(name) {
     return /\.[a-z0-9]+$/i.test(name);
@@ -36,6 +86,7 @@ export function hasExtension(name) {
 // 共通関数
 // ------------------------
 async function deleteFSItem(parentPath, itemName, rerender, dispatchEvent = true) {
+    if (!assertWritableFS()) return false;
     const parentNode = resolveFS(parentPath);
     if (!parentNode || !parentNode[itemName]) return false;
 
@@ -43,7 +94,7 @@ async function deleteFSItem(parentPath, itemName, rerender, dispatchEvent = true
     if (isTrashPath(parentPath)) {
         const msg = `
             <div style="padding:10px; font-size:13px;">
-                「${itemName}」を完全に消去しますか？<br>
+                「${escapeHTML(itemName)}」を完全に消去しますか？<br>
                 <small style="color:#ff4444;">※この操作は取り消せません。</small>
             </div>`;
 
@@ -169,6 +220,7 @@ async function deleteFSItem(parentPath, itemName, rerender, dispatchEvent = true
  * ゴミ箱から元に戻す機能（実データおよび元のパスへの復元に対応）
  */
 export async function restoreFSItem(itemName, rerender, dispatchEvent = true) {
+    if (!assertWritableFS()) return false;
     const trash = resolveFS("C:/Trash");
     if (!trash) return false;
     const item = trash[itemName];
@@ -266,6 +318,7 @@ export async function restoreFSItem(itemName, rerender, dispatchEvent = true) {
  * ゴミ箱を空にする機能
  */
 export function emptyTrash(rerender) {
+    if (!assertWritableFS()) return;
     const trash = resolveFS("C:/Trash");
     if (!trash) return;
 
@@ -339,6 +392,7 @@ export function emptyTrash(rerender) {
 }
 
 function createNewItem(currentPath, listContainer, renderCallback, type = "folder") {
+    if (!assertWritableFS()) return;
     const folderNode = resolveFS(currentPath);
     if (!folderNode || !listContainer) return;
 
@@ -474,6 +528,9 @@ export default async function Explorer(root, options = {}) {
 
     // ウィンドウごとに独立した選択状態を保持（複数ウィンドウ同時操作時の競合を防止）
     const globalSelected = { items: new Set(), window: win, lastSelected: null };
+    let isDisposed = false;
+    let activePathInputCleanup = null;
+    const isAlive = () => !isDisposed && Boolean(win?.isConnected) && !isKernelHaltedOrLoggingOff();
 
     let currentPath = (options.path || "C:/Desktop").replace(/\/+$/, "") || "C:";
     let historyStack = [];
@@ -778,6 +835,7 @@ export default async function Explorer(root, options = {}) {
     // 描画
     // ------------------------
     const render = async (path) => {
+        if (!isAlive()) return;
         currentPath = path;
 
         if (searchInput && document.activeElement !== searchInput) {
@@ -790,11 +848,13 @@ export default async function Explorer(root, options = {}) {
 
         // 拡張子表示設定を毎回ロードして同期
         const rawShowExt = await loadSetting("explorerShowFileExtensions");
+        if (!isAlive()) return;
         showFileExtensions = rawShowExt === null ? true : (rawShowExt === true || rawShowExt === "true");
 
         // フォルダごとのアイコン座標設定を読み込み
         const safePath = currentPath.replace(/\//g, "_") || "root";
         iconPositions = await loadSetting(`explorerIconPositions_${safePath}`) || {};
+        if (!isAlive()) return;
 
         // 複数選択解除
         if (globalSelected.items.size > 0) {
@@ -846,6 +906,7 @@ export default async function Explorer(root, options = {}) {
                 e.preventDefault();
                 e.stopPropagation();
                 listContainer.classList.remove("drag-over");
+                if (!isAlive()) return;
 
                 const dataStr = e.dataTransfer.getData("text/plain");
 
@@ -863,7 +924,7 @@ export default async function Explorer(root, options = {}) {
 
                                 iconPositions[info.name] = { x: dropX, y: dropY };
 
-                                const el = listContainer.querySelector(`[data-name="${info.name}"]`);
+                                const el = listContainer.querySelector(`[data-name="${escapeSelectorAttr(info.name)}"]`);
                                 if (el) {
                                     el.style.left = `${dropX}px`;
                                     el.style.top = `${dropY}px`;
@@ -1002,9 +1063,12 @@ export default async function Explorer(root, options = {}) {
                     }
                 };
 
+                if (!assertWritableFS()) return;
+
                 setBulkUpdating(true);
                 try {
                     for (const item of initialEntries) {
+                        if (!isAlive() || !assertWritableFS(false)) break;
                         if (item instanceof File) {
                             await addFileToNode(item, folderNode);
                         } else {
@@ -1012,14 +1076,14 @@ export default async function Explorer(root, options = {}) {
                         }
                     }
                     folderNode.lastModified = Date.now();
-                    pg.update(totalFiles, totalFiles, "すべての項目のコピーが完了しました。");
+                    pg?.update(totalFiles, totalFiles, "すべての項目のコピーが完了しました。");
                     await forceSave();
                 } catch (err) {
                     console.error("Drop processing failed:", err);
                     if (pg && typeof pg.close === "function") pg.close();
                 } finally {
                     setBulkUpdating(false);
-                    listContainer.style.opacity = "1";
+                    if (listContainer) listContainer.style.opacity = "1";
 
                     initialEntries.length = 0;
 
@@ -1032,8 +1096,10 @@ export default async function Explorer(root, options = {}) {
                         }
                     }
 
-                    window.dispatchEvent(new Event("fs-updated"));
-                    render(currentPath);
+                    if (isAlive()) {
+                        window.dispatchEvent(new Event("fs-updated"));
+                        render(currentPath);
+                    }
 
                     const closeProgress = (progressWindowObj) => {
                         if (progressWindowObj && typeof progressWindowObj.close === "function") {
@@ -1630,6 +1696,7 @@ export default async function Explorer(root, options = {}) {
             const iconHtml = renderIconHTML(iconChar);
             const isFolder = itemData && itemData.type === "folder";
             const displayName = isFolder ? name : getDisplayFileName(name, showFileExtensions);
+            const safeDisplayName = escapeHTML(displayName);
 
             if (viewMode === "icon") {
                 if (!autoArrange) {
@@ -1655,7 +1722,7 @@ export default async function Explorer(root, options = {}) {
 
                 const newHTML = `
                     <div class="item-icon-large">${iconHtml}</div>
-                    <div class="item-name-label">${displayName}</div>
+                    <div class="item-name-label">${safeDisplayName}</div>
                 `;
                 if (item.innerHTML !== newHTML) {
                     item.innerHTML = newHTML;
@@ -1687,7 +1754,7 @@ export default async function Explorer(root, options = {}) {
                 const newHTML = `
                     <div style="flex: 1 1 auto; min-width: 0; padding: 0 4px 0 8px; display: flex; align-items: center; gap: 6px; overflow: hidden;">
                         <span class="item-icon-small" style="flex-shrink: 0; display: flex; align-items: center; justify-content: center;">${iconHtml}</span>
-                        <span class="item-name-text">${displayName}</span>
+                        <span class="item-name-text">${safeDisplayName}</span>
                     </div>
                     <span class="item-type-text" style="flex: 0 0 130px; padding-left: 8px;">${typeLabel}</span>
                     <span class="item-size-text" style="flex: 0 0 100px; padding-left: 8px;">${size}</span>
@@ -1702,7 +1769,7 @@ export default async function Explorer(root, options = {}) {
                 item.style.top = "";
                 const newHTML = `
                     <span class="item-icon-small">${iconHtml}</span>
-                    <span class="item-name-text">${displayName}</span>
+                    <span class="item-name-text">${safeDisplayName}</span>
                 `;
                 if (item.innerHTML !== newHTML) {
                     item.innerHTML = newHTML;
@@ -2101,7 +2168,7 @@ export default async function Explorer(root, options = {}) {
      * 共通のアイテム移動・コピー処理（エクスプローラー内 / デスクトップからのD&D共通）
      */
     async function handleItemDropMove(data, targetPath, currentPath, render, isCopy = false) {
-        if (!data) return false;
+        if (!data || !assertWritableFS()) return false;
 
         const resolved = resolveLinkTarget(targetPath);
         const effectiveTargetPath = (resolved.path || "").replace(/\\/g, "/").replace(/\/+$/, "");
@@ -2481,7 +2548,7 @@ export default async function Explorer(root, options = {}) {
             el.style.color = "";
         });
 
-        const activeElements = sidebarContainer.querySelectorAll(`[data-path="${activePath}"]`);
+        const activeElements = sidebarContainer.querySelectorAll(`[data-path="${escapeSelectorAttr(activePath)}"]`);
         activeElements.forEach(el => {
             const itemEl = el.classList.contains("sidebar-item") ? el : el.querySelector(".sidebar-item");
             if (itemEl) {
@@ -2494,7 +2561,7 @@ export default async function Explorer(root, options = {}) {
         let accumulatedPath = "";
         for (let i = 0; i < parts.length - 1; i++) {
             accumulatedPath = accumulatedPath ? `${accumulatedPath}/${parts[i]}` : parts[i];
-            const sub = sidebarContainer.querySelector(`.sidebar-sub-container[data-parent="${accumulatedPath}"]`);
+            const sub = sidebarContainer.querySelector(`.sidebar-sub-container[data-parent="${escapeSelectorAttr(accumulatedPath)}"]`);
             if (sub) {
                 sub.style.display = "block";
                 const wrapper = sub.previousElementSibling;
@@ -2573,8 +2640,8 @@ export default async function Explorer(root, options = {}) {
 
             item.innerHTML = `
                 <span class="item-icon-small">${iconHtml}</span>
-                <span class="item-name-text">${displayName}</span>
-                <span style="color:#888; font-size:10px; margin-left:8px;">(${res.path})</span>
+                <span class="item-name-text">${escapeHTML(displayName)}</span>
+                <span style="color:#888; font-size:10px; margin-left:8px;">(${escapeHTML(res.path)})</span>
             `;
 
             listContainer.appendChild(item);
@@ -2661,7 +2728,14 @@ export default async function Explorer(root, options = {}) {
 
             const cleanup = () => {
                 document.removeEventListener("mousedown", handleOutsideMouseDown, true);
+                if (activePathInputCleanup === cleanup) {
+                    activePathInputCleanup = null;
+                }
             };
+            if (activePathInputCleanup) {
+                activePathInputCleanup();
+            }
+            activePathInputCleanup = cleanup;
 
             // 編集をキャンセルして即座にボタン（パンくず）モードへ戻す
             const cancelEdit = () => {
@@ -3088,13 +3162,14 @@ export default async function Explorer(root, options = {}) {
 
     let renderScheduled = false;
     const handleFsUpdated = () => {
-        if (renderScheduled) return;
+        if (!isAlive() || renderScheduled) return;
         renderScheduled = true;
         const pathToRender = currentPath;
         requestAnimationFrame(() => {
+            renderScheduled = false;
+            if (!isAlive()) return;
             sidebarInitialized = false;
             render(pathToRender);
-            renderScheduled = false;
         });
     };
 
@@ -3130,6 +3205,7 @@ export default async function Explorer(root, options = {}) {
     }
 
     const handleFsRenamed = async (e) => {
+        if (!isAlive()) return;
         const { oldPath, oldName, newName } = e.detail || {};
         if (oldPath === `${currentPath}/${oldName}` && !autoArrange && viewMode === "icon" && iconPositions[oldName]) {
             iconPositions[newName] = iconPositions[oldName];
@@ -3148,6 +3224,7 @@ export default async function Explorer(root, options = {}) {
 
     return {
         onRename: ({ oldPath, newPath, updatedPath }) => {
+            if (!isAlive()) return;
             const replacePrefix = (p) => (p === oldPath ? newPath : (p.startsWith(oldPath + "/") ? newPath + p.slice(oldPath.length) : p));
             historyStack = historyStack.map(replacePrefix);
             forwardStack = forwardStack.map(replacePrefix);
@@ -3157,7 +3234,12 @@ export default async function Explorer(root, options = {}) {
             render(currentPath);
         },
         dispose: () => {
+            isDisposed = true;
             cancelSelection();
+            if (activePathInputCleanup) {
+                activePathInputCleanup();
+                activePathInputCleanup = null;
+            }
             window.removeEventListener("fs-renamed", handleFsRenamed);
             window.removeEventListener("fs-updated", handleFsUpdated);
             window.removeEventListener("clipboard-updated", handleFsUpdated);
@@ -3190,8 +3272,39 @@ export default async function Explorer(root, options = {}) {
 let explorerWorker = null;
 let workerCallbackId = 0;
 const workerPendingRequests = new Map();
+const nodeSizeCache = new Map();
+
+function terminateExplorerWorker() {
+    if (explorerWorker) {
+        try { explorerWorker.terminate(); } catch (_) { }
+        explorerWorker = null;
+    }
+    for (const resolveFn of workerPendingRequests.values()) {
+        try { resolveFn(0); } catch (_) { }
+    }
+    workerPendingRequests.clear();
+}
+
+function resetExplorerGlobalResources() {
+    terminateExplorerWorker();
+    nodeSizeCache.clear();
+    for (const [propPath, propWin] of Object.entries(propertyWindows)) {
+        if (propWin?._propObserver) {
+            try { propWin._propObserver.disconnect(); } catch (_) { }
+            propWin._propObserver = null;
+        }
+        delete propertyWindows[propPath];
+    }
+}
+
+if (typeof window !== "undefined" && !window._explorerLifecycleHooksInstalled) {
+    window._explorerLifecycleHooksInstalled = true;
+    window.addEventListener("nexser-logoff", resetExplorerGlobalResources);
+    window.addEventListener("nexser-bsod", resetExplorerGlobalResources);
+}
 
 function getExplorerWorker() {
+    if (isKernelHaltedOrLoggingOff()) return null;
     if (!explorerWorker) {
         explorerWorker = new Worker(new URL("./worker/explorer.worker.js", import.meta.url), { type: "module" });
         explorerWorker.onmessage = (e) => {
@@ -3201,11 +3314,13 @@ function getExplorerWorker() {
                 workerPendingRequests.delete(id);
             }
         };
+        explorerWorker.onerror = (err) => {
+            console.warn("[Explorer Worker] error, resetting worker:", err);
+            terminateExplorerWorker();
+        };
     }
     return explorerWorker;
 }
-
-const nodeSizeCache = new Map();
 
 export function calcNodeSize(node, path = "") {
     return new Promise((resolve) => {
@@ -3231,6 +3346,10 @@ export function calcNodeSize(node, path = "") {
         try {
             const safeNodePayload = sanitizeForWorker(node);
             const worker = getExplorerWorker();
+            if (!worker) {
+                resolve(0);
+                return;
+            }
             const id = ++workerCallbackId;
 
             workerPendingRequests.set(id, (size) => {
@@ -3424,18 +3543,23 @@ export async function showProperties(name, node, path) {
         ? new Date(node.lastModified).toLocaleDateString("ja-JP", dateOpts)
         : "不明";
 
+    const safeName = escapeHTML(name);
+    const safeUrlValue = escapeHTML(urlValue);
+    const safeParentPath = escapeHTML(parentPath);
+    const safeTypeLabel = escapeHTML(node.type === "folder" ? "ファイル フォルダー" : (node.type || "不明"));
+
     const msg = `
         <div style="padding:15px; font-size:12px; line-height:1.8; user-select:none; font-family: 'Segoe UI', Tahoma, sans-serif;">
             <div style="display:flex; align-items:center; gap:15px; padding-bottom:15px;">
                 <span style="font-size:36px; display:inline-flex; align-items:center; justify-content:center;">${iconHtml}</span>
-                <input type="text" value="${name}" class="border" style="flex:1; padding:3px; font-size:12px;" readonly>
+                <input type="text" value="${safeName}" class="border" style="flex:1; padding:3px; font-size:12px;" readonly>
             </div>
             <hr style="border:0; border-top:1px solid #dfdfdf; margin: 0 0 10px 0;">
             
             <table style="width:100%; border-collapse:collapse;">
-                <tr><td style="width:85px; color:#333;">ファイルの種類:</td><td style="color:#000;">${node.type === "folder" ? "ファイル フォルダー" : (node.type || "不明")}</td></tr>
-                ${isUrl ? `<tr><td style="color:#333;">URL:</td><td><input type="text" id="prop-url-input" value="${urlValue}" style="width:100%; border:1px solid #ccc; padding:2px;"></td></tr>` : ""}
-                <tr><td style="color:#333;">場所:</td><td style="color:#000;">${parentPath}</td></tr>
+                <tr><td style="width:85px; color:#333;">ファイルの種類:</td><td style="color:#000;">${safeTypeLabel}</td></tr>
+                ${isUrl ? `<tr><td style="color:#333;">URL:</td><td><input type="text" id="prop-url-input" value="${safeUrlValue}" style="width:100%; border:1px solid #ccc; padding:2px;"></td></tr>` : ""}
+                <tr><td style="color:#333;">場所:</td><td style="color:#000;">${safeParentPath}</td></tr>
                 <tr><td style="color:#333;">サイズ:</td><td style="color:#000;">${formattedSize} (${size.toLocaleString()} バイト)</td></tr>
             </table>
             
@@ -3451,6 +3575,10 @@ export async function showProperties(name, node, path) {
         {
             label: "OK",
             action: async () => {
+                if (!assertWritableFS()) {
+                    closeModal(win);
+                    return;
+                }
                 let isChanged = false;
 
                 if (isUrl) {
@@ -3523,8 +3651,10 @@ export async function showProperties(name, node, path) {
         if (!document.body.contains(win)) {
             delete propertyWindows[path];
             observer.disconnect();
+            if (win) win._propObserver = null;
         }
     });
+    if (win) win._propObserver = observer;
 
     observer.observe(document.body, { childList: true });
 }

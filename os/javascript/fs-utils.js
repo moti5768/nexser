@@ -1,5 +1,5 @@
 // fs-utils.js
-import { FS } from "./fs.js";
+import { FS, runWithFSOwner, isFSReadOnly } from "./fs.js";
 import { getFileContent, deleteFileContentRecursive } from "./fs-db.js";
 
 /**
@@ -21,78 +21,88 @@ export async function readFileContent(path, cwd = "C:/") {
 /**
  * パスを指定してファイル内容を書き込む（未存在の場合は親フォルダに新規作成。排他ロックや差分保存は FS の Proxy が自動処理）
  */
-export function writeFileContent(path, data, cwd = "C:/") {
-    const normalized = normalizePath(path, cwd);
-    const existing = resolveFS(normalized);
+export function writeFileContent(path, data, cwd = "C:/", ownerPid = "system") {
+    if (isFSReadOnly()) {
+        throw new Error("ファイルシステムは現在読み取り専用です。");
+    }
+    return runWithFSOwner(ownerPid, () => {
+        const normalized = normalizePath(path, cwd);
+        const existing = resolveFS(normalized);
 
-    if (existing) {
-        if (existing.type !== "file" && existing.type !== "app") {
-            throw new Error(`書き込み対象がファイルではありません: ${normalized}`);
+        if (existing) {
+            if (existing.type !== "file" && existing.type !== "app") {
+                throw new Error(`書き込み対象がファイルではありません: ${normalized}`);
+            }
+            existing.content = data;
+            return true;
         }
-        existing.content = data;
+
+        const lastSlash = normalized.lastIndexOf("/");
+        if (lastSlash === -1) {
+            throw new Error(`無効なファイルパスです: ${normalized}`);
+        }
+
+        const parentPath = normalized.slice(0, lastSlash) || "C:/";
+        const fileName = normalized.slice(lastSlash + 1);
+        const nameError = validateName(fileName);
+        if (nameError) {
+            throw new Error(`無効なファイル名です (${fileName}): ${nameError}`);
+        }
+
+        const parentNode = resolveFS(parentPath);
+        if (!parentNode || parentNode.type !== "folder") {
+            throw new Error(`親フォルダが見つかりません: ${parentPath}`);
+        }
+
+        const isBlobOrBuffer =
+            data instanceof Blob ||
+            data instanceof ArrayBuffer ||
+            ArrayBuffer.isView(data);
+        const byteSize = isBlobOrBuffer
+            ? (data.size || data.byteLength || 0)
+            : (typeof data === "string" ? data.length : 0);
+
+        parentNode[fileName] = {
+            type: "file",
+            content: data,
+            size: byteSize,
+            lastModified: Date.now()
+        };
         return true;
-    }
-
-    const lastSlash = normalized.lastIndexOf("/");
-    if (lastSlash === -1) {
-        throw new Error(`無効なファイルパスです: ${normalized}`);
-    }
-
-    const parentPath = normalized.slice(0, lastSlash) || "C:/";
-    const fileName = normalized.slice(lastSlash + 1);
-    const nameError = validateName(fileName);
-    if (nameError) {
-        throw new Error(`無効なファイル名です (${fileName}): ${nameError}`);
-    }
-
-    const parentNode = resolveFS(parentPath);
-    if (!parentNode || parentNode.type !== "folder") {
-        throw new Error(`親フォルダが見つかりません: ${parentPath}`);
-    }
-
-    const isBlobOrBuffer =
-        data instanceof Blob ||
-        data instanceof ArrayBuffer ||
-        ArrayBuffer.isView(data);
-    const byteSize = isBlobOrBuffer
-        ? (data.size || data.byteLength || 0)
-        : (typeof data === "string" ? data.length : 0);
-
-    parentNode[fileName] = {
-        type: "file",
-        content: data,
-        size: byteSize,
-        lastModified: Date.now()
-    };
-    return true;
+    });
 }
 
 /**
  * 指定パスのディレクトリを再帰的に作成する（mkdir -p 相当）
  */
-export function ensureDirectory(path, cwd = "C:/") {
-    const normalized = normalizePath(path, cwd).replace(/\/+$/, "");
-    const parts = normalized.split("/").filter(Boolean);
-    if (parts.length === 0) return null;
-
-    let cur = FS;
-    for (let i = 0; i < parts.length; i++) {
-        const part = parts[i];
-        if (i === 0) {
-            if (!cur[part]) throw new Error(`ドライブが見つかりません: ${part}`);
-            cur = cur[part];
-            continue;
-        }
-        if (!cur[part]) {
-            const nameError = validateName(part);
-            if (nameError) throw new Error(`無効なフォルダ名です (${part}): ${nameError}`);
-            cur[part] = { type: "folder", lastModified: Date.now() };
-        } else if (cur[part].type !== "folder") {
-            throw new Error(`ファイルと同名のフォルダは作成できません: ${part}`);
-        }
-        cur = cur[part];
+export function ensureDirectory(path, cwd = "C:/", ownerPid = "system") {
+    if (isFSReadOnly()) {
+        throw new Error("ファイルシステムは現在読み取り専用です。");
     }
-    return cur;
+    return runWithFSOwner(ownerPid, () => {
+        const normalized = normalizePath(path, cwd).replace(/\/+$/, "");
+        const parts = normalized.split("/").filter(Boolean);
+        if (parts.length === 0) return null;
+
+        let cur = FS;
+        for (let i = 0; i < parts.length; i++) {
+            const part = parts[i];
+            if (i === 0) {
+                if (!cur[part]) throw new Error(`ドライブが見つかりません: ${part}`);
+                cur = cur[part];
+                continue;
+            }
+            if (!cur[part]) {
+                const nameError = validateName(part);
+                if (nameError) throw new Error(`無効なフォルダ名です (${part}): ${nameError}`);
+                cur[part] = { type: "folder", lastModified: Date.now() };
+            } else if (cur[part].type !== "folder") {
+                throw new Error(`ファイルと同名のフォルダは作成できません: ${part}`);
+            }
+            cur = cur[part];
+        }
+        return cur;
+    });
 }
 
 /**
@@ -146,7 +156,10 @@ export function statFS(path, cwd = "C:/") {
 /**
  * パスを指定してノードおよび配下の外部実データを削除する（システム保護ノードは拒否）
  */
-export async function deleteFSNode(path, cwd = "C:/") {
+export async function deleteFSNode(path, cwd = "C:/", ownerPid = "system") {
+    if (isFSReadOnly()) {
+        throw new Error("ファイルシステムは現在読み取り専用です。");
+    }
     const normalized = normalizePath(path, cwd).replace(/\/+$/, "");
     if (!normalized || normalized === "C:") {
         throw new Error("ルートドライブは削除できません。");
@@ -163,7 +176,7 @@ export async function deleteFSNode(path, cwd = "C:/") {
         throw new Error(`システム保護されているため削除できません: ${normalized}`);
     }
 
-    const deleted = delete parentNode[targetName];
+    const deleted = runWithFSOwner(ownerPid, () => delete parentNode[targetName]);
     if (!deleted) {
         throw new Error(`削除が拒否されました（ロック中または保護対象）: ${normalized}`);
     }
@@ -600,6 +613,9 @@ export function isPathCutInClipboard(parentPath, itemName) {
 // 共通アイテムリネーム処理（仮想FS + IndexedDB実データ + ウィンドウ連動）
 // ========================================================
 export async function renameFSItem(parentPath, oldName, rawNewName) {
+    if (isFSReadOnly()) {
+        return { ok: false, error: "ファイルシステムは現在読み取り専用のため名前を変更できません。" };
+    }
     const cleanParent = (parentPath || "C:/Desktop").replace(/\\/g, "/").replace(/\/+$/, "");
     const parentNode = resolveFS(cleanParent);
     if (!parentNode || !parentNode[oldName]) {

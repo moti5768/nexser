@@ -1529,8 +1529,9 @@ export function showModalWindow(title, message, options = {}) {
         ? options.disableResize
         : (options.resizable !== undefined ? !options.resizable : true);
 
-    // 既存の createWindow 関数を利用
-    const content = createWindow(modalTitle, {
+    // カーネル登録済みの windowCreator を経由してモーダル生成もカーネル統制下へ統合
+    const createModalWin = kernelWindowCreator || createWindow;
+    const content = createModalWin(modalTitle, {
         ...positionOpts,
         taskbar: (options.taskbar !== undefined) ? options.taskbar : false,
         disableControls: options.disableControls !== undefined ? options.disableControls : false,

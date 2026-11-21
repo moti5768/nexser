@@ -148,6 +148,6 @@ Contact your administrator for further assistance.
     };
 
     ["keydown", "mousedown", "touchstart"].forEach(evt => {
-        window.addEventListener(evt, reboot, false);
+        window.addEventListener(evt, reboot, { capture: true });
     });
 }

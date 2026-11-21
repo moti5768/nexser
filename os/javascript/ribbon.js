@@ -82,7 +82,9 @@ function setupSubmenuHover(parentItem, submenu) {
     const scheduleHide = () => {
         clearTimeout(hideTimer);
         hideTimer = setTimeout(() => {
-            submenu.style.display = "none";
+            if (submenu.isConnected) {
+                submenu.style.display = "none";
+            }
         }, 180);
     };
 
@@ -192,16 +194,24 @@ function addRibbonItem(container, item, refreshers = []) {
     } else {
         div.addEventListener("click", e => {
             e.stopPropagation();
+            const sysState = window.nexser?.kernelAPI?.getSystemState?.();
+            if (sysState && (sysState.isSystemDead || sysState.isLoggingOff || !sysState.isGuiActive)) {
+                return;
+            }
             if (!div.classList.contains("pointer_none")) {
-                if (typeof item.action === "function") item.action();
-
-                const rootDropdown = div.closest(".ribbon-menu")?.querySelector(".ribbon-dropdown");
-                if (rootDropdown) {
-                    rootDropdown.querySelectorAll(".ribbon-submenu").forEach(s => { s.style.display = "none"; });
-                    rootDropdown.style.display = "none";
+                try {
+                    if (typeof item.action === "function") item.action();
+                } catch (err) {
+                    console.error("[Ribbon] Menu action failed:", err);
+                } finally {
+                    const rootDropdown = div.closest(".ribbon-menu")?.querySelector(".ribbon-dropdown");
+                    if (rootDropdown) {
+                        rootDropdown.querySelectorAll(".ribbon-submenu").forEach(s => { s.style.display = "none"; });
+                        rootDropdown.style.display = "none";
+                    }
+                    const parentMenu = div.closest(".ribbon-menu");
+                    if (parentMenu) parentMenu.classList.remove("selected");
                 }
-                const parentMenu = div.closest(".ribbon-menu");
-                if (parentMenu) parentMenu.classList.remove("selected");
             }
         });
     }

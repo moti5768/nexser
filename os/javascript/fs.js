@@ -39,11 +39,35 @@ export function setBulkUpdating(flag) {
 }
 
 // =========================================
-// 【NTFS風改善】ファイル排他ロック管理機構
+// 【NTFS風改善】ファイル排他ロック管理＆カーネルFS統制機構
 // =========================================
 const fileLocks = new Map(); // normalizedPath -> { mode: "exclusive", pid: string }
+let currentFSOwnerPid = null;
+let fsReadOnlyMode = false;
+
+export function setFSReadOnly(flag) {
+    fsReadOnlyMode = Boolean(flag);
+}
+
+export function isFSReadOnly() {
+    return fsReadOnlyMode;
+}
+
+/**
+ * 指定PID（または "system"）の所有コンテキストで同期FS操作を実行する
+ */
+export function runWithFSOwner(pid, fn) {
+    const prevOwner = currentFSOwnerPid;
+    currentFSOwnerPid = pid !== null && pid !== undefined ? String(pid) : null;
+    try {
+        return fn();
+    } finally {
+        currentFSOwnerPid = prevOwner;
+    }
+}
 
 export function lockFile(path, mode = "exclusive", pid = "system") {
+    if (fsReadOnlyMode) return false;
     const normPath = normalizePath(path);
     const ownerPid = String(pid);
     const current = fileLocks.get(normPath);
@@ -88,11 +112,13 @@ export function unlockFilesByPath(pathPrefix) {
     }
 }
 
-// 自身または上位（祖先）パスに排他ロックがあるか判定（親フォルダーへの新規追加・並び替え用）
-function isSelfOrAncestorLocked(targetPath) {
+// 自身または上位（祖先）パスに他プロセスの排他ロックがあるか判定（親フォルダーへの新規追加・並び替え用）
+function isSelfOrAncestorLocked(targetPath, ownerPid = null) {
     const norm = normalizePath(targetPath).replace(/\/+$/, "");
+    const ownerStr = ownerPid !== null && ownerPid !== undefined ? String(ownerPid) : null;
     for (const [lockedPath, info] of fileLocks.entries()) {
         if (info.mode !== "exclusive") continue;
+        if (ownerStr !== null && info.pid === ownerStr) continue;
         const cleanLocked = lockedPath.replace(/\/+$/, "");
         if (norm === cleanLocked || norm.startsWith(cleanLocked + "/")) {
             return info;
@@ -101,11 +127,13 @@ function isSelfOrAncestorLocked(targetPath) {
     return null;
 }
 
-// 自身・祖先・または配下（子孫）に排他ロックがあるか判定（削除・リネーム・上書き用）
-function hasExclusiveLockOnOrAbove(targetPath) {
+// 自身・祖先・または配下（子孫）に他プロセスの排他ロックがあるか判定（削除・リネーム・上書き用）
+function hasExclusiveLockOnOrAbove(targetPath, ownerPid = null) {
     const norm = normalizePath(targetPath).replace(/\/+$/, "");
+    const ownerStr = ownerPid !== null && ownerPid !== undefined ? String(ownerPid) : null;
     for (const [lockedPath, info] of fileLocks.entries()) {
         if (info.mode !== "exclusive") continue;
+        if (ownerStr !== null && info.pid === ownerStr) continue;
         const cleanLocked = lockedPath.replace(/\/+$/, "");
         if (
             norm === cleanLocked ||
@@ -118,8 +146,8 @@ function hasExclusiveLockOnOrAbove(targetPath) {
     return null;
 }
 
-export function isFileLocked(pathPrefix) {
-    return hasExclusiveLockOnOrAbove(pathPrefix) !== null;
+export function isFileLocked(pathPrefix, ownerPid = null) {
+    return hasExclusiveLockOnOrAbove(pathPrefix, ownerPid) !== null;
 }
 // 1. ベースデータ
 const baseFS = {
@@ -253,7 +281,11 @@ let needsFullSyncSave = false;
  * フォルダ内の子要素の並び順のみを完全差分更新で変更する（サブツリー再保存・メタデータ欠落を防止）
  */
 export function reorderNodeKeys(nodePath, orderedKeys) {
-    if (isSelfOrAncestorLocked(nodePath)) {
+    if (fsReadOnlyMode) {
+        console.error(`[FS Error] 並び替え拒否: ファイルシステムは読み取り専用です。`);
+        return false;
+    }
+    if (isSelfOrAncestorLocked(nodePath, currentFSOwnerPid)) {
         console.error(`[FS Error] 並び替え拒否: '${nodePath}' はロックされています。`);
         return false;
     }
@@ -416,6 +448,11 @@ function wrapProxy(obj, path = "") {
                 return false;
             }
 
+            if (!isInitializing && fsReadOnlyMode) {
+                console.error(`[FS Error] 書き込み拒否: ファイルシステムは読み取り専用です (${path ? `${path}/${prop}` : prop})。`);
+                return false;
+            }
+
             if (!isInitializing && target[prop] && typeof target[prop] === "object" && target[prop].system === true) {
                 console.error(`[FS Error] 上書き拒否: '${path ? `${path}/${prop}` : prop}' はシステム保護されています。`);
                 return false;
@@ -425,9 +462,9 @@ function wrapProxy(obj, path = "") {
                 return true;
             }
 
-            // 親フォルダー(path)は自身/祖先のロックのみ、対象アイテム(currentPath)は配下を含めてロック判定
+            // 親フォルダー(path)は自身/祖先のロックのみ、対象アイテム(currentPath)は配下を含めてロック判定（自身のPIDロックは通過）
             const currentPath = path ? `${path}/${prop}` : prop;
-            const lockInfo = (path ? isSelfOrAncestorLocked(path) : null) || hasExclusiveLockOnOrAbove(currentPath);
+            const lockInfo = (path ? isSelfOrAncestorLocked(path, currentFSOwnerPid) : null) || hasExclusiveLockOnOrAbove(currentPath, currentFSOwnerPid);
             if (lockInfo) {
                 console.error(`[FS Error] 書き込み拒否: '${currentPath}' はロックされています (PID: ${lockInfo.pid})。`);
                 return false;
@@ -481,13 +518,18 @@ function wrapProxy(obj, path = "") {
         },
 
         deleteProperty(target, prop) {
+            if (!isInitializing && fsReadOnlyMode) {
+                console.error(`[FS Error] 削除拒否: ファイルシステムは読み取り専用です (${path ? `${path}/${prop}` : prop})。`);
+                return false;
+            }
+
             if (PROTECTED_KEYS.has(prop) || (target[prop] && target[prop].system === true)) {
                 return false;
             }
 
-            // 親フォルダー(path)は自身/祖先のロックのみ、削除対象(currentPath)は配下を含めてロック判定
+            // 親フォルダー(path)は自身/祖先のロックのみ、削除対象(currentPath)は配下を含めてロック判定（自身のPIDロックは通過）
             const currentPath = path ? `${path}/${prop}` : prop;
-            const lockInfo = (path ? isSelfOrAncestorLocked(path) : null) || hasExclusiveLockOnOrAbove(currentPath);
+            const lockInfo = (path ? isSelfOrAncestorLocked(path, currentFSOwnerPid) : null) || hasExclusiveLockOnOrAbove(currentPath, currentFSOwnerPid);
             if (lockInfo) {
                 console.error(`[FS Error] 削除拒否: '${currentPath}' はロックされています (PID: ${lockInfo.pid})。`);
                 return false;
@@ -1053,7 +1095,7 @@ if (typeof window !== "undefined") {
             clearTimeout(saveTimer);
             saveTimer = null;
         }
-        if (isSaving || dirtyNodePaths.size > 0 || deletedNodePaths.size > 0 || dirtyMetaOnlyPaths.size > 0) {
+        if (!fsReadOnlyMode && (isSaving || dirtyNodePaths.size > 0 || deletedNodePaths.size > 0 || dirtyMetaOnlyPaths.size > 0)) {
             try {
                 localStorage.setItem("OS_EMERGENCY_BACKUP", "dirty");
             } catch (e) { }
@@ -1063,15 +1105,15 @@ if (typeof window !== "undefined") {
 
     document.addEventListener("visibilitychange", () => {
         if (document.visibilityState === "hidden") {
-            if (saveTimer || dirtyNodePaths.size > 0 || deletedNodePaths.size > 0 || dirtyMetaOnlyPaths.size > 0) {
+            if (!fsReadOnlyMode && (saveTimer || dirtyNodePaths.size > 0 || deletedNodePaths.size > 0 || dirtyMetaOnlyPaths.size > 0)) {
                 forceSave().catch(e => console.error("[FS] Background save failed:", e));
             }
         }
     });
 
     watchdogInterval = setInterval(async () => {
-        // ★ FSのマウント完了前（初回boot前・boot中）は監視を発火させない
-        if (!isFSReady || isInitializing || isSaving || saveTimer !== null) return;
+        // ★ FSのマウント完了前・ログオフ中・読み取り専用ロックダウン中は監視を発火させない
+        if (!isFSReady || isInitializing || isSaving || saveTimer !== null || fsReadOnlyMode || window.nexser?.isLoggingOff) return;
 
         try {
             const hasInstalled = localStorage.getItem("nexser_installed") === "true";
@@ -1097,6 +1139,7 @@ if (typeof window !== "undefined") {
     }, 3000);
 
     window.addEventListener("nexser-bsod", () => {
+        fsReadOnlyMode = true;
         if (watchdogInterval) {
             clearInterval(watchdogInterval);
             watchdogInterval = null;

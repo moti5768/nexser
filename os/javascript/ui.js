@@ -212,14 +212,29 @@ export function installDynamicButtonEffect() {
         isBodyListenersRegistered = true;
     }
 
-    // グローバルなマウスアップ処理（一度だけ登録）
+    // グローバルなマウスアップおよびログオフ・BSOD時のUI状態リセット処理（一度だけ登録）
     if (!isGlobalMouseUpRegistered) {
+        const resetDynamicUIState = () => {
+            clearTimeout(tooltipTimer);
+            tooltipTimer = null;
+            if (globalTooltip) {
+                globalTooltip.style.display = "none";
+            }
+            if (pressedEl) {
+                pressedEl.classList.remove("pressed");
+                pressedEl = null;
+            }
+            closeAllRibbonDropdownsAndSelectedGlobal();
+        };
+
         document.addEventListener("mouseup", () => {
             if (pressedEl) {
                 pressedEl.classList.remove("pressed");
                 pressedEl = null;
             }
         });
+        window.addEventListener("nexser-logoff", resetDynamicUIState);
+        window.addEventListener("nexser-bsod", resetDynamicUIState);
         isGlobalMouseUpRegistered = true;
     }
 

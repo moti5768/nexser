@@ -1,5 +1,5 @@
 // desktop.js
-import { FS, forceSave, markDefaultDeleted, unmarkDefaultDeleted, setBulkUpdating, reorderNodeKeys } from "./fs.js";
+import { FS, forceSave, markDefaultDeleted, unmarkDefaultDeleted, setBulkUpdating, reorderNodeKeys, isFSReadOnly } from "./fs.js";
 import {
     resolveFS,
     validateName,
@@ -22,7 +22,41 @@ import { attachContextMenu } from "./context-menu.js";
 import { resolveAppByPath, getIcon, getDisplayFileName, applyIconToElement } from "./file-associations.js";
 import { openWithDialog as explorerOpenWithDialog, showProperties, emptyTrash } from "./apps/explorer.js";
 import { moveFileContent, copyFileContent, deleteFileContentRecursive } from "./fs-db.js";
-import { applyDesktopBackground, loadSetting, saveSetting } from "./apps/settings.js";
+import { applyDesktopBackground, loadSetting as rawLoadSetting, saveSetting as rawSaveSetting } from "./apps/settings.js";
+
+function isKernelStopped() {
+    const state = window.nexser?.kernelAPI?.getSystemState?.();
+    if (state) {
+        return Boolean(state.isSystemDead || state.isLoggingOff || !state.isGuiActive);
+    }
+    return Boolean(window.nexser?.isLoggingOff);
+}
+
+function assertWritableFS(notify = true) {
+    if (isKernelStopped()) return false;
+    if (typeof isFSReadOnly === "function" && isFSReadOnly()) {
+        if (notify) {
+            window.nexser?.windowAPI?.alertWindow("ファイルシステムは現在読み取り専用のため変更できません。", { title: "システム保護" });
+        }
+        return false;
+    }
+    return true;
+}
+
+async function loadSetting(key) {
+    if (typeof window.nexser?.kernelAPI?.settings?.load === "function") {
+        return await window.nexser.kernelAPI.settings.load(key, null);
+    }
+    return await rawLoadSetting(key);
+}
+
+async function saveSetting(key, value) {
+    if (isKernelStopped()) return false;
+    if (typeof window.nexser?.kernelAPI?.settings?.save === "function") {
+        return await window.nexser.kernelAPI.settings.save(key, value);
+    }
+    return await rawSaveSetting(key, value);
+}
 
 // 選択状態管理 (複数選択・範囲選択対応)
 let globalSelected = { items: new Set(), window: null, lastSelected: null };
@@ -30,22 +64,49 @@ let autoArrange = true; // 自動整列フラグ
 let iconPositions = {}; // 自動整列OFF時のアイコン座標データ
 let showFileExtensions = true; // 拡張子表示設定
 
+function resetDesktopInteractiveState() {
+    if (globalSelected.items) {
+        globalSelected.items.forEach(i => i.classList?.remove("selected"));
+        globalSelected.items.clear();
+    }
+    globalSelected.lastSelected = null;
+    globalSelected.item = null;
+    globalSelected.window = null;
+
+    const selState = window._desktopSelectionState;
+    if (selState) {
+        selState.startX = undefined;
+        selState.startY = undefined;
+        selState.isSelecting = false;
+        selState.wasDragging = false;
+        if (selState.selectionBox) {
+            selState.selectionBox.remove();
+            selState.selectionBox = null;
+        }
+    }
+}
+
+if (typeof window !== "undefined" && !window._desktopLifecycleHooksInstalled) {
+    window._desktopLifecycleHooksInstalled = true;
+    window.addEventListener("nexser-logoff", resetDesktopInteractiveState);
+    window.addEventListener("nexser-bsod", resetDesktopInteractiveState);
+}
+
 (async () => {
     try {
-        const savedAutoArrange = await loadSetting("desktop_autoArrange");
+        const [savedAutoArrange, savedPositions, savedShowExt] = await Promise.all([
+            loadSetting("desktop_autoArrange"),
+            loadSetting("desktop_iconsPositions"),
+            loadSetting("explorerShowFileExtensions")
+        ]);
         if (savedAutoArrange != null) autoArrange = savedAutoArrange;
-
-        const savedPositions = await loadSetting("desktop_iconsPositions");
         if (savedPositions) iconPositions = savedPositions;
-
-        // エクスプローラーと共通の拡張子表示設定をロード
-        const savedShowExt = await loadSetting("explorerShowFileExtensions");
         if (savedShowExt != null) {
             showFileExtensions = savedShowExt === true || savedShowExt === "true";
         }
 
         const desktop = document.getElementById("desktop");
-        if (desktop && !window.nexser?.isBooting) buildDesktop();
+        if (desktop && !window.nexser?.isBooting && !isKernelStopped()) buildDesktop();
     } catch (e) {
         console.warn("デスクトップ設定の読み込みに失敗しました:", e);
     }
@@ -55,6 +116,7 @@ let showFileExtensions = true; // 拡張子表示設定
 // 共通: アイテム移動・コピー処理（デスクトップ背景・フォルダアイコン共通）
 // --------------------
 async function transferItemsToTarget(data, targetPath, targetNode, isCopy) {
+    if (!assertWritableFS()) return false;
     if (!data || !targetNode || targetNode.type !== "folder") return false;
 
     const cleanTargetPath = targetPath.replace(/\\/g, "/").replace(/\/+$/, "");
@@ -183,6 +245,7 @@ async function transferItemsToTarget(data, targetPath, targetNode, isCopy) {
 // デスクトップ描画
 // --------------------
 export function buildDesktop() {
+    if (isKernelStopped()) return;
     globalSelected = { items: new Set(), window: null, lastSelected: null, item: null };
 
     const desktop = document.getElementById("desktop");
@@ -968,9 +1031,12 @@ export function buildDesktop() {
                 }
             };
 
+            if (!assertWritableFS()) return;
+
             setBulkUpdating(true);
             try {
                 for (const item of initialEntries) {
+                    if (!assertWritableFS(false)) break;
                     if (item instanceof File) {
                         await addFileToNode(item, folderNode);
                     } else {
@@ -978,14 +1044,14 @@ export function buildDesktop() {
                     }
                 }
                 folderNode.lastModified = Date.now();
-                pg.update(totalFiles, totalFiles, "すべての項目のコピーが完了しました。");
+                pg?.update(totalFiles, totalFiles, "すべての項目のコピーが完了しました。");
                 await forceSave();
             } catch (err) {
                 console.error("Drop processing failed:", err);
                 if (pg && typeof pg.close === "function") pg.close();
             } finally {
                 setBulkUpdating(false);
-                desktop.style.opacity = "1";
+                if (desktop) desktop.style.opacity = "1";
                 initialEntries.length = 0;
 
                 if (e.dataTransfer) {
@@ -997,8 +1063,10 @@ export function buildDesktop() {
                     }
                 }
 
-                window.dispatchEvent(new Event("fs-updated"));
-                buildDesktop();
+                if (!isKernelStopped()) {
+                    window.dispatchEvent(new Event("fs-updated"));
+                    buildDesktop();
+                }
 
                 const closeProgress = (progressWindowObj) => {
                     if (progressWindowObj && typeof progressWindowObj.close === "function") {
@@ -1010,7 +1078,7 @@ export function buildDesktop() {
         });
     }
 
-    if (window.nexser?.isBooting) {
+    if (window.nexser?.isBooting || window.nexser?.isLoggingOff) {
         iconsContainer.style.display = "none";
     } else {
         requestAnimationFrame(adjustDesktopIconArea);
@@ -1026,7 +1094,7 @@ function adjustDesktopIconArea() {
     const taskbar = document.getElementById("taskbar");
     if (!desktop || !iconsContainer || !taskbar) return;
 
-    if (window.nexser?.isBooting) {
+    if (window.nexser?.isBooting || window.nexser?.isLoggingOff) {
         iconsContainer.style.display = "none";
         return;
     }
@@ -1092,6 +1160,7 @@ window.addEventListener("desktop-resize", adjustDesktopIconArea);
 // 新規フォルダ/ファイル作成
 // --------------------
 function createNewItem(currentPath, container, itemType = "folder") {
+    if (!assertWritableFS()) return;
     const folderNode = resolveFS(currentPath);
     if (!folderNode || !container) return;
 
@@ -1203,6 +1272,7 @@ function createNewItem(currentPath, container, itemType = "folder") {
 // アイテム削除 (ゴミ箱対応版)
 // --------------------
 async function deleteFSItem(parentPath, itemName, dispatchEvent = true) {
+    if (!assertWritableFS()) return false;
     const parentNode = resolveFS(parentPath);
     if (!parentNode || !parentNode[itemName]) return false;
 
@@ -1397,6 +1467,7 @@ function setupDesktopKeyboardNavigation() {
     if (isDesktopKeyHandlerAttached) return;
 
     document.addEventListener("keydown", async (e) => {
+        if (isKernelStopped()) return;
         // --- ガード処理：デスクトップがアクティブか判定 ---
         const active = document.activeElement;
         if (!active) return;
@@ -1791,6 +1862,7 @@ async function snapDesktopIconsToGrid(orderedNames = null) {
 }
 
 window.addEventListener("fs-renamed", async (e) => {
+    if (isKernelStopped()) return;
     const { oldPath, oldName, newName } = e.detail || {};
     if (oldPath === `C:/Desktop/${oldName}` && !autoArrange && iconPositions[oldName]) {
         iconPositions[newName] = iconPositions[oldName];

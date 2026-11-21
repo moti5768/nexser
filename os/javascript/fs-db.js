@@ -9,10 +9,23 @@ const NODE_PREFIX = "fs_node:";
 export const LARGE_FILE_THRESHOLD = 100 * 1024; // 100KB以上を外部保存
 const CHUNK_SIZE = 10 * 1024 * 1024;            // 10MBごとに分割
 
+let isStorageHalted = false;
+export function setStorageHalted(flag) {
+    isStorageHalted = Boolean(flag);
+}
+export function getStorageHalted() {
+    return isStorageHalted;
+}
+
 let saveChain = Promise.resolve();
 
 function enqueueSave(task) {
-    const run = saveChain.then(task);
+    const run = saveChain.then(() => {
+        if (isStorageHalted) {
+            throw new Error("FS_STORAGE_HALTED: ストレージ書き込みはカーネルにより停止されています。");
+        }
+        return task();
+    });
     // 内部チェーンは常に resolved に保ち、1回の失敗で後続保存が永久停止するのを防ぐ
     saveChain = run.catch(() => { });
     return run.catch(async err => {
@@ -26,6 +39,9 @@ function enqueueSave(task) {
 ========================= */
 
 async function withStore(storeName, mode, callback) {
+    if (isStorageHalted && mode === "readwrite") {
+        throw new Error("FS_STORAGE_HALTED: ストレージ書き込みはカーネルにより停止されています。");
+    }
     const db = await openDB();
     return new Promise((resolve, reject) => {
         const tx = db.transaction(storeName, mode);
@@ -308,8 +324,8 @@ export async function saveNodeDiff(rootFS, dirtyPaths = [], deletedPaths = [], m
             if (usage >= quota * 0.95) {
                 const quotaGB = (quota / 1024 / 1024 / 1024).toFixed(2);
                 console.error(`[FS-DB] Save aborted: Storage limit reached (${(usage / 1024 / 1024 / 1024).toFixed(2)}GB / ${quotaGB}GB)`);
-                if (typeof nexser !== "undefined" && nexser.windowAPI?.alertWindow) {
-                    nexser.windowAPI.alertWindow(`ディスク領域不足: ブラウザの制限 (${quotaGB}GB) に達したため、保存できません。`, { title: "nexser" });
+                if (typeof window !== "undefined" && !window.nexser?.isLoggingOff && window.nexser?.windowAPI?.alertWindow) {
+                    window.nexser.windowAPI.alertWindow(`ディスク領域不足: ブラウザの制限 (${quotaGB}GB) に達したため、保存できません。`, { title: "nexser" });
                 }
                 throw new Error("FS_QUOTA_EXCEEDED");
             }
@@ -425,8 +441,8 @@ export async function saveFS(fs) {
             if (usage >= quota * 0.95) {
                 const quotaGB = (quota / 1024 / 1024 / 1024).toFixed(2);
                 console.error(`[FS-DB] Save aborted: Storage limit reached (${(usage / 1024 / 1024 / 1024).toFixed(2)}GB / ${quotaGB}GB)`);
-                if (typeof nexser !== "undefined" && nexser.windowAPI?.alertWindow) {
-                    nexser.windowAPI.alertWindow(`ディスク領域不足: ブラウザの制限 (${quotaGB}GB) に達したため、保存できません。`, { title: "nexser" });
+                if (typeof window !== "undefined" && !window.nexser?.isLoggingOff && window.nexser?.windowAPI?.alertWindow) {
+                    window.nexser.windowAPI.alertWindow(`ディスク領域不足: ブラウザの制限 (${quotaGB}GB) に達したため、保存できません。`, { title: "nexser" });
                 }
                 throw new Error("FS_QUOTA_EXCEEDED");
             }
@@ -657,16 +673,36 @@ export async function loadFS() {
 export async function saveSingleFile(path, data) {
     return enqueueSave(async () => {
         const db = await openDB();
+
+        // 1. 削除フェーズ（専用トランザクションで完了させて TransactionInactiveError を防止）
+        await new Promise((resolve, reject) => {
+            const delTx = db.transaction([STORE_FILES], "readwrite");
+            const delStore = delTx.objectStore(STORE_FILES);
+            delTx.oncomplete = () => resolve();
+            delTx.onerror = (e) => reject(e?.target?.error || delTx.error || new Error("Single file delete phase error"));
+            delTx.onabort = (e) => reject(e?.target?.error || delTx.error || new Error("Single file delete phase aborted"));
+
+            deletePrefixFromStore(delStore, path).catch(err => {
+                try { delTx.abort(); } catch (_) { }
+                reject(err);
+            });
+        });
+
+        // 2. 書き込みフェーズ（同期的・アトミックにコミット）
         const tx = db.transaction([STORE_FILES], "readwrite");
         const fileStore = tx.objectStore(STORE_FILES);
 
-        await deletePrefixFromStore(fileStore, path);
-        writeLargeFilesToStore(fileStore, new Map([[path, data]]));
-
         return new Promise((resolve, reject) => {
             tx.oncomplete = () => resolve();
-            tx.onerror = (e) => reject(e?.target?.error || new Error("Single file save error"));
-            tx.onabort = (e) => reject(e?.target?.error || new Error("Single file save aborted"));
+            tx.onerror = (e) => reject(e?.target?.error || tx.error || new Error("Single file save error"));
+            tx.onabort = (e) => reject(e?.target?.error || tx.error || new Error("Single file save aborted"));
+
+            try {
+                writeLargeFilesToStore(fileStore, new Map([[path, data]]));
+            } catch (err) {
+                try { tx.abort(); } catch (_) { }
+                reject(err);
+            }
         });
     });
 }

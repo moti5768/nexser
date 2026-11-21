@@ -166,42 +166,57 @@ const commands = {
 
     rd: {
         desc: 'Removes a directory (MS-DOS style rmdir)',
-        run(args) {
+        async run(args) {
             if (!args[0]) return print("Usage: rd <directory>");
-            const fullPath = normalizePath(args[0]);
-            const parts = fullPath.replace(/^C:\//, "").split("/");
-            const name = parts.pop();
-            const parentPath = parts.join("/");
-            const parent = parentPath === "" ? resolveFS("") : resolveFS(parentPath);
+            const fullPath = normalizePath(args[0]).replace(/\/+$/, "");
+            if (!fullPath || fullPath === "C:") return print("Access is denied.");
 
-            if (!parent || !parent[name]) return print("The system cannot find the path specified.");
-            if (parent[name].type !== 'folder') return print("The directory name is invalid.");
+            const node = resolveFS(fullPath);
+            if (!node) return print("The system cannot find the path specified.");
+            if (node.type !== 'folder') return print("The directory name is invalid.");
+            if (node.system === true) return print("Access is denied. (System protected directory)");
 
-            // 中身が空かどうかの確認
-            const isEmpty = Object.keys(parent[name]).filter(k => !['type', 'system', 'name'].includes(k)).length === 0;
+            const { isSystemMetaKey, isChildNodeObject, deleteFSNode } = await import('./fs-utils.js');
+            const { markDefaultDeleted, forceSave } = await import('./fs.js');
+
+            // メタデータ（lastModified等）を除外して本当に空かどうかを正確に判定
+            const isEmpty = Object.keys(node).filter(k => !isSystemMetaKey(k) && isChildNodeObject(node[k])).length === 0;
             if (!isEmpty) return print("The directory is not empty.");
 
-            delete parent[name];
-            print(`Directory removed: ${name}`);
-            window.dispatchEvent(new Event("fs-updated"));
+            try {
+                await deleteFSNode(fullPath);
+                await markDefaultDeleted(fullPath);
+                await forceSave();
+                print(`Directory removed: ${fullPath.split("/").pop()}`);
+                window.dispatchEvent(new Event("fs-updated"));
+            } catch (err) {
+                print(`Error: ${err.message}`);
+            }
         }
     },
 
     del: {
         desc: 'Deletes one or more files',
-        run(args) {
+        async run(args) {
             if (!args[0]) return print("Usage: del <file>");
-            const fullPath = normalizePath(args[0]);
-            const parts = fullPath.replace(/^C:\//, "").split("/");
-            const name = parts.pop();
-            const parentPath = parts.join("/");
-            const parent = parentPath === "" ? resolveFS("") : resolveFS(parentPath);
+            const fullPath = normalizePath(args[0]).replace(/\/+$/, "");
+            const node = resolveFS(fullPath);
 
-            if (!parent || !parent[name]) return print("Could Not Find " + fullPath);
-            if (parent[name].type === 'folder') return print("Access is denied. (Use 'rd' to remove directories)");
+            if (!node) return print("Could Not Find " + fullPath);
+            if (node.type === 'folder') return print("Access is denied. (Use 'rd' to remove directories)");
+            if (node.system === true) return print("Access is denied. (System protected item)");
 
-            delete parent[name];
-            window.dispatchEvent(new Event("fs-updated"));
+            const { deleteFSNode } = await import('./fs-utils.js');
+            const { markDefaultDeleted, forceSave } = await import('./fs.js');
+
+            try {
+                await deleteFSNode(fullPath);
+                await markDefaultDeleted(fullPath);
+                await forceSave();
+                window.dispatchEvent(new Event("fs-updated"));
+            } catch (err) {
+                print(`Error: ${err.message}`);
+            }
         }
     },
 
@@ -237,10 +252,14 @@ const commands = {
                 return print("The file cannot be copied onto itself.");
             }
 
-            const { cloneFSNode } = await import('./fs-utils.js');
+            const { cloneFSNode, clearSystemProtection } = await import('./fs-utils.js');
             const { copyFileContent } = await import('./fs-db.js');
+            const { forceSave } = await import('./fs.js');
+            const cloned = cloneFSNode(srcNode);
+            clearSystemProtection(cloned);
             await copyFileContent(srcPath, destFullPath);
-            destParent[finalName] = cloneFSNode(srcNode);
+            destParent[finalName] = cloned;
+            await forceSave();
             print(`        1 file(s) copied.`);
             window.dispatchEvent(new Event("fs-updated"));
         }
@@ -389,17 +408,27 @@ const commands = {
 
     rm: {
         desc: 'Remove a file or directory',
-        run(args) {
+        async run(args) {
             if (!args[0]) return print("Usage: rm <path>");
-            const fullPath = normalizePath(args[0]);
-            const parts = fullPath.replace(/^C:\//, "").split("/");
-            const name = parts.pop();
-            const parentPath = parts.join("/");
-            const parent = parentPath === "" ? resolveFS("") : resolveFS(parentPath);
-            if (!parent || !parent[name]) return print("File or directory not found");
-            delete parent[name];
-            print(`Removed: ${name}`);
-            window.dispatchEvent(new Event("fs-updated"));
+            const fullPath = normalizePath(args[0]).replace(/\/+$/, "");
+            if (!fullPath || fullPath === "C:") return print("Cannot remove root directory");
+
+            const node = resolveFS(fullPath);
+            if (!node) return print("File or directory not found");
+            if (node.system === true) return print("Access denied: system protected item");
+
+            const { deleteFSNode } = await import('./fs-utils.js');
+            const { markDefaultDeleted, forceSave } = await import('./fs.js');
+
+            try {
+                await deleteFSNode(fullPath);
+                await markDefaultDeleted(fullPath);
+                await forceSave();
+                print(`Removed: ${fullPath.split("/").pop()}`);
+                window.dispatchEvent(new Event("fs-updated"));
+            } catch (err) {
+                print(`Error: ${err.message}`);
+            }
         }
     },
 
@@ -440,15 +469,46 @@ const commands = {
             if (srcPath === destFullPath) return;
             if (destParent[destName]) return print("Destination already exists");
 
-            // 外部データ(__EXTERNAL_DATA__)を持つファイルの場合はDB側も複製して旧キーを掃除
             const targetNode = srcParent[srcName];
-            if (targetNode.type === "file" && targetNode.content === "__EXTERNAL_DATA__") {
-                const { copyFileContent } = await import('./fs-db.js');
-                await copyFileContent(srcPath, destFullPath);
+            if (targetNode.system === true) return print("Cannot rename or move a system protected item");
+
+            const { cloneFSNode, isDescendantOrSelf, processStorageRecursively } = await import('./fs-utils.js');
+            const { moveFileContent } = await import('./fs-db.js');
+            const { setBulkUpdating, forceSave, markDefaultDeleted, unmarkDefaultDeleted } = await import('./fs.js');
+
+            if (targetNode.type === "folder" && isDescendantOrSelf(srcPath, destFullPath)) {
+                return print("Cannot move a folder into itself or its subfolder");
             }
 
-            destParent[destName] = targetNode;
-            delete srcParent[srcName];
+            const clonedNode = cloneFSNode(targetNode);
+            clonedNode.lastModified = Date.now();
+
+            setBulkUpdating(true);
+            try {
+                if (clonedNode.type === "file" || clonedNode.type === "app") {
+                    await moveFileContent(srcPath, destFullPath);
+                } else if (clonedNode.type === "folder") {
+                    await processStorageRecursively(targetNode, srcPath, destFullPath, false);
+                }
+
+                const removed = delete srcParent[srcName];
+                if (!removed) {
+                    // 削除できなかった場合は実データを元のパスへロールバック
+                    if (clonedNode.type === "file" || clonedNode.type === "app") {
+                        await moveFileContent(destFullPath, srcPath).catch(() => { });
+                    } else if (clonedNode.type === "folder") {
+                        await processStorageRecursively(targetNode, destFullPath, srcPath, false).catch(() => { });
+                    }
+                    return print("Rename failed: source is locked or protected");
+                }
+
+                destParent[destName] = clonedNode;
+                await markDefaultDeleted(srcPath);
+                await unmarkDefaultDeleted(destFullPath);
+                await forceSave();
+            } finally {
+                setBulkUpdating(false);
+            }
 
             print(`Renamed: ${srcName} -> ${destName}`);
             window.dispatchEvent(new Event("fs-updated"));
@@ -615,6 +675,192 @@ const commands = {
                 }
             };
 
+            // ★ インストール必須条件ポリシー（必要に応じて配列を増減可能）
+            const PACKAGE_INSTALL_POLICY = {
+                requiredFiles: ["manifest.json"],
+                requiredDirs: ["assets"], // 必須フォルダを増やす例: ["assets", "core"] / 不要なら []
+                requirePermissions: true, // false にすると permissions 未記載パッケージも許可
+                allowedPermissions: new Set([
+                    "fs:read",
+                    "fs:write",
+                    "settings",
+                    "app:launch",
+                    "ipc",
+                    "window:preview",
+                    "system:assoc",
+                    "fs:icon",
+                    "log",
+                    "*"
+                ])
+            };
+
+            const isRelativeAssetPath = (val) => {
+                if (typeof val !== "string" || !val.trim()) return false;
+                const trimmed = val.trim();
+                if (trimmed.startsWith("data:") || /^https?:\/\//i.test(trimmed)) return false;
+                return trimmed.includes("/") || trimmed.includes("\\") || /\.(png|svg|webp|ico|jpg|jpeg|gif)$/i.test(trimmed);
+            };
+
+            const normalizePackageRelPath = (rawPath) => {
+                return String(rawPath || "").replace(/\\/g, "/").replace(/^\.\//, "").replace(/^\/+/, "").replace(/\/+$/, "");
+            };
+
+            const validateInstallPackage = (fileEntries, manifestRawText, validateNameFn, targetAppsFolder) => {
+                const errors = [];
+                const filePathSet = new Set();
+                const dirPathSet = new Set();
+
+                // 1. パス安全性とファイル・フォルダ集合の構築
+                for (const entry of fileEntries) {
+                    const rel = normalizePackageRelPath(entry.relPath);
+                    if (!rel || rel.split("/").some(seg => seg === ".." || seg === ".")) {
+                        errors.push(`不正な相対パスが含まれています: '${entry.relPath}'`);
+                        continue;
+                    }
+                    const lowerRel = rel.toLowerCase();
+                    filePathSet.add(lowerRel);
+
+                    const parts = lowerRel.split("/");
+                    for (let i = 1; i < parts.length; i++) {
+                        dirPathSet.add(parts.slice(0, i).join("/"));
+                    }
+                }
+
+                // 2. OS共通の必須ファイルチェック
+                for (const reqFile of PACKAGE_INSTALL_POLICY.requiredFiles) {
+                    const normReq = normalizePackageRelPath(reqFile).toLowerCase();
+                    if (!filePathSet.has(normReq)) {
+                        errors.push(`必須ファイルが見つかりません: '${reqFile}'`);
+                    }
+                }
+
+                // 3. OS共通の必須フォルダチェック
+                for (const reqDir of PACKAGE_INSTALL_POLICY.requiredDirs) {
+                    const normDir = normalizePackageRelPath(reqDir).toLowerCase();
+                    if (!dirPathSet.has(normDir)) {
+                        errors.push(`必須フォルダ（配下に1つ以上のファイル）が見つかりません: '${reqDir}/'`);
+                    }
+                }
+
+                // 4. manifest.json のパースと必須スキーマ検証
+                let manifestData = null;
+                if (typeof manifestRawText !== "string" || !manifestRawText.trim()) {
+                    errors.push("manifest.json が存在しないか内容が空です。");
+                } else {
+                    try {
+                        const parsed = JSON.parse(manifestRawText);
+                        if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+                            errors.push("manifest.json のルートは JSON オブジェクトである必要があります。");
+                        } else {
+                            manifestData = parsed;
+                        }
+                    } catch (jsonErr) {
+                        errors.push(`manifest.json の構文エラー: ${jsonErr.message}`);
+                    }
+                }
+
+                let safeAppName = "";
+                let mainEntry = "";
+
+                if (manifestData) {
+                    // name 必須
+                    if (typeof manifestData.name !== "string" || !manifestData.name.trim()) {
+                        errors.push("manifest.json に必須項目 'name' がありません。");
+                    } else {
+                        safeAppName = manifestData.name.trim().replace(/\.app$/i, "");
+                        const nameErr = validateNameFn(safeAppName);
+                        if (nameErr) {
+                            errors.push(`manifest.json の 'name' が不正です ('${safeAppName}'): ${nameErr}`);
+                        } else if (targetAppsFolder?.[`${safeAppName}.app`]?.system === true) {
+                            errors.push(`システム標準アプリ '${safeAppName}.app' と同名のパッケージはインストールできません。`);
+                        }
+                    }
+
+                    // version 必須（x.y.z 形式）
+                    if (typeof manifestData.version !== "string" || !/^\d+\.\d+\.\d+(?:[-+][\w.-]+)?$/.test(manifestData.version.trim())) {
+                        errors.push("manifest.json に有効な必須項目 'version'（例: 1.0.0）がありません。");
+                    }
+
+                    // main 必須＆実ファイル存在確認
+                    if (typeof manifestData.main !== "string" || !manifestData.main.trim()) {
+                        errors.push("manifest.json に必須項目 'main' がありません。");
+                    } else {
+                        mainEntry = normalizePackageRelPath(manifestData.main);
+                        if (!mainEntry || mainEntry.split("/").some(seg => seg === ".." || seg === ".") || !mainEntry.toLowerCase().endsWith(".js")) {
+                            errors.push(`manifest.json の 'main' はパッケージ内の .js ファイルを指定してください: '${manifestData.main}'`);
+                        } else if (!filePathSet.has(mainEntry.toLowerCase())) {
+                            errors.push(`manifest.json で指定されたエントリファイルが見つかりません: '${mainEntry}'`);
+                        }
+                    }
+
+                    // permissions 検証
+                    if (PACKAGE_INSTALL_POLICY.requirePermissions) {
+                        if (!Array.isArray(manifestData.permissions)) {
+                            errors.push("manifest.json に必須項目 'permissions'（配列）がありません。");
+                        }
+                    }
+                    if (Array.isArray(manifestData.permissions)) {
+                        for (const p of manifestData.permissions) {
+                            const perm = String(p || "").trim();
+                            if (!PACKAGE_INSTALL_POLICY.allowedPermissions.has(perm)) {
+                                errors.push(`manifest.json に不明な権限が指定されています: '${p}'`);
+                            }
+                        }
+                    }
+
+                    // styles で宣言された全CSSの実在確認
+                    if (manifestData.styles !== undefined) {
+                        const stylesArr = Array.isArray(manifestData.styles)
+                            ? manifestData.styles
+                            : (typeof manifestData.styles === "string" ? [manifestData.styles] : null);
+                        if (!stylesArr) {
+                            errors.push("manifest.json の 'styles' は文字列または配列で指定してください。");
+                        } else {
+                            for (const st of stylesArr) {
+                                const normStyle = normalizePackageRelPath(st);
+                                if (!normStyle || !filePathSet.has(normStyle.toLowerCase())) {
+                                    errors.push(`manifest.json の 'styles' で指定されたファイルが見つかりません: '${st}'`);
+                                }
+                            }
+                        }
+                    }
+
+                    // icon がファイルパス指定の場合の実在確認
+                    if (isRelativeAssetPath(manifestData.icon)) {
+                        const normIcon = normalizePackageRelPath(manifestData.icon);
+                        if (!filePathSet.has(normIcon.toLowerCase())) {
+                            errors.push(`manifest.json の 'icon' で指定されたファイルが見つかりません: '${manifestData.icon}'`);
+                        }
+                    }
+
+                    // アプリ独自宣言の必須ファイル・必須フォルダ確認
+                    if (Array.isArray(manifestData.requiredFiles)) {
+                        for (const rf of manifestData.requiredFiles) {
+                            const normRf = normalizePackageRelPath(rf);
+                            if (!normRf || !filePathSet.has(normRf.toLowerCase())) {
+                                errors.push(`manifest.json の requiredFiles で指定された必須ファイルがありません: '${rf}'`);
+                            }
+                        }
+                    }
+                    if (Array.isArray(manifestData.requiredDirs)) {
+                        for (const rd of manifestData.requiredDirs) {
+                            const normRd = normalizePackageRelPath(rd);
+                            if (!normRd || !dirPathSet.has(normRd.toLowerCase())) {
+                                errors.push(`manifest.json の requiredDirs で指定された必須フォルダがありません: '${rd}/'`);
+                            }
+                        }
+                    }
+                }
+
+                return {
+                    ok: errors.length === 0,
+                    errors,
+                    manifestData,
+                    safeAppName,
+                    mainEntry
+                };
+            };
+
             print("フォルダ選択ダイアログを開いています...");
 
             return new Promise((resolve) => {
@@ -694,12 +940,12 @@ const commands = {
 
                     setBulkUpdating(true);
                     try {
-                        // --- [1/4] パッケージ読み込み ---
-                        print(`[1/4] パッケージを読み込み中... (${files.length} ファイル)`);
+                        // --- [1/4] パッケージ読み込み＆必須条件の事前検証（FSへ書き込む前に全チェック） ---
+                        print(`[1/4] パッケージを読み込み・検証中... (${files.length} ファイル)`);
                         const firstRel = (files[0].webkitRelativePath || files[0].name).replace(/\\/g, "/");
                         const rootFolderName = firstRel.includes("/") ? firstRel.split("/")[0] : "CustomApp";
 
-                        let manifestData = {};
+                        let manifestRawText = null;
                         const fileEntries = [];
 
                         for (const file of files) {
@@ -713,73 +959,43 @@ const commands = {
                             fileEntries.push({ relPath, content });
 
                             if (relPath.toLowerCase() === "manifest.json" && typeof content === "string") {
-                                try {
-                                    manifestData = JSON.parse(content);
-                                } catch (jsonErr) {
-                                    throw new Error(`manifest.json の構文エラー: ${jsonErr.message}`);
-                                }
+                                manifestRawText = content;
                             }
                         }
-
-                        const safeAppName = String(manifestData.name || rootFolderName).trim().replace(/\.app$/i, "");
-                        const nameErr = validateName(safeAppName);
-                        if (nameErr) throw new Error(`無効なアプリ名 '${safeAppName}': ${nameErr}`);
 
                         const targetFolder = resolveFS("Programs/Applications");
                         if (!targetFolder) throw new Error("C:/Programs/Applications が見つかりません。");
 
-                        // --- [2/4] 仮想FSへの展開 ---
+                        const validation = validateInstallPackage(fileEntries, manifestRawText, validateName, targetFolder);
+                        if (!validation.ok) {
+                            print("[Validation Failed] 必須条件を満たしていないため、インストールを中止しました:");
+                            validation.errors.forEach(errMsg => print(`  - ${errMsg}`));
+                            throw new Error(`パッケージ必須条件エラー (${validation.errors.length}件)`);
+                        }
+
+                        const { manifestData, safeAppName, mainEntry } = validation;
+
+                        // --- [2/4] 仮想FSへの展開（検証通過後のみ実行） ---
                         ensureDirectory("C:/Programs/Packages");
                         const packageRoot = `C:/Programs/Packages/${safeAppName}`;
-                        print(`[2/4] ファイルを展開中: ${packageRoot}`);
+                        print(`[2/4] 検証完了。ファイルを展開中: ${packageRoot}`);
 
                         if (resolveFS(packageRoot)) {
                             await deleteFSNode(packageRoot);
                         }
                         ensureDirectory(packageRoot);
 
-                        let mainEntry = manifestData.main || "";
-                        const detectedJsFiles = [];
                         const fileMap = new Map();
 
                         for (const entry of fileEntries) {
-                            const relPath = String(entry.relPath || "").replace(/\\/g, "/").replace(/^\/+/, "");
-                            if (!relPath || relPath.split("/").some(seg => seg === ".." || seg === ".")) {
-                                throw new Error(`不正な相対パスが含まれています: ${relPath}`);
-                            }
+                            const relPath = normalizePackageRelPath(entry.relPath);
                             const fullFilePath = `${packageRoot}/${relPath}`;
                             const parentDir = fullFilePath.slice(0, fullFilePath.lastIndexOf("/"));
                             ensureDirectory(parentDir);
 
                             writeFileContent(fullFilePath, entry.content);
                             fileMap.set(relPath.toLowerCase(), entry.content);
-                            if (relPath.toLowerCase().endsWith(".js")) {
-                                detectedJsFiles.push(relPath);
-                            }
                             print(`  + ${relPath}`);
-                        }
-
-                        if (!mainEntry) {
-                            mainEntry =
-                                detectedJsFiles.find(p => p.toLowerCase() === "main.js") ||
-                                detectedJsFiles.find(p => p.toLowerCase() === "index.js") ||
-                                detectedJsFiles[0] ||
-                                "";
-                        }
-                        if (!mainEntry || !resolveFS(`${packageRoot}/${mainEntry.replace(/^\/+/, "")}`)) {
-                            throw new Error(`エントリポイント '${mainEntry || "main.js"}' が見つかりません。`);
-                        }
-
-                        if (!resolveFS(`${packageRoot}/manifest.json`)) {
-                            const generatedManifest = {
-                                name: safeAppName,
-                                version: manifestData.version || "1.0.0",
-                                main: mainEntry,
-                                ...(manifestData.styles ? { styles: Array.isArray(manifestData.styles) ? manifestData.styles : [manifestData.styles] } : {}),
-                                ...(manifestData.icon ? { icon: manifestData.icon } : {}),
-                                windowOptions: manifestData.windowOptions || {}
-                            };
-                            writeFileContent(`${packageRoot}/manifest.json`, JSON.stringify(generatedManifest, null, 2));
                         }
 
                         // --- [3/4] ランチャー・アイコン・関連付け登録 ---
@@ -796,6 +1012,10 @@ const commands = {
                             ? manifestData.styles
                             : (typeof manifestData.styles === "string" ? [manifestData.styles] : []);
 
+                        const permissionsList = Array.isArray(manifestData.permissions)
+                            ? manifestData.permissions.map(p => String(p).trim()).filter(Boolean)
+                            : null;
+
                         targetFolder[appNodeName] = {
                             type: "app",
                             name: safeAppName,
@@ -806,6 +1026,7 @@ const commands = {
                             ...(appIcon ? { icon: appIcon } : {}),
                             ...(manifestData.singleton ? { singleton: true } : {}),
                             ...(manifestData.frameless ? { frameless: true } : {}),
+                            ...(permissionsList ? { permissions: permissionsList } : {}),
                             windowOptions: manifestData.windowOptions || {},
                             lastModified: Date.now()
                         };
@@ -1162,15 +1383,23 @@ const commands = {
                         }
                     }
                     if (item.packageRoot) {
-                        const pkgNode = resolveFS(item.packageRoot.replace(/^C:\//, ""));
+                        const pkgRelRoot = item.packageRoot.replace(/^C:\//, "");
+                        const pkgNode = resolveFS(pkgRelRoot);
+                        const manifestNode = pkgNode ? resolveFS(`${pkgRelRoot}/manifest.json`) : null;
                         const mainRel = (item.main || "main.js").replace(/^\/+/, "");
-                        const mainNode = pkgNode ? resolveFS(`${item.packageRoot.replace(/^C:\//, "")}/${mainRel}`) : null;
+                        const mainNode = pkgNode ? resolveFS(`${pkgRelRoot}/${mainRel}`) : null;
                         if (!pkgNode || pkgNode.type !== "folder") {
                             errorCount++;
                             repairLogs.push(`[Error] Missing package folder for app: ${itemPath} -> ${item.packageRoot}`);
-                        } else if (!mainNode || mainNode.type !== "file") {
-                            errorCount++;
-                            repairLogs.push(`[Error] Missing package main file: ${item.packageRoot}/${mainRel}`);
+                        } else {
+                            if (!manifestNode || manifestNode.type !== "file") {
+                                errorCount++;
+                                repairLogs.push(`[Error] Missing manifest.json for package app: ${item.packageRoot}/manifest.json`);
+                            }
+                            if (!mainNode || mainNode.type !== "file") {
+                                errorCount++;
+                                repairLogs.push(`[Error] Missing package main file: ${item.packageRoot}/${mainRel}`);
+                            }
                         }
                     } else if (!item.entry) {
                         errorCount++;
@@ -1253,7 +1482,15 @@ export function prompt() {
 
     const line = document.createElement('div');
     line.id = 'input-line';
-    line.innerHTML = `${cwd}> <input id="cmd" autocomplete="off" spellcheck="false" style="background:transparent; color:inherit; border:none; outline:none; font:inherit; width:calc(100% - 80px); min-width:120px;">`;
+    line.appendChild(document.createTextNode(`${cwd}> `));
+
+    const cmdInput = document.createElement('input');
+    cmdInput.id = 'cmd';
+    cmdInput.autocomplete = 'off';
+    cmdInput.spellcheck = false;
+    cmdInput.style.cssText = 'background:transparent; color:inherit; border:none; outline:none; font:inherit; width:calc(100% - 80px); min-width:120px;';
+    line.appendChild(cmdInput);
+
     screen.appendChild(line);
     scrollToBottom();
     const input = line.querySelector('#cmd');
@@ -1299,6 +1536,9 @@ async function exec(cmdLine) {
 // ===== Screen Control =====
 export function showPromptScreen(logoffMessage = '') {
     document.getElementById('boot-input-shield')?.remove();
+    document.getElementById('logoff-input-shield')?.remove();
+    document.getElementById('screensaver-layer')?.remove();
+    document.querySelectorAll('.modal-overlay').forEach(el => el.remove());
     screen.style.display = 'block';
     const root = document.getElementById('os-root');
     if (root) {
@@ -1316,7 +1556,12 @@ export function showPromptScreen(logoffMessage = '') {
 }
 
 // ===== Boot Sequence =====
+let isBootingOS = false;
+
 export async function bootOS() {
+    if (isBootingOS || isCliHalted) return;
+    isBootingOS = true;
+
     try {
         print("\nBoot sequence started...\n");
         const kernel = await import('./kernel.js');
@@ -1339,6 +1584,8 @@ export async function bootOS() {
         print(`\n[Boot Error] ${e.message}`);
         print("Type 'scanfilesystem' to repair, or 'boot' to retry.\n");
         prompt();
+    } finally {
+        isBootingOS = false;
     }
 }
 
@@ -1406,12 +1653,23 @@ export async function bootOS() {
     }
 })();
 
+let isCliHalted = false;
+
+window.addEventListener('nexser-bsod', () => {
+    isCliHalted = true;
+    const input = screen?.querySelector('#cmd');
+    if (input) {
+        input.disabled = true;
+        input.blur();
+    }
+});
+
 function bindScreenFocus() {
     if (!screen) return;
 
     // #screen だけでなく、CUI表示中の画面全体のクリック・タップで #cmd へフォーカスを復元する
     document.addEventListener('click', () => {
-        if (screen.style.display === 'none') return;
+        if (isCliHalted || screen.style.display === 'none') return;
         const selection = window.getSelection();
         if (selection && selection.toString().length > 0) return;
         focusCmdInput();
@@ -1419,7 +1677,7 @@ function bindScreenFocus() {
 
     // フォーカスが外れた状態でキーが押された場合も自動フォーカスして入力を取りこぼさない
     document.addEventListener('keydown', (e) => {
-        if (screen.style.display === 'none') return;
+        if (isCliHalted || screen.style.display === 'none') return;
         const active = document.activeElement;
         if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')) return;
         if (e.ctrlKey || e.metaKey || e.altKey) return;

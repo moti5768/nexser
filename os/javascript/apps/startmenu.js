@@ -1,27 +1,53 @@
 // startmenu.js
-import { FS } from "../fs.js";
+import { FS, forceSave, markDefaultDeleted, isFSReadOnly } from "../fs.js";
 import { getRecent, addRecent, removeRecent } from "../recent.js";
 import { resolveFS, basename, isSystemMetaKey } from "../fs-utils.js";
 import { resolveAppByPath, getIcon, applyIconToElement } from "../file-associations.js";
-import { loadSetting } from "./settings.js";
+import { loadSetting as rawLoadSetting } from "./settings.js";
 
 // グローバルな状態管理用 (スモールアイコン)
 window.smallIcons = false;
+let isStartMenuDisposed = false;
+
+function isKernelStopped() {
+    const state = window.nexser?.kernelAPI?.getSystemState?.();
+    if (state) {
+        return Boolean(state.isSystemDead || state.isLoggingOff || !state.isGuiActive);
+    }
+    return Boolean(window.nexser?.isLoggingOff);
+}
+
+async function loadSetting(key) {
+    if (typeof window.nexser?.kernelAPI?.settings?.load === "function") {
+        return await window.nexser.kernelAPI.settings.load(key, null);
+    }
+    return await rawLoadSetting(key);
+}
 
 /* =====================================================
    Start Menu Builder
 ===================================================== */
 export async function buildStartMenu() {
+    if (isStartMenuDisposed || isKernelStopped()) return;
+
+    const [smallIconsVal, showRecentVal] = await Promise.all([
+        loadSetting("smallIcons"),
+        loadSetting("showRecentItems")
+    ]);
+    if (isStartMenuDisposed || isKernelStopped()) return;
+
+    const root = document.getElementById("os-root");
+    if (!root) return;
+
     let menu = document.getElementById("start-menu");
     if (!menu) {
         menu = document.createElement("div");
         menu.id = "start-menu";
-        const root = document.getElementById("os-root") || document.body;
         root.appendChild(menu);
     }
 
-    window.smallIcons = Boolean(await loadSetting("smallIcons"));
-    window.showRecent = (await loadSetting("showRecentItems")) ?? true;
+    window.smallIcons = Boolean(smallIconsVal);
+    window.showRecent = showRecentVal ?? true;
 
     menu.innerHTML = "";
     menu.classList.toggle("small-icons", window.smallIcons);
@@ -90,9 +116,24 @@ export async function buildStartMenu() {
             if (!runNode) {
                 window.nexser?.windowAPI.confirmWindow(
                     `問題のあるショートカット\n\nこのショートカットが参照している '${runPath}' は変更または移動されているか、存在しないため、正しく機能しません。\n\nこのショートカットを削除しますか？`,
-                    (result) => {
-                        if (result) {
-                            console.log(`ショートカットを削除します: ${fullPath}`);
+                    async (result) => {
+                        if (!result || isKernelStopped()) return;
+                        if (typeof isFSReadOnly === "function" && isFSReadOnly()) {
+                            window.nexser?.windowAPI?.alertWindow("ファイルシステムは現在読み取り専用のため削除できません。", { title: "システム保護" });
+                            return;
+                        }
+                        if (rawNode.system === true) {
+                            window.nexser?.windowAPI?.errorWindow("システム保護されたショートカットは削除できません。", { taskbar: false });
+                            return;
+                        }
+                        const lastSlash = fullPath.lastIndexOf("/");
+                        const parentPath = lastSlash !== -1 ? fullPath.slice(0, lastSlash) : "C:/";
+                        const linkName = basename(fullPath);
+                        const parentNode = resolveFS(parentPath);
+                        if (parentNode && delete parentNode[linkName]) {
+                            await markDefaultDeleted(fullPath);
+                            await forceSave();
+                            window.dispatchEvent(new Event("fs-updated"));
                         }
                     },
                     { width: 400, overlay: true }
@@ -328,6 +369,8 @@ async function buildRecentArea(root) {
             div.onclick = () => {
                 launchByType(item.type, item.path);
                 root.style.display = "none";
+                const startBtn = document.getElementById("start-btn");
+                if (startBtn) startBtn.classList.remove("pressed");
             };
             list.appendChild(div);
         }
@@ -385,25 +428,33 @@ async function launchByType(type, path) {
 ===================================================== */
 let refreshTimer = null;
 export function refreshStartMenu() {
+    if (isStartMenuDisposed || isKernelStopped()) return;
     clearTimeout(refreshTimer);
     refreshTimer = setTimeout(async () => {
+        refreshTimer = null;
+        if (isStartMenuDisposed || isKernelStopped()) return;
         await buildStartMenu();
         updateStartMenuPosition();
     }, 10);
 }
 
 async function initSettings() {
-    window.showRecent = (await loadSetting("showRecentItems")) ?? true;
-    window.smallIcons = Boolean(await loadSetting("smallIcons"));
+    const [showRecentVal, smallIconsVal] = await Promise.all([
+        loadSetting("showRecentItems"),
+        loadSetting("smallIcons")
+    ]);
+    window.showRecent = showRecentVal ?? true;
+    window.smallIcons = Boolean(smallIconsVal);
 }
 
 export async function startMenuReady() {
+    isStartMenuDisposed = false;
     initGlobalListeners();
     await initSettings();
+    if (isStartMenuDisposed || isKernelStopped()) return;
     await buildStartMenu();
     updateStartMenuPosition();
 }
-
 function handleTaskbarStyleChanged(e) {
     if (e.detail.smallIcons !== undefined) {
         window.smallIcons = e.detail.smallIcons;
@@ -531,6 +582,7 @@ export function updateStartMenuPosition() {
 
 // ✨ カーネルからアプリとして呼び出された際のデフォルトエクスポートとクリーンアップ（dispose）
 export default async function startMenuApp(content, options) {
+    isStartMenuDisposed = false;
     await startMenuReady();
     if (content) {
         content.style.display = "none";
@@ -539,13 +591,22 @@ export default async function startMenuApp(content, options) {
     return {
         isTabApp: false,
         dispose: () => {
+            isStartMenuDisposed = true;
+            if (refreshTimer) {
+                clearTimeout(refreshTimer);
+                refreshTimer = null;
+            }
             // 1. 登録したすべてのグローバルリスナーを確実に解除
             removeGlobalListeners();
 
-            // 2. スタートメニューのDOM要素自体を完全に削除する
+            // 2. スタートメニューのDOM要素と押下状態を完全にクリアする
             const menu = document.getElementById("start-menu");
             if (menu) {
                 menu.remove();
+            }
+            const startBtn = document.getElementById("start-btn");
+            if (startBtn) {
+                startBtn.classList.remove("pressed");
             }
         }
     };

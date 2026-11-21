@@ -38,6 +38,11 @@ export default async function TaskbarProperties(content) {
             if (e.detail.taskbarSize) tempSettings.taskbarSize = e.detail.taskbarSize;
             if (e.detail.autoHide !== undefined) tempSettings.autoHide = e.detail.autoHide;
             if (e.detail.showClock !== undefined) tempSettings.showClock = e.detail.showClock;
+            if (e.detail.taskbarWindowMode !== undefined) {
+                tempSettings.taskbarWindowMode = Boolean(e.detail.taskbarWindowMode);
+                const checkWindowMode = content.querySelector("#tp-check-windowmode");
+                if (checkWindowMode) checkWindowMode.checked = tempSettings.taskbarWindowMode;
+            }
 
             // プロパティ画面が開いている場合は位置選択セレクトボックスの見た目も同期
             const selectPos = content.querySelector("#tp-select-position");
@@ -75,7 +80,10 @@ export default async function TaskbarProperties(content) {
         const tab = tabs.find(t => t.id === id);
         if (tab && typeof tab.render === "function") {
             try {
-                await tab.render(bodyEl);
+                const cleanup = await tab.render(bodyEl);
+                if (typeof cleanup === "function") {
+                    activeCleanup = cleanup;
+                }
             } catch (e) {
                 console.error("Render failed:", e);
             }
@@ -222,10 +230,10 @@ export default async function TaskbarProperties(content) {
         root.querySelector("#tp-sm-clear").onclick = async () => {
             try {
                 if (confirm("Are you sure you want to clear the list of recently used documents?")) {
-                    const { clearRecent } = await import("./recent.js");
+                    const { clearRecent } = await import("../recent.js");
                     await clearRecent();
                     window.dispatchEvent(new Event("recent-updated"));
-                    nexser.windowAPI.alertWindow("Documents menu cleared.", { title: "taskbarproperties" });
+                    window.nexser?.windowAPI?.alertWindow("Documents menu cleared.", { title: "taskbarproperties" });
                 }
             } catch (e) {
                 console.warn("履歴のクリアに失敗しました", e);
@@ -362,7 +370,13 @@ export default async function TaskbarProperties(content) {
 
     function closeWindow() {
         const win = content.closest(".window");
-        if (win) win.querySelector(".title-bar-button.close")?.click();
+        if (!win) return;
+        const closeBtn = win.querySelector(".close-btn") || win.querySelector(".title-bar-button.close");
+        if (closeBtn) {
+            closeBtn.click();
+        } else if (typeof window.nexser?.windowAPI?.destroyWindow === "function") {
+            window.nexser.windowAPI.destroyWindow(win);
+        }
     }
 
     const winEl = content.closest(".window");

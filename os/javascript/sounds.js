@@ -3,21 +3,70 @@ import { FS } from "./fs.js";
 import { resolveFS } from "./fs-utils.js";
 
 let audioCtx = null;
+let isSoundHalted = false;
 
 // 再生中のオーディオインスタンスを保持するセット（GCによる音声途切れ・未再生を防止）
 const activeAudios = new Set();
+const pendingGestureCleanups = new Set();
+
+export function stopAllSounds() {
+    for (const cleanup of Array.from(pendingGestureCleanups)) {
+        try { cleanup(); } catch (_) { }
+    }
+    pendingGestureCleanups.clear();
+
+    for (const audio of Array.from(activeAudios)) {
+        try {
+            audio.pause();
+            audio.currentTime = 0;
+        } catch (_) { }
+    }
+    activeAudios.clear();
+
+    if (audioCtx && audioCtx.state === "running") {
+        audioCtx.suspend().catch(() => { });
+    }
+}
+
+function registerOneShotGesture(callback) {
+    if (isSoundHalted) return;
+    let fired = false;
+    const cleanup = () => {
+        document.removeEventListener("click", handler);
+        document.removeEventListener("keydown", handler);
+        pendingGestureCleanups.delete(cleanup);
+    };
+    const handler = () => {
+        if (fired) return;
+        fired = true;
+        cleanup();
+        if (!isSoundHalted) callback();
+    };
+    pendingGestureCleanups.add(cleanup);
+    document.addEventListener("click", handler);
+    document.addEventListener("keydown", handler);
+}
+
+if (typeof window !== "undefined" && !window._soundsLifecycleHooksInstalled) {
+    window._soundsLifecycleHooksInstalled = true;
+    window.addEventListener("nexser-bsod", () => {
+        isSoundHalted = true;
+        stopAllSounds();
+    });
+}
 
 /**
  * AudioContextを安全に取得・初期化（シングルトン化 ＆ 自動再生ポリシー対策）
  */
 function getAudioContext() {
+    if (isSoundHalted) return null;
     if (!audioCtx) {
         const AudioContextClass = window.AudioContext || window.webkitAudioContext;
         if (!AudioContextClass) return null;
         audioCtx = new AudioContextClass();
     }
     if (audioCtx.state === 'suspended') {
-        audioCtx.resume();
+        audioCtx.resume().catch(() => { });
     }
     return audioCtx;
 }
@@ -70,6 +119,7 @@ export const startup_sound = startupSound;
  * FSに保存された音声データを再生する
  */
 export async function playSavedAudio(path) {
+    if (isSoundHalted) return;
     const file = resolveFS(`C:/Programs/Music/${path}`);
     if (file && file.content) {
         let audioData = file.content;
@@ -97,8 +147,14 @@ export async function playSavedAudio(path) {
  * システムイベントに関連付けられた音声を再生する
  */
 export async function playSystemEventSound(eventName) {
+    if (isSoundHalted) return;
     try {
-        const configText = FS["C:"]?.System?.["SoundConfig.json"]?.content;
+        const configNode = FS["C:"]?.System?.["SoundConfig.json"];
+        let configText = configNode?.content;
+        if (configText === "__EXTERNAL_DATA__") {
+            const { getFileContent } = await import("./fs-db.js");
+            configText = await getFileContent("C:/System/SoundConfig.json");
+        }
         const config = JSON.parse(configText || "{}");
         const path = config[eventName];
 
@@ -112,7 +168,7 @@ export async function playSystemEventSound(eventName) {
                     audioData = await getFileContent(`C:/Programs/Music/${path}`);
                 }
 
-                if (audioData) {
+                if (audioData && !isSoundHalted) {
                     const audio = new Audio(audioData);
 
                     // GCによる破棄を防ぐためSetに保持し、終了時に削除
@@ -122,17 +178,15 @@ export async function playSystemEventSound(eventName) {
 
                     audio.play().catch(err => {
                         activeAudios.delete(audio);
-                        // オートプレイ制限 (NotAllowedError) への対処
-                        if (err.name === "NotAllowedError") {
-                            const playOnGesture = () => {
+                        // オートプレイ制限 (NotAllowedError) への対処（click/keydown 相互解除で二重再生を防止）
+                        if (err.name === "NotAllowedError" && !isSoundHalted) {
+                            registerOneShotGesture(() => {
                                 audio.play().then(() => {
                                     activeAudios.add(audio);
                                 }).catch(() => {
                                     activeAudios.delete(audio);
                                 });
-                            };
-                            document.addEventListener("click", playOnGesture, { once: true });
-                            document.addEventListener("keydown", playOnGesture, { once: true });
+                            });
                         }
                     });
                 }
@@ -141,11 +195,9 @@ export async function playSystemEventSound(eventName) {
             try {
                 startup_sound();
             } catch (e) {
-                const playBeepOnGesture = () => {
+                registerOneShotGesture(() => {
                     startup_sound();
-                };
-                document.addEventListener("click", playBeepOnGesture, { once: true });
-                document.addEventListener("keydown", playBeepOnGesture, { once: true });
+                });
             }
         }
     } catch (e) {

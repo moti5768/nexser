@@ -1,8 +1,25 @@
 // Screensaver.js
-import { loadSetting } from "./apps/settings.js";
+import { loadSetting as rawLoadSetting } from "./apps/settings.js";
+
+function isKernelStopped() {
+    const state = window.nexser?.kernelAPI?.getSystemState?.();
+    if (state) {
+        return Boolean(state.isSystemDead || state.isLoggingOff || !state.isGuiActive);
+    }
+    return Boolean(window.nexser?.isLoggingOff);
+}
+
+async function loadSetting(key) {
+    if (typeof window.nexser?.kernelAPI?.settings?.load === "function") {
+        return await window.nexser.kernelAPI.settings.load(key, null);
+    }
+    return await rawLoadSetting(key);
+}
 
 let idleTimer = null;
 let isScreensaverActive = false;
+let isScreensaverServiceActive = false;
+let screensaverAbortController = null;
 let screensaverLayer = null;
 
 // 設定値のキャッシュ
@@ -34,35 +51,70 @@ let currentFullscreenCleanup = null;
  * 設定を読み込み、タイマーをリセットする
  */
 async function refreshSettings() {
-    currentType = (await loadSetting("screensaverType")) || "none";
-    const waitMinutes = parseInt(await loadSetting("screensaverWait"), 10) || 10;
+    const [
+        ssType,
+        ssWait,
+        textColor,
+        mazeWall,
+        mazeFloor,
+        mazeCeiling,
+        mystifyLines,
+        mystify1,
+        mystify2,
+        starCount,
+        starSpeed,
+        starColor,
+        marqueeText,
+        marqueeTextColor,
+        marqueeBgColor,
+        marqueeSpeed
+    ] = await Promise.all([
+        loadSetting("screensaverType"),
+        loadSetting("screensaverWait"),
+        loadSetting("screensaverColor_text"),
+        loadSetting("screensaverColor_maze_wall"),
+        loadSetting("screensaverColor_maze_floor"),
+        loadSetting("screensaverColor_maze_ceiling"),
+        loadSetting("screensaverMystifyLines"),
+        loadSetting("screensaverColor_mystify_1"),
+        loadSetting("screensaverColor_mystify_2"),
+        loadSetting("screensaverStarfieldCount"),
+        loadSetting("screensaverStarfieldSpeed"),
+        loadSetting("screensaverColor_starfield"),
+        loadSetting("screensaverMarqueeText"),
+        loadSetting("screensaverColor_marquee_text"),
+        loadSetting("screensaverColor_marquee_bg"),
+        loadSetting("screensaverMarqueeSpeed")
+    ]);
+
+    currentType = ssType || "none";
+    const waitMinutes = parseInt(ssWait, 10) || 10;
     waitTimeMs = waitMinutes * 60 * 1000;
 
-    currentTextColor = (await loadSetting("screensaverColor_text")) || "#ff0000";
+    currentTextColor = textColor || "#ff0000";
 
-    currentMazeWallColor = (await loadSetting("screensaverColor_maze_wall")) || "#008080";
-    currentMazeFloorColor = (await loadSetting("screensaverColor_maze_floor")) || "#333333";
-    currentMazeCeilingColor = (await loadSetting("screensaverColor_maze_ceiling")) || "#555555";
+    currentMazeWallColor = mazeWall || "#008080";
+    currentMazeFloorColor = mazeFloor || "#333333";
+    currentMazeCeilingColor = mazeCeiling || "#555555";
 
-    // ★修正: Mystifyの設定を確実に最新化
-    const rawLines = parseInt(await loadSetting("screensaverMystifyLines"), 10) || 5;
+    const rawLines = parseInt(mystifyLines, 10) || 5;
     currentMystifyLines = Math.min(15, Math.max(1, rawLines));
-    currentMystifyColor1 = (await loadSetting("screensaverColor_mystify_1")) || "#00ff00";
-    currentMystifyColor2 = (await loadSetting("screensaverColor_mystify_2")) || "#00ffff";
+    currentMystifyColor1 = mystify1 || "#00ff00";
+    currentMystifyColor2 = mystify2 || "#00ffff";
 
-    const rawStarCount = parseInt(await loadSetting("screensaverStarfieldCount"), 10) || 200;
+    const rawStarCount = parseInt(starCount, 10) || 200;
     currentStarfieldCount = Math.min(1000, Math.max(10, rawStarCount));
-    const rawStarSpeed = parseInt(await loadSetting("screensaverStarfieldSpeed"), 10) || 4;
+    const rawStarSpeed = parseInt(starSpeed, 10) || 4;
     currentStarfieldSpeed = Math.min(20, Math.max(1, rawStarSpeed));
-    currentStarfieldColor = (await loadSetting("screensaverColor_starfield")) || "#ffffff";
+    currentStarfieldColor = starColor || "#ffffff";
 
-    // ★追加: 伝言板の設定読み込み
-    currentMarqueeText = (await loadSetting("screensaverMarqueeText")) ?? "伝言板";
-    currentMarqueeTextColor = (await loadSetting("screensaverColor_marquee_text")) || "#ffffff";
-    currentMarqueeBgColor = (await loadSetting("screensaverColor_marquee_bg")) || "#000000";
-    const rawMarqueeSpeed = parseInt(await loadSetting("screensaverMarqueeSpeed"), 10) || 5;
+    currentMarqueeText = marqueeText ?? "伝言板";
+    currentMarqueeTextColor = marqueeTextColor || "#ffffff";
+    currentMarqueeBgColor = marqueeBgColor || "#000000";
+    const rawMarqueeSpeed = parseInt(marqueeSpeed, 10) || 5;
     currentMarqueeSpeed = Math.min(10, Math.max(1, rawMarqueeSpeed));
 
+    if (!isScreensaverServiceActive || isKernelStopped()) return;
     resetIdleTimer();
 }
 
@@ -73,7 +125,14 @@ function resetIdleTimer() {
     if (isScreensaverActive) {
         stopScreensaver();
     }
-    if (idleTimer) clearTimeout(idleTimer);
+    if (idleTimer) {
+        clearTimeout(idleTimer);
+        idleTimer = null;
+    }
+
+    if (!isScreensaverServiceActive || window.nexser?.isLoggingOff) {
+        return;
+    }
 
     if (currentType !== "none") {
         idleTimer = setTimeout(startScreensaver, waitTimeMs);
@@ -84,7 +143,13 @@ function resetIdleTimer() {
  * スクリーンセーバーを起動する
  */
 function startScreensaver() {
-    if (isScreensaverActive || currentType === "none") return;
+    if (
+        !isScreensaverServiceActive ||
+        window.nexser?.isLoggingOff ||
+        window.nexser?.isBooting ||
+        isScreensaverActive ||
+        currentType === "none"
+    ) return;
     isScreensaverActive = true;
 
     // オーバーレイとなる全画面の要素を作成
@@ -143,17 +208,24 @@ export function startPreview(container, type) {
     container.innerHTML = "";
     if (type === "none") {
         container.style.background = "#008080";
-        return;
+        return () => { };
     }
 
-    currentPreviewCleanup = renderScreensaver(container, type, false);
+    const cleanup = renderScreensaver(container, type, false);
+    currentPreviewCleanup = () => {
+        cleanup?.();
+        if (currentPreviewCleanup) {
+            currentPreviewCleanup = null;
+        }
+    };
+    return currentPreviewCleanup;
 }
 
 /**
  * 設定画面の「Preview」ボタンから強制的に全画面テスト起動する関数
  */
 export function testScreensaver() {
-    if (currentType === "none") return;
+    if (isKernelStopped() || currentType === "none") return;
     startScreensaver();
 }
 
@@ -572,13 +644,58 @@ function renderScreensaver(container, type, isFullscreen) {
 }
 
 /**
+ * ログオフ・終了時にスクリーンセーバー監視と表示を完全停止する
+ */
+export function stopScreensaverService() {
+    isScreensaverServiceActive = false;
+
+    if (idleTimer) {
+        clearTimeout(idleTimer);
+        idleTimer = null;
+    }
+
+    stopScreensaver();
+
+    if (currentPreviewCleanup) {
+        currentPreviewCleanup();
+        currentPreviewCleanup = null;
+    }
+
+    const strayLayer = document.getElementById("screensaver-layer");
+    if (strayLayer) strayLayer.remove();
+
+    if (screensaverAbortController) {
+        screensaverAbortController.abort();
+        screensaverAbortController = null;
+    }
+}
+
+/**
  * 初期化処理
  */
 export async function initScreensaver() {
+    // 再起動時のリスナー重複を防ぐため、既存サービスを先にクリーンアップ
+    stopScreensaverService();
+
+    if (window.nexser?.isLoggingOff) return;
+
+    isScreensaverServiceActive = true;
+    screensaverAbortController = new AbortController();
+    const { signal } = screensaverAbortController;
+
     await refreshSettings();
-    window.addEventListener("mousemove", resetIdleTimer);
-    window.addEventListener("mousedown", resetIdleTimer);
-    window.addEventListener("keydown", resetIdleTimer);
-    window.addEventListener("touchstart", resetIdleTimer);
-    window.addEventListener("screensaver-settings-changed", refreshSettings);
+
+    // 非同期読み込み中にログオフへ移行した場合は監視を開始しない
+    if (!isScreensaverServiceActive || window.nexser?.isLoggingOff) {
+        stopScreensaverService();
+        return;
+    }
+
+    window.addEventListener("mousemove", resetIdleTimer, { signal });
+    window.addEventListener("mousedown", resetIdleTimer, { signal });
+    window.addEventListener("keydown", resetIdleTimer, { signal });
+    window.addEventListener("touchstart", resetIdleTimer, { signal });
+    window.addEventListener("screensaver-settings-changed", refreshSettings, { signal });
+    window.addEventListener("nexser-logoff", stopScreensaverService, { signal });
+    window.addEventListener("nexser-bsod", stopScreensaverService, { signal });
 }
