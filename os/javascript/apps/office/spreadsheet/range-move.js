@@ -723,7 +723,6 @@ export function createRangeMoveModule(ctx) {
                     ? adjustFormula(item.formula, rowDelta, colDelta)
                     : adjustMovedFormulaSelf(item.formula, srcBounds, rowDelta, colDelta);
                 dest.dataset.formula = nextFormula;
-                setCellFormattedValue(dest, evaluateFormula(nextFormula));
             } else {
                 delete dest.dataset.formula;
                 setCellFormattedValue(dest, item.value);
@@ -834,7 +833,6 @@ export function createRangeMoveModule(ctx) {
         if (newActive) setActiveCell(newActive, true);
 
         updateAllFormulas();
-        applyConditionalFormats();
         if (hasAutoFilters()) applyAutoFilterRows();
         refreshVisibleFloatingObjects();
         updateSelectedCellsDisplay();

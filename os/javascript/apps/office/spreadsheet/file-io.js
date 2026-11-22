@@ -100,6 +100,9 @@ export function createFileIOModule(ctx) {
         renderSheetTabs,
         syncSheetProtectionUI,
         invalidateBackgroundSheetCache,
+        invalidateDependencyGraph,
+        clearFormulaEvalCache,
+        resetConditionalFormatCache,
         recalculateBackgroundSheets,
         evaluateFormula,
         setCellFormattedValue,
@@ -143,6 +146,10 @@ export function createFileIOModule(ctx) {
 
     let currentFilePath = null;
     let lockedFilePath = null;
+    let isSavingFile = false;
+    let recoveryBackupTimer = null;
+    let pendingRecoverySnapshot = null;
+    let lastRecoveryBackupAt = 0;
 
     // 遅延起動 Web Worker ブリッジ（起動失敗時は自動的にメインスレッドへフォールバック）
     let ioWorker = null;
@@ -231,7 +238,7 @@ export function createFileIOModule(ctx) {
         setDirtyState(getIsDirty());
     }
 
-    function persistCrashRecoveryBackup(serializedSnapshot) {
+    function writeCrashRecoveryNow(serializedSnapshot) {
         try {
             if (!serializedSnapshot || serializedSnapshot.length > 2_500_000) return;
             const payload = JSON.stringify({
@@ -240,12 +247,43 @@ export function createFileIOModule(ctx) {
                 snapshot: serializedSnapshot
             });
             localStorage.setItem(RECOVERY_STORAGE_KEY, payload);
+            lastRecoveryBackupAt = Date.now();
         } catch {
             try { localStorage.removeItem(RECOVERY_STORAGE_KEY); } catch { /* ignore */ }
         }
     }
 
+    function persistCrashRecoveryBackup(serializedSnapshot, { immediate = false } = {}) {
+        if (!serializedSnapshot || serializedSnapshot.length > 2_500_000) return;
+        if (immediate) {
+            if (recoveryBackupTimer) {
+                clearManagedTimeout(recoveryBackupTimer);
+                recoveryBackupTimer = null;
+            }
+            pendingRecoverySnapshot = null;
+            writeCrashRecoveryNow(serializedSnapshot);
+            return;
+        }
+        // 通常編集時は最低3秒間隔で遅延書き込みし、メインスレッドの同期ディスク停止を防ぐ
+        pendingRecoverySnapshot = serializedSnapshot;
+        if (recoveryBackupTimer) return;
+        const waitMs = Math.max(400, 3000 - (Date.now() - lastRecoveryBackupAt));
+        recoveryBackupTimer = managedTimeout(() => {
+            recoveryBackupTimer = null;
+            const snap = pendingRecoverySnapshot;
+            pendingRecoverySnapshot = null;
+            if (snap && getIsDirty() && !isSavingFile) {
+                writeCrashRecoveryNow(snap);
+            }
+        }, waitMs);
+    }
+
     function clearCrashRecoveryBackup() {
+        if (recoveryBackupTimer) {
+            clearManagedTimeout(recoveryBackupTimer);
+            recoveryBackupTimer = null;
+        }
+        pendingRecoverySnapshot = null;
         try { localStorage.removeItem(RECOVERY_STORAGE_KEY); } catch { /* ignore */ }
     }
 
@@ -257,14 +295,14 @@ export function createFileIOModule(ctx) {
         }
     }
 
-    function pushSerializedSnapshot(serialized) {
+    function pushSerializedSnapshot(serialized, { skipRecovery = false } = {}) {
         if (!serialized) return;
         if (undoHistory.length > 0 && undoHistory[undoHistory.length - 1] === serialized) return;
         redoHistory = [];
         undoHistory.push(serialized);
         if (undoHistory.length > 50) undoHistory.shift();
         updateQATButtonsState();
-        if (getIsDirty()) persistCrashRecoveryBackup(serialized);
+        if (!skipRecovery && getIsDirty()) persistCrashRecoveryBackup(serialized);
     }
 
     function buildSnapshotObject({ flush = true, recalcBackground = true } = {}) {
@@ -300,7 +338,7 @@ export function createFileIOModule(ctx) {
         }
     }
 
-    async function saveStateInBackground() {
+    async function saveStateInBackground({ markAsSaved = false } = {}) {
         const mySeq = ++asyncSaveSeq;
         try {
             const snapshotObj = buildSnapshotObject({ flush: false, recalcBackground: false });
@@ -315,7 +353,10 @@ export function createFileIOModule(ctx) {
             if (serialized === null) {
                 serialized = JSON.stringify(snapshotObj);
             }
-            pushSerializedSnapshot(serialized);
+            pushSerializedSnapshot(serialized, { skipRecovery: markAsSaved });
+            if (markAsSaved) {
+                savedSnapshotJSON = serialized;
+            }
         } catch (err) {
             console.warn("[Spreadsheet] バックグラウンドスナップショット保存中にエラーが発生しました:", err);
         }
@@ -401,37 +442,63 @@ export function createFileIOModule(ctx) {
 
     function clearSheetToBlank({ resetHistory = true } = {}) {
         disconnectActiveSheetObservers();
+        resetConditionalFormatCache?.();
+        invalidateDependencyGraph?.();
+        clearFormulaEvalCache?.();
         const curCols = getCurrentColumns();
-        tbody.querySelectorAll("td").forEach(cell => {
-            cell.textContent = "";
-            cell.removeAttribute("style");
-            cell.removeAttribute("colspan");
-            cell.removeAttribute("rowspan");
-            cell.className = "";
-            Object.keys(cell.dataset).forEach(k => {
-                if (k !== "row" && k !== "col") delete cell.dataset[k];
-            });
-        });
-        for (let c = 0; c < curCols; c++) {
-            setColumnWidth(c, 120);
-        }
-        for (let c = 0; c < curCols; c++) {
-            theadRow.children[c + 1]?.classList.remove("ss-col-hidden", "ss-has-hidden-next");
-            const colEl = colgroup.children[c + 1];
-            if (colEl) delete colEl.dataset.prevWidth;
-        }
-        Array.from(tbody.rows).forEach(tr => {
-            tr.style.height = "";
-            tr.style.display = "";
-            delete tr.dataset.userHidden;
-            delete tr.dataset.filterHidden;
+        const rowsList = tbody.rows;
+        for (let r = 0; r < rowsList.length; r++) {
+            const tr = rowsList[r];
+            if (tr.style.height) tr.style.height = "";
+            if (tr.style.display) tr.style.display = "";
+            if (tr.dataset.userHidden) delete tr.dataset.userHidden;
+            if (tr.dataset.filterHidden) delete tr.dataset.filterHidden;
             tr.cells[0]?.classList.remove("ss-has-hidden-next");
-        });
+
+            const cells = tr.cells;
+            for (let c = 1; c < cells.length; c++) {
+                const cell = cells[c];
+                // 未変更の空セルはスキップして大量行での Undo/Redo・シート切替を高速化
+                if (
+                    cell.firstChild === null &&
+                    !cell.hasAttribute("style") &&
+                    cell.className === "" &&
+                    !cell.hasAttribute("colspan") &&
+                    !cell.hasAttribute("rowspan") &&
+                    Object.keys(cell.dataset).length <= 2
+                ) {
+                    continue;
+                }
+                cell.textContent = "";
+                cell.removeAttribute("style");
+                cell.removeAttribute("title");
+                cell.removeAttribute("colspan");
+                cell.removeAttribute("rowspan");
+                cell.className = "";
+                for (const k in cell.dataset) {
+                    if (k !== "row" && k !== "col") delete cell.dataset[k];
+                }
+            }
+        }
+        // 列幅と非表示属性をまとめてリセットし、syncTableWidth を1回だけ実行
+        for (let c = 0; c < curCols; c++) {
+            const colEl = colgroup.children[c + 1];
+            const thEl = theadRow.children[c + 1];
+            if (colEl) {
+                colEl.style.width = "120px";
+                delete colEl.dataset.prevWidth;
+            }
+            if (thEl) {
+                thEl.style.width = "120px";
+                thEl.classList.remove("ss-col-hidden", "ss-has-hidden-next");
+            }
+        }
+        syncTableWidth();
         spreadsheetContent.querySelectorAll(".floating-textbox").forEach(b => removeFloatingObject(b));
         closeCellDropdownList();
         hideCellDropdownButton();
         clearCopyAnimation();
-        clearAllAutoFilters();
+        clearAllAutoFilters({ skipRecalc: true });
         setFreezePanes(0, 0, { silent: true });
         if (resetHistory) {
             setDefinedNames({});
@@ -458,6 +525,17 @@ export function createFileIOModule(ctx) {
             const cells = rowsList[rIdx].cells;
             for (let cIdx = 1; cIdx < cells.length; cIdx++) {
                 const cell = cells[cIdx];
+                // 未編集・書式なしの完全空セル（基本4属性のみ・子ノードなし）を O(1) でスキップ
+                if (
+                    cell.firstChild === null &&
+                    cell.attributes.length === 4 &&
+                    cell.dataset.row !== undefined &&
+                    cell.dataset.col !== undefined &&
+                    cell.hasAttribute("tabindex") &&
+                    cell.hasAttribute("contenteditable")
+                ) {
+                    continue;
+                }
                 const r = rIdx + 1;
                 const c = cIdx - 1;
                 const v = cell.dataset.rawValue ?? cell.textContent;
@@ -646,18 +724,39 @@ export function createFileIOModule(ctx) {
         setZoom(z, { silent: true });
         setPageSize(sheetData.pageSize || "A4", { silent: true });
 
+        const MAX_SAFE_ROWS = 10000;
+        const MAX_SAFE_COLS = 500;
         const curRowCount = getRowCount();
         const curCols = getCurrentColumns();
-        const maxRow = Math.max(
-            0,
-            ...cells.map(item => (Number(item.r) || 0) + (Number(item.rs) || 1) - 1),
-            ...rows.map(item => Number(item.r) || 0)
-        );
-        const maxCol = Math.max(
-            0,
-            ...cells.map(item => (Number(item.c) || 0) + (Number(item.cs) || 1) - 1),
-            ...columns.map(item => Number(item.c) || 0)
-        );
+
+        let maxRow = 0;
+        for (let i = 0; i < cells.length; i++) {
+            const r = Math.trunc(Number(cells[i]?.r));
+            const rs = Math.max(1, Math.trunc(Number(cells[i]?.rs) || 1));
+            if (Number.isFinite(r) && r >= 1 && r <= MAX_SAFE_ROWS) {
+                const endR = Math.min(MAX_SAFE_ROWS, r + rs - 1);
+                if (endR > maxRow) maxRow = endR;
+            }
+        }
+        for (let i = 0; i < rows.length; i++) {
+            const r = Math.trunc(Number(rows[i]?.r));
+            if (Number.isFinite(r) && r >= 1 && r <= MAX_SAFE_ROWS && r > maxRow) maxRow = r;
+        }
+
+        let maxCol = 0;
+        for (let i = 0; i < cells.length; i++) {
+            const c = Math.trunc(Number(cells[i]?.c));
+            const cs = Math.max(1, Math.trunc(Number(cells[i]?.cs) || 1));
+            if (Number.isFinite(c) && c >= 0 && c < MAX_SAFE_COLS) {
+                const endC = Math.min(MAX_SAFE_COLS - 1, c + cs - 1);
+                if (endC > maxCol) maxCol = endC;
+            }
+        }
+        for (let i = 0; i < columns.length; i++) {
+            const c = Math.trunc(Number(columns[i]?.c));
+            if (Number.isFinite(c) && c >= 0 && c < MAX_SAFE_COLS && c > maxCol) maxCol = c;
+        }
+
         if (maxRow >= curRowCount) loadRowsSync(maxRow - curRowCount + 1);
         if (maxCol >= curCols) loadColumnsSync(maxCol - curCols + 1);
 
@@ -671,18 +770,31 @@ export function createFileIOModule(ctx) {
             if (hidden) hiddenRowsToRestore.push(Number(r));
         });
 
+        let colWidthChanged = false;
         columns.forEach(({ c, w, hidden }) => {
             const colIdx = Number(c);
             if (w) {
                 const px = parseInt(w, 10);
-                if (!isNaN(px)) setColumnWidth(colIdx, px);
+                if (!isNaN(px)) {
+                    const colEl = colgroup.children[colIdx + 1];
+                    const thEl = theadRow.children[colIdx + 1];
+                    if (colEl) colEl.style.width = `${px}px`;
+                    if (thEl) thEl.style.width = `${px}px`;
+                    colWidthChanged = true;
+                }
             }
             if (hidden) hiddenColsToRestore.push(colIdx);
         });
+        if (colWidthChanged) syncTableWidth();
 
         const total = cells.length;
         cells.forEach((item, idx) => {
-            const cell = getCell(Number(item.r), Number(item.c));
+            const rNum = Math.trunc(Number(item?.r));
+            const cNum = Math.trunc(Number(item?.c));
+            if (!Number.isFinite(rNum) || !Number.isFinite(cNum) || rNum < 1 || rNum > MAX_SAFE_ROWS || cNum < 0 || cNum >= MAX_SAFE_COLS) {
+                return;
+            }
+            const cell = getCell(rNum, cNum);
             if (!cell) return;
 
             if (item.qp) cell.dataset.quotePrefix = "1";
@@ -768,8 +880,9 @@ export function createFileIOModule(ctx) {
         });
 
         (getSheets()[getActiveSheetIndex()]?.tables || []).forEach(tbl => applyStructuredTableVisuals(tbl));
+        // フィルター状態を先に適用してから一括計算（SUBTOTAL等の再計算重複を解消）
+        restoreAutoFilters(sheetData, { skipRecalc: true });
         updateAllFormulas();
-        applyConditionalFormats();
 
         if (Array.isArray(textboxes)) {
             textboxes.forEach(tb => {
@@ -812,8 +925,6 @@ export function createFileIOModule(ctx) {
                 }
             });
         }
-
-        restoreAutoFilters(sheetData);
 
         if (hiddenColsToRestore.length) {
             hiddenColsToRestore.forEach(c => {
@@ -975,7 +1086,6 @@ export function createFileIOModule(ctx) {
                 const trimmed = val.trim();
                 if (trimmed.startsWith("=")) {
                     cell.dataset.formula = trimmed;
-                    setCellFormattedValue(cell, evaluateFormula(trimmed));
                 } else {
                     setCellFormattedValue(cell, trimmed);
                 }
@@ -1050,6 +1160,7 @@ export function createFileIOModule(ctx) {
     }
 
     async function writeToFSPath(targetPath) {
+        if (isSavingFile) return false;
         const normalized = normalizePath(targetPath);
         const lastSlash = normalized.lastIndexOf("/");
         const rawParent = lastSlash > 0 ? normalized.substring(0, lastSlash) : "C:/";
@@ -1068,14 +1179,28 @@ export function createFileIOModule(ctx) {
             return false;
         }
 
+        // セル編集中・数式バー編集中の未確定入力を先に確定させ、変更有無（isDirty）を正確に反映する
+        flushPendingEdits();
+
+        // 未変更のまま同じ既存ファイルへ上書き保存する場合は全走査・IndexedDB再書き込みをスキップ
+        if (!getIsDirty() && currentFilePath === normalized && parentNode[fileName]?.type === "file") {
+            statusBarState.stateText = "保存済み（変更なし）";
+            renderWindowStatusBar();
+            return true;
+        }
+
+        isSavingFile = true;
+        cancelDebouncedSaveState();
         statusBarState.stateText = "保存中...";
+        renderWindowStatusBar();
         let wasLockedBySelf = false;
         try {
+            const isCsv = normalized.toLowerCase().endsWith(".csv");
             let payload;
-            if (normalized.toLowerCase().endsWith(".csv")) {
+            if (isCsv) {
                 payload = await generateCSVTextAsync();
             } else {
-                const snapObj = buildSnapshotObject({ flush: true, recalcBackground: true });
+                const snapObj = buildSnapshotObject({ flush: false, recalcBackground: true });
                 const totalCells = countTotalCellsInSheets(snapObj.sheets);
                 payload = totalCells >= WORKER_SNAPSHOT_MIN_CELLS
                     ? ((await runWorkerTask("stringify-snapshot", snapObj)) ?? JSON.stringify(snapObj))
@@ -1119,13 +1244,20 @@ export function createFileIOModule(ctx) {
             }
 
             currentFilePath = normalized;
-            flushDebouncedSaveState();
-            saveState();
-            savedSnapshotJSON = undoHistory[undoHistory.length - 1] || null;
+            // 先に dirty 解除とリカバリ消去を行い、直後の履歴登録で localStorage 同期書き込みが走らないようにする
             setDirtyState(false);
             clearCrashRecoveryBackup();
+
+            if (!isCsv) {
+                // 保存用に作成した payload をそのまま Undo 履歴へ再利用（再DOM走査・再JSON.stringifyゼロ）
+                pushSerializedSnapshot(payload, { skipRecovery: true });
+                savedSnapshotJSON = payload;
+            } else {
+                void saveStateInBackground({ markAsSaved: true });
+            }
+
             statusBarState.stateText = "保存しました";
-            await updateStorageUsageDisplay();
+            void updateStorageUsageDisplay();
             return true;
         } catch (err) {
             if (wasLockedBySelf && lockFile(normalized, "exclusive", lockOwnerPid)) {
@@ -1136,6 +1268,8 @@ export function createFileIOModule(ctx) {
             renderWindowStatusBar();
             showAlert(`保存に失敗しました:\n${err.message}`, "保存エラー");
             return false;
+        } finally {
+            isSavingFile = false;
         }
     }
 

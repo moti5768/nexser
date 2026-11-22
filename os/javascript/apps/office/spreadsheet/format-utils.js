@@ -53,7 +53,18 @@ export function getCellReferenceByCoord(row, col) {
 // 日付・数値書式変換 ＆ 数式前処理ヘルパー
 // =========================================================
 export function isDateFormat(str) {
-    return /^\d{1,2}[\/\-]\d{1,2}([\/\-]\d{2,4})?$/.test(str) || /^\d{4}[\/\-]\d{1,2}[\/\-]\d{1,2}$/.test(str);
+    const s = String(str ?? "").trim();
+    const ymd = s.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
+    if (ymd) {
+        const m = Number(ymd[2]), d = Number(ymd[3]);
+        return m >= 1 && m <= 12 && d >= 1 && d <= 31;
+    }
+    const short = s.match(/^(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{2,4}))?$/);
+    if (short) {
+        const p1 = Number(short[1]), p2 = Number(short[2]);
+        return p1 >= 1 && p1 <= 12 && p2 >= 1 && p2 <= 31;
+    }
+    return false;
 }
 
 export function formatDate(date) {
@@ -126,9 +137,11 @@ export function parseCellNumericLiteral(rawStr) {
     if (str === "") return NaN;
     if (str.includes(",")) {
         if (!COMMA_GROUPED_NUM_RE.test(str)) return NaN;
-        return Number(str.replace(/,/g, ""));
+        const n = Number(str.replace(/,/g, ""));
+        return Number.isFinite(n) ? n : NaN;
     }
-    return Number(str);
+    const n = Number(str);
+    return Number.isFinite(n) ? n : NaN;
 }
 
 export function parseFormattedNumber(rawStr) {
@@ -150,7 +163,7 @@ export function parseFormattedNumber(rawStr) {
     }
 
     const num = Number(cleaned);
-    if (isNaN(num)) return NaN;
+    if (!Number.isFinite(num)) return NaN;
     return isPct ? num / 100 : num;
 }
 
@@ -275,6 +288,15 @@ export function formatDisplayByNumFmt(rawVal, fmt, cell = null) {
             return fmt === "date-jp"
                 ? `${Number(m[1])}年${Number(m[2])}月${Number(m[3])}日`
                 : `${Number(m[2])}/${Number(m[3])}`;
+        }
+        const serialNum = parseFormattedNumber(str);
+        if (!isNaN(serialNum) && serialNum >= 0 && serialNum <= 2958465) {
+            const dt = parseExcelDate(serialNum);
+            if (dt) {
+                return fmt === "date-jp"
+                    ? `${dt.getFullYear()}年${dt.getMonth() + 1}月${dt.getDate()}日`
+                    : `${dt.getMonth() + 1}/${dt.getDate()}`;
+            }
         }
         return str;
     }
@@ -438,6 +460,17 @@ export function setCellTextPreservingControls(cell, text) {
         rotSpan.textContent = strText;
         cell.appendChild(rotSpan);
     } else {
+        // 差分スキップ：子コントロールがなく既に同一テキストならDOM再生成を回避
+        if (!filterBtn && !fillHandleEl && !annoMarkEl) {
+            if (strText === "" && cell.firstChild === null) return;
+            if (
+                cell.childNodes.length === 1 &&
+                cell.firstChild.nodeType === Node.TEXT_NODE &&
+                cell.firstChild.nodeValue === strText
+            ) {
+                return;
+            }
+        }
         cell.textContent = strText;
     }
     if (filterBtn) cell.appendChild(filterBtn);

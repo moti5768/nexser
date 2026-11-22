@@ -713,9 +713,8 @@ export function createRowColOpsModule(ctx) {
                 if (item.formulaHidden === "1") dest.dataset.formulaHidden = "1"; else delete dest.dataset.formulaHidden;
 
                 if (item.formula) {
-                    const nextFormula = adjustFormula(item.formula, rowDelta, 0);
-                    dest.dataset.formula = nextFormula;
-                    setCellFormattedValue(dest, evaluateFormula(nextFormula));
+                    // ループ末尾の updateAllFormulas() で一括キャッシュ評価するため個別評価を省略
+                    dest.dataset.formula = adjustFormula(item.formula, rowDelta, 0);
                 } else {
                     delete dest.dataset.formula;
                     setCellFormattedValue(dest, item.value);
@@ -727,7 +726,6 @@ export function createRowColOpsModule(ctx) {
         });
 
         updateAllFormulas();
-        applyConditionalFormats();
         if (hasAutoFilters()) applyAutoFilterRows();
         updateFillHandle();
         updateSelectedCellsDisplay();
@@ -877,9 +875,8 @@ export function createRowColOpsModule(ctx) {
                 }
 
                 if (item.formula) {
-                    const nextFormula = adjustFormula(item.formula, rowDelta, 0);
-                    dest.dataset.formula = nextFormula;
-                    setCellFormattedValue(dest, evaluateFormula(nextFormula));
+                    // ループ末尾の updateAllFormulas() で一括キャッシュ評価するため個別評価を省略
+                    dest.dataset.formula = adjustFormula(item.formula, rowDelta, 0);
                 } else {
                     delete dest.dataset.formula;
                     setCellFormattedValue(dest, item.value);
@@ -891,7 +888,6 @@ export function createRowColOpsModule(ctx) {
         });
 
         updateAllFormulas();
-        applyConditionalFormats();
         if (hasAutoFilters()) applyAutoFilterRows();
         updateFillHandle();
         updateSelectedCellsDisplay();

@@ -195,6 +195,11 @@ export function createConditionalFormattingModule(ctx) {
     const appliedCfCells = new Set();
     const appliedCfIconCells = new Set();
 
+    function resetConditionalFormatCache() {
+        appliedCfCells.clear();
+        appliedCfIconCells.clear();
+    }
+
     const CF_ICON_SETS = {
         arrows3: [
             { char: "▼", color: "#d13438" },
@@ -226,22 +231,126 @@ export function createConditionalFormattingModule(ctx) {
     const CF_NEEDS_RANK_SORT = new Set(["topN", "topPercent", "bottomN", "bottomPercent"]);
     const CF_NEEDS_VALUE_COUNT = new Set(["duplicate", "unique"]);
 
-    function applyConditionalFormats() {
+    function ruleHasExternalFormula(rule) {
+        if (!rule) return false;
+        if (rule.op === "formula") return true;
+        if (typeof rule.val1 === "string" && rule.val1.trim().startsWith("=")) return true;
+        if (typeof rule.val2 === "string" && rule.val2.trim().startsWith("=")) return true;
+        return false;
+    }
+
+    function rulesOverlap(a, b) {
+        return !(a.maxRow < b.minRow || a.minRow > b.maxRow || a.maxCol < b.minCol || a.minCol > b.maxCol);
+    }
+
+    function applyConditionalFormats(dirtyCoords = null) {
         const rules = getActiveSheet()?.conditionalFormats || [];
 
-        // 前回適用セルのみを O(適用数) で即座にリセット（ルール0件時は実質0ms）
+        // ルール0件時のみ既存適用を完全クリアして終了
+        if (!rules.length) {
+            if (appliedCfIconCells.size > 0) {
+                appliedCfIconCells.forEach(td => {
+                    delete td.dataset.cfIcon;
+                    td.style.removeProperty("--cf-icon-color");
+                });
+                appliedCfIconCells.clear();
+            }
+            if (appliedCfCells.size > 0) {
+                appliedCfCells.forEach(td => clearAppliedConditionalStyle(td));
+                appliedCfCells.clear();
+            }
+            return;
+        }
+
+        // 差分更新モード：変更座標の影響を受けるルール群（重なり連鎖含む）だけを特定
+        let targetRules = rules;
+        if (Array.isArray(dirtyCoords)) {
+            if (dirtyCoords.length === 0) return;
+
+            const affectedIndices = new Set();
+            for (let i = 0; i < rules.length; i++) {
+                const rule = rules[i];
+                if (ruleHasExternalFormula(rule)) {
+                    affectedIndices.add(i);
+                    continue;
+                }
+                for (let j = 0; j < dirtyCoords.length; j++) {
+                    const p = dirtyCoords[j];
+                    if (p.row >= rule.minRow && p.row <= rule.maxRow && p.col >= rule.minCol && p.col <= rule.maxCol) {
+                        affectedIndices.add(i);
+                        break;
+                    }
+                }
+            }
+
+            // どのルールにも影響しないセルの編集なら DOM に一切触れず即終了
+            if (affectedIndices.size === 0) return;
+
+            // 優先順位・stopIfTrue 整合性のため、対象ルールと範囲が重なるルールを閉包展開
+            let expanded = true;
+            while (expanded && affectedIndices.size < rules.length) {
+                expanded = false;
+                for (let i = 0; i < rules.length; i++) {
+                    if (affectedIndices.has(i)) continue;
+                    for (const idx of affectedIndices) {
+                        if (rulesOverlap(rules[i], rules[idx])) {
+                            affectedIndices.add(i);
+                            expanded = true;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (affectedIndices.size < rules.length) {
+                targetRules = rules.filter((_, idx) => affectedIndices.has(idx));
+            }
+        }
+
+        const isPartialUpdate = targetRules.length < rules.length;
+        const isCellInTargetRules = (td) => {
+            const r = parseInt(td.dataset.row, 10);
+            const c = parseInt(td.dataset.col, 10);
+            for (let i = 0; i < targetRules.length; i++) {
+                const rule = targetRules[i];
+                if (r >= rule.minRow && r <= rule.maxRow && c >= rule.minCol && c <= rule.maxCol) {
+                    return true;
+                }
+            }
+            return false;
+        };
+
+        // 対象ルール群の適用セルのみリセット（部分更新時は無関係なルールのセルを温存）
         if (appliedCfIconCells.size > 0) {
-            appliedCfIconCells.forEach(td => {
-                delete td.dataset.cfIcon;
-                td.style.removeProperty("--cf-icon-color");
-            });
-            appliedCfIconCells.clear();
+            if (!isPartialUpdate) {
+                appliedCfIconCells.forEach(td => {
+                    delete td.dataset.cfIcon;
+                    td.style.removeProperty("--cf-icon-color");
+                });
+                appliedCfIconCells.clear();
+            } else {
+                appliedCfIconCells.forEach(td => {
+                    if (!td.isConnected || isCellInTargetRules(td)) {
+                        delete td.dataset.cfIcon;
+                        td.style.removeProperty("--cf-icon-color");
+                        appliedCfIconCells.delete(td);
+                    }
+                });
+            }
         }
         if (appliedCfCells.size > 0) {
-            appliedCfCells.forEach(td => clearAppliedConditionalStyle(td));
-            appliedCfCells.clear();
+            if (!isPartialUpdate) {
+                appliedCfCells.forEach(td => clearAppliedConditionalStyle(td));
+                appliedCfCells.clear();
+            } else {
+                appliedCfCells.forEach(td => {
+                    if (!td.isConnected || isCellInTargetRules(td)) {
+                        clearAppliedConditionalStyle(td);
+                        appliedCfCells.delete(td);
+                    }
+                });
+            }
         }
-        if (!rules.length) return;
 
         const stoppedCells = new Set();
         // Excel準拠：上位ルールが設定済みのスタイル属性は下位ルールで上書きしない
@@ -273,7 +382,7 @@ export function createConditionalFormattingModule(ctx) {
         const totalRows = tbody.rows.length;
         const maxColIdx = getCurrentColumns() - 1;
 
-        for (const rule of rules) {
+        for (const rule of targetRules) {
             const ruleOp = String(rule.op || "expr");
             const maxExistingRow = Math.min(rule.maxRow, totalRows);
             const maxExistingCol = Math.min(rule.maxCol, maxColIdx);
@@ -1089,6 +1198,7 @@ export function createConditionalFormattingModule(ctx) {
     return {
         matchConditionalRule,
         applyConditionalFormats,
+        resetConditionalFormatCache,
         openConditionalFormatPresetDialog,
         openConditionalFormatModal,
         openConditionalFormatManager

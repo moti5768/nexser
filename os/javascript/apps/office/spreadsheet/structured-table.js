@@ -3,6 +3,7 @@
 
 import { escapeHtml, getColumnName } from "./format-utils.js";
 import { parseRangeReference, parseCellReference } from "./formula-ref-overlay.js";
+import { clearAppliedConditionalStyle } from "./conditional-format.js";
 
 export const TABLE_THEMES = {
     blue: { label: "青 (標準)", headerBg: "#1f4e78", headerFg: "#ffffff", stripeBg: "#d9e1f2", evenBg: "#ffffff", bodyFg: "#000000", border: "1px solid #8ea9db" },
@@ -39,7 +40,10 @@ export function createStructuredTableModule(ctx) {
         adjustFormula,
         addAutoFilterForRange,
         getAutoFilterByTableId,
+        removeAutoFilterById,
         removeAutoFiltersInBounds,
+        hasAutoFilters,
+        applyAutoFilterRows,
         updateAllFormulas,
         applyConditionalFormats,
         getBackgroundSheetCellMap,
@@ -77,6 +81,7 @@ export function createStructuredTableModule(ctx) {
             for (let c = tbl.minCol; c <= tbl.maxCol; c++) {
                 const cell = getVisibleCell(r, c);
                 if (!cell) continue;
+                clearAppliedConditionalStyle(cell);
                 cell.dataset.tableId = tbl.id;
                 cell.style.borderTop = isTotal ? "2px solid #000" : theme.border;
                 cell.style.borderBottom = isTotal ? "4px double #000" : theme.border;
@@ -134,12 +139,17 @@ export function createStructuredTableModule(ctx) {
             }
         }
 
-        removeAutoFiltersInBounds?.({
-            minRow: tbl.minRow,
-            maxRow: tbl.minRow,
-            minCol: tbl.minCol,
-            maxCol: tbl.maxCol
-        });
+        const tblFilter = getAutoFilterByTableId?.(tbl.id);
+        if (tblFilter && removeAutoFilterById) {
+            removeAutoFilterById(tblFilter.id);
+        } else {
+            removeAutoFiltersInBounds?.({
+                minRow: tbl.minRow,
+                maxRow: tbl.minRow,
+                minCol: tbl.minCol,
+                maxCol: tbl.maxCol
+            });
+        }
 
         updateAllFormulas();
         applyConditionalFormats();
@@ -420,6 +430,7 @@ export function createStructuredTableModule(ctx) {
 
         updateAllFormulas();
         applyConditionalFormats();
+        if (hasAutoFilters?.()) applyAutoFilterRows?.();
         setDirtyState(true);
         debouncedSaveState();
     }

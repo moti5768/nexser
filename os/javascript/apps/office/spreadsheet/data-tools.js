@@ -326,9 +326,7 @@ export function createDataToolsModule(ctx) {
                 }
 
                 if (item.formula) {
-                    const nextFormula = adjustFormula(item.formula, rowDelta, 0);
-                    dest.dataset.formula = nextFormula;
-                    setCellFormattedValue(dest, evaluateFormula(nextFormula));
+                    dest.dataset.formula = adjustFormula(item.formula, rowDelta, 0);
                 } else {
                     delete dest.dataset.formula;
                     setCellFormattedValue(dest, item.value);
@@ -357,7 +355,6 @@ export function createDataToolsModule(ctx) {
         }
 
         updateAllFormulas();
-        applyConditionalFormats();
         if (hasAutoFilters()) applyAutoFilterRows();
         updateFillHandle();
         updateSelectedCellsDisplay();

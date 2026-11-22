@@ -10,10 +10,14 @@ export function createFindReplaceModule(ctx) {
         signal,
         tbody,
         getActiveCell,
+        isCurrentSheetProtected,
+        isCellLockedForEdit,
+        hasAutoFilters,
+        applyAutoFilterRows,
+        showAlert,
         openAppModal,
         restoreMainWindowFocus,
         flushPendingEdits,
-        evaluateFormula,
         setCellFormattedValue,
         clearSelection,
         setActiveCell,
@@ -178,6 +182,7 @@ export function createFindReplaceModule(ctx) {
 
             const applyReplacementToCell = (cell, opts) => {
                 if (!isCellMatched(cell, opts)) return false;
+                if (isCellLockedForEdit?.(cell)) return false;
                 if (cell.dataset.formula && !opts.searchFormula) return false;
 
                 const flags = opts.matchCase ? "g" : "gi";
@@ -189,7 +194,6 @@ export function createFindReplaceModule(ctx) {
                         : cell.dataset.formula.replace(regex, () => opts.replacement);
                     if (nextFormula.trim().startsWith("=")) {
                         cell.dataset.formula = nextFormula.trim();
-                        setCellFormattedValue(cell, evaluateFormula(cell.dataset.formula));
                     } else {
                         delete cell.dataset.formula;
                         setCellFormattedValue(cell, nextFormula);
@@ -250,9 +254,14 @@ export function createFindReplaceModule(ctx) {
                     return;
                 }
                 const curActive = getActiveCell();
+                if (curActive && isCellLockedForEdit?.(curActive) && isCellMatched(curActive, opts)) {
+                    showAlert?.("保護されたシート上のロックされたセルは置換できません。", "シートの保護");
+                    return;
+                }
                 if (curActive && applyReplacementToCell(curActive, opts)) {
-                    setActiveCell(curActive, false);
                     updateAllFormulas();
+                    if (hasAutoFilters?.()) applyAutoFilterRows?.();
+                    setActiveCell(curActive, false);
                     updateFillHandle();
                     updateSelectedCellsDisplay();
                     setDirtyState(true);
@@ -280,11 +289,14 @@ export function createFindReplaceModule(ctx) {
                 }
                 if (count > 0) {
                     updateAllFormulas();
+                    if (hasAutoFilters?.()) applyAutoFilterRows?.();
                     updateFillHandle();
                     updateSelectedCellsDisplay();
                     setDirtyState(true);
                     debouncedSaveState();
                     statusEl.textContent = `${count} 件を置換しました。`;
+                } else if (isCurrentSheetProtected?.()) {
+                    statusEl.textContent = "置換対象がないか、シート保護により変更できません。";
                 } else {
                     statusEl.textContent = "置換対象が見つかりませんでした。";
                 }

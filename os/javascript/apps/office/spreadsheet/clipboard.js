@@ -83,6 +83,8 @@ export function createClipboardModule(ctx) {
         setActiveCell,
         autoFitRow,
         applyFreezePanes,
+        hasAutoFilters,
+        applyAutoFilterRows,
         updateAllFormulas,
         refreshVisibleFloatingObjects,
         updateFillHandle,
@@ -292,8 +294,8 @@ export function createClipboardModule(ctx) {
                 dest.dataset.quotePrefix = "1";
                 setCellFormattedValue(dest, raw.slice(1));
             } else if (trimmed.startsWith("=")) {
+                // ループ末尾の updateAllFormulas() で一括キャッシュ評価するため個別評価を省略
                 dest.dataset.formula = trimmed;
-                setCellFormattedValue(dest, evaluateFormula(trimmed));
             } else {
                 delete dest.dataset.formula;
                 setCellFormattedValue(dest, raw);
@@ -335,6 +337,7 @@ export function createClipboardModule(ctx) {
         affectedRows.forEach(r => autoFitRow(getRow(r)));
 
         updateAllFormulas();
+        if (hasAutoFilters?.()) applyAutoFilterRows?.();
         updateFillHandle();
         updateSelectedCellsDisplay();
         clearCopyAnimation();
@@ -622,7 +625,7 @@ export function createClipboardModule(ctx) {
                 if (item.decimalPlaces !== undefined && item.decimalPlaces !== "") dest.dataset.decimalPlaces = item.decimalPlaces;
                 else delete dest.dataset.decimalPlaces;
                 applyCellStyleData(dest, item.styleObj);
-                const curRaw = dest.dataset.formula ? evaluateFormula(dest.dataset.formula) : (dest.dataset.rawValue ?? dest.textContent);
+                const curRaw = dest.dataset.formula ? (dest.dataset.rawValue ?? "") : (dest.dataset.rawValue ?? getCellPureText(dest));
                 setCellFormattedValue(dest, curRaw);
                 return;
             }
@@ -900,7 +903,10 @@ export function createClipboardModule(ctx) {
         const landedActive = getVisibleCell(targetRow, targetCol);
         if (landedActive) setActiveCell(landedActive, true);
 
-        // 貼り付け範囲に改行や折り返し設定が含まれる場合は行の高さを自動調整
+        updateAllFormulas();
+        if (hasAutoFilters?.()) applyAutoFilterRows?.();
+
+        // 貼り付け範囲（数式評価後の結果含む）に改行や折り返し設定が含まれる場合は行の高さを自動調整
         const affectedRows = new Set();
         for (let r = targetRow; r < targetRow + pasteHeight; r++) {
             for (let c = targetCol; c < targetCol + pasteWidth; c++) {
@@ -913,7 +919,6 @@ export function createClipboardModule(ctx) {
         affectedRows.forEach(r => autoFitRow(getRow(r)));
 
         if (getFreezeRows() > 0 || getFreezeCols() > 0) applyFreezePanes();
-        updateAllFormulas();
         refreshVisibleFloatingObjects();
         updateFillHandle();
         updateSelectedCellsDisplay();

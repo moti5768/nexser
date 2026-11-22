@@ -53,6 +53,8 @@ export function createDataValidationModule(ctx) {
         getCurrentColumns,
         getRowCount,
         getCachedTableWidth,
+        isCurrentSheetProtected,
+        isCellLockedForEdit,
         isCellEditing,
         loadColumnsSync,
         loadRowsSync,
@@ -291,6 +293,10 @@ export function createDataValidationModule(ctx) {
 
     function openCellDropdownList(cell, anchorBtn = floatingDropdownBtn) {
         closeCellDropdownList();
+        if (isCellLockedForEdit?.(cell)) {
+            showAlert("保護されたシート上のロックされたセルは変更できません。", "シートの保護");
+            return;
+        }
         const items = resolveCellDropdownItems(cell.dataset.dropdownList);
         if (!items.length) {
             showAlert("リストの候補が見つかりません。入力規則の「元の値」を確認してください。", "ドロップダウンリスト");
@@ -582,6 +588,10 @@ export function createDataValidationModule(ctx) {
     function openHyperlinkDialog() {
         const activeCell = getActiveCell();
         if (!activeCell) return;
+        if (isCellLockedForEdit?.(activeCell)) {
+            showAlert("保護されたシート上のロックされたセルにはハイパーリンクを設定できません。", "シートの保護");
+            return;
+        }
         flushPendingEdits();
         const curLink = activeCell.dataset.hyperlink || "";
         const curLabel = activeCell.dataset.rawValue ?? activeCell.textContent ?? "";
@@ -643,6 +653,10 @@ export function createDataValidationModule(ctx) {
         const selected = Array.from(tbody.querySelectorAll("td.selected")).filter(td => td.style.display !== "none");
         const targets = selected.length ? selected : (activeCell ? [activeCell] : []);
         if (!targets.length) return;
+        if (isCurrentSheetProtected?.() && targets.some(td => isCellLockedForEdit?.(td))) {
+            showAlert("保護されたシート上のロックされたセルの入力規則は変更できません。", "シートの保護");
+            return;
+        }
         let cur = {
             type: targets[0].dataset.dropdownList ? "list" : "any",
             operator: "between",

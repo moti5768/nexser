@@ -838,8 +838,30 @@ export function createChartsModule(ctx) {
         }
     }
 
-    function updateAllFloatingCharts() {
-        spreadsheetContent.querySelectorAll(".floating-chart[data-source-range]").forEach(box => {
+    function updateAllFloatingCharts(dirtyCoords = null) {
+        const charts = spreadsheetContent.querySelectorAll(".floating-chart[data-source-range]");
+        if (!charts.length) return;
+        if (Array.isArray(dirtyCoords) && dirtyCoords.length === 0) return;
+
+        charts.forEach(box => {
+            if (Array.isArray(dirtyCoords)) {
+                const bounds = parseRangeReference(box.dataset.sourceRange);
+                if (bounds) {
+                    const minR = Math.min(bounds.start.row, bounds.end.row);
+                    const maxR = Math.max(bounds.start.row, bounds.end.row);
+                    const minC = Math.min(bounds.start.col, bounds.end.col);
+                    const maxC = Math.max(bounds.start.col, bounds.end.col);
+                    let intersects = false;
+                    for (let i = 0; i < dirtyCoords.length; i++) {
+                        const p = dirtyCoords[i];
+                        if (p.row >= minR && p.row <= maxR && p.col >= minC && p.col <= maxC) {
+                            intersects = true;
+                            break;
+                        }
+                    }
+                    if (!intersects) return;
+                }
+            }
             renderChartBoxSVG(box);
         });
     }

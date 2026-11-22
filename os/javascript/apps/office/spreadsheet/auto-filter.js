@@ -20,6 +20,8 @@ export function createAutoFilterModule(ctx) {
         sortSelectedRange,
         refreshVisibleRows,
         syncCopyAntsBoxPosition,
+        syncCellDropdownButtonPosition,
+        refreshFormulaRefOverlay,
         updateAllFormulas,
         showAlert,
         setDirtyState,
@@ -204,7 +206,7 @@ export function createAutoFilterModule(ctx) {
         }));
     }
 
-    function restoreAutoFilters(sheetData) {
+    function restoreAutoFilters(sheetData, { skipRecalc = false } = {}) {
         const rawAutoFilters = Array.isArray(sheetData?.autoFilters)
             ? sheetData.autoFilters
             : (sheetData?.autoFilter ? [sheetData.autoFilter] : []);
@@ -220,7 +222,7 @@ export function createAutoFilterModule(ctx) {
                 conditions: new Map((af.conditions || []).map(([col, cond]) => [Number(col), { ...cond }]))
             }));
             renderAutoFilterArrows();
-            applyAutoFilterRows();
+            applyAutoFilterRows({ skipRecalc });
         }
     }
 
@@ -263,18 +265,25 @@ export function createAutoFilterModule(ctx) {
         return true;
     }
 
-    function applyAutoFilterRows() {
+    function applyAutoFilterRows({ skipRecalc = false } = {}) {
         const totalRows = tbody.rows.length;
+        let visibilityChanged = false;
         if (!autoFilterStates.length) {
             for (let i = 0; i < totalRows; i++) {
                 const tr = tbody.rows[i];
+                const nextDisplay = tr.dataset.userHidden === "1" ? "none" : "";
+                if (tr.dataset.filterHidden === "1" || tr.style.display !== nextDisplay) {
+                    visibilityChanged = true;
+                }
                 delete tr.dataset.filterHidden;
-                tr.style.display = tr.dataset.userHidden === "1" ? "none" : "";
+                tr.style.display = nextDisplay;
             }
             syncFilterButtonState();
             refreshVisibleRows();
             syncCopyAntsBoxPosition();
-            updateAllFormulas();
+            syncCellDropdownButtonPosition?.();
+            refreshFormulaRefOverlay?.();
+            if (!skipRecalc && visibilityChanged) updateAllFormulas();
             return;
         }
 
@@ -345,11 +354,18 @@ export function createAutoFilterModule(ctx) {
             const tr = getRow(r);
             if (!tr) continue;
             if (hiddenRows.has(r)) {
+                if (tr.dataset.filterHidden !== "1" || tr.style.display !== "none") {
+                    visibilityChanged = true;
+                }
                 tr.dataset.filterHidden = "1";
                 tr.style.display = "none";
             } else {
+                const nextDisplay = tr.dataset.userHidden === "1" ? "none" : "";
+                if (tr.dataset.filterHidden === "1" || tr.style.display !== nextDisplay) {
+                    visibilityChanged = true;
+                }
                 delete tr.dataset.filterHidden;
-                tr.style.display = tr.dataset.userHidden === "1" ? "none" : "";
+                tr.style.display = nextDisplay;
             }
         }
 
@@ -361,7 +377,9 @@ export function createAutoFilterModule(ctx) {
         syncFilterButtonState();
         refreshVisibleRows();
         syncCopyAntsBoxPosition();
-        updateAllFormulas();
+        syncCellDropdownButtonPosition?.();
+        refreshFormulaRefOverlay?.();
+        if (!skipRecalc && visibilityChanged) updateAllFormulas();
     }
 
     function openFilterDropdownMenu(filterId, colIdx, anchorEl) {
@@ -539,7 +557,7 @@ export function createAutoFilterModule(ctx) {
         searchInp.focus();
     }
 
-    function clearAllAutoFilters() {
+    function clearAllAutoFilters({ skipRecalc = false } = {}) {
         closeFilterDropdown();
         tbody.querySelectorAll(".ss-filter-arrow").forEach(el => el.remove());
         autoFilterStates = [];
@@ -550,7 +568,11 @@ export function createAutoFilterModule(ctx) {
         syncFilterButtonState();
         refreshVisibleRows();
         syncCopyAntsBoxPosition();
-        updateAllFormulas();
+        syncCellDropdownButtonPosition?.();
+        refreshFormulaRefOverlay?.();
+        if (!skipRecalc) {
+            updateAllFormulas();
+        }
     }
 
     function toggleAutoFilter() {
@@ -626,6 +648,7 @@ export function createAutoFilterModule(ctx) {
         syncFilterButtonState,
         renderAutoFilterArrows,
         addAutoFilterForRange,
+        removeAutoFilterById,
         removeAutoFiltersInBounds,
         shiftAutoFiltersForMove,
         serializeAutoFilters,

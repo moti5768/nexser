@@ -14,7 +14,8 @@ export function serialToDate(serial) {
 }
 
 export function tryParseDateToSerial(str) {
-    const m = String(str ?? "").trim().match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})$/);
+    if (typeof str !== "string" || str.indexOf("/") === -1) return null;
+    const m = str.trim().match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})$/);
     if (!m) return null;
     const dt = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
     return isNaN(dt.getTime()) ? null : dateToSerial(dt);
@@ -35,9 +36,30 @@ export function isBlankVal(v) {
     return v === "" || v == null || Boolean(v && typeof v === "object" && v.isBlank);
 }
 
+function dateToExcelSerial(d) {
+    const daySerial = dateToSerial(d);
+    const sec = d.getHours() * 3600 + d.getMinutes() * 60 + d.getSeconds();
+    return sec === 0 ? daySerial : daySerial + sec / 86400;
+}
+
+function normalizeDateToSerial(v) {
+    return (v instanceof Date && !isNaN(v.getTime())) ? dateToExcelSerial(v) : v;
+}
+
+function tryParseCriterionDateSerial(str) {
+    if (typeof str !== "string") return null;
+    const m = str.trim().match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
+    if (!m) return null;
+    const y = Number(m[1]), mo = Number(m[2]), d = Number(m[3]);
+    if (mo < 1 || mo > 12 || d < 1 || d > 31) return null;
+    const dt = new Date(y, mo - 1, d);
+    if (isNaN(dt.getTime()) || dt.getFullYear() !== y || dt.getMonth() !== mo - 1 || dt.getDate() !== d) return null;
+    return dateToSerial(dt);
+}
+
 export function excelEquals(a, b) {
-    const va = unwrapBlank(a);
-    const vb = unwrapBlank(b);
+    const va = normalizeDateToSerial(unwrapBlank(a));
+    const vb = normalizeDateToSerial(unwrapBlank(b));
     if (va === "" || vb === "") return va === "" && vb === "";
     if (typeof va === "number" && typeof vb === "number") return va === vb;
     if (typeof va === "boolean" || typeof vb === "boolean") return Boolean(va) === Boolean(vb);
@@ -48,11 +70,13 @@ export function excelOpEquals(a, b) {
     const aBlank = Boolean(a && typeof a === "object" && a.isBlank);
     const bBlank = Boolean(b && typeof b === "object" && b.isBlank);
     if (aBlank && bBlank) return true;
-    if (aBlank) return b === "" || b === 0 || b === false;
-    if (bBlank) return a === "" || a === 0 || a === false;
-    if (typeof a === "number" && typeof b === "number") return a === b;
-    if (typeof a === "boolean" && typeof b === "boolean") return a === b;
-    if (typeof a === "string" && typeof b === "string") return a.toLowerCase() === b.toLowerCase();
+    const va = normalizeDateToSerial(a);
+    const vb = normalizeDateToSerial(b);
+    if (aBlank) return vb === "" || vb === 0 || vb === false;
+    if (bBlank) return va === "" || va === 0 || va === false;
+    if (typeof va === "number" && typeof vb === "number") return va === vb;
+    if (typeof va === "boolean" && typeof vb === "boolean") return va === vb;
+    if (typeof va === "string" && typeof vb === "string") return va.toLowerCase() === vb.toLowerCase();
     return false;
 }
 
@@ -81,9 +105,22 @@ export function parseExcelDate(input) {
     return isNaN(parsed.getTime()) ? null : parsed;
 }
 
+function pushFlattened(source, out) {
+    for (let i = 0; i < source.length; i++) {
+        const val = source[i];
+        if (Array.isArray(val)) {
+            pushFlattened(val, out);
+        } else {
+            out.push(val);
+        }
+    }
+}
+
 export function flattenArray(arr) {
     if (!Array.isArray(arr)) return [arr];
-    return arr.reduce((acc, val) => acc.concat(Array.isArray(val) ? flattenArray(val) : val), []);
+    const out = [];
+    pushFlattened(arr, out);
+    return out;
 }
 
 export function to2DArray(val) {
@@ -93,7 +130,7 @@ export function to2DArray(val) {
 }
 
 export function coerceExcelNum(v) {
-    const uv = unwrapBlank(v);
+    const uv = normalizeDateToSerial(unwrapBlank(v));
     if (typeof uv === "boolean") return uv ? 1 : 0;
     if (uv === "" || uv == null) return 0;
     const n = Number(uv);
@@ -123,8 +160,8 @@ export function excelBinaryOp(op, a, b) {
         if (op === "==") return excelOpEquals(va, vb);
         if (op === "!=") return !excelOpEquals(va, vb);
         if (op === "<" || op === "<=" || op === ">" || op === ">=") {
-            const ua = unwrapBlank(va);
-            const ub = unwrapBlank(vb);
+            const ua = normalizeDateToSerial(unwrapBlank(va));
+            const ub = normalizeDateToSerial(unwrapBlank(vb));
             const na = (ua === "" || ua == null) ? 0 : (typeof ua === "number" ? ua : NaN);
             const nb = (ub === "" || ub == null) ? 0 : (typeof ub === "number" ? ub : NaN);
             let cmp;
@@ -200,14 +237,16 @@ export function buildConditionMatcher(condition) {
             if (op === "<>" || op === "!=") return (v) => !isBlankVal(v);
         }
 
-        const numTarget = Number(rawTarget);
-        const isNum = rawTarget !== "" && !isNaN(numTarget);
+        const parsedNum = rawTarget !== "" ? Number(rawTarget) : NaN;
+        const dateSerial = isNaN(parsedNum) ? tryParseCriterionDateSerial(rawTarget) : null;
+        const numTarget = dateSerial !== null ? dateSerial : parsedNum;
+        const isNum = !isNaN(numTarget);
         const hasWildcard = !isNum && (op === "=" || op === "<>" || op === "!=") && /[*?]/.test(rawTarget);
         const wcRegex = hasWildcard ? buildWildcardRegex(rawTarget) : null;
         const lowerTarget = rawTarget.toLowerCase();
 
         return (rawV) => {
-            const v = unwrapBlank(rawV);
+            const v = normalizeDateToSerial(unwrapBlank(rawV));
             const blank = v === "" || v == null;
             const isBool = typeof v === "boolean";
             const numVal = (!blank && !isBool && !isNaN(Number(v))) ? Number(v) : NaN;
@@ -256,11 +295,13 @@ export function buildConditionMatcher(condition) {
         return (v) => isBlankVal(v);
     }
 
-    const numTarget = Number(condStr);
+    const parsedNum = Number(condStr);
+    const dateSerial = isNaN(parsedNum) ? tryParseCriterionDateSerial(condStr) : null;
+    const numTarget = dateSerial !== null ? dateSerial : parsedNum;
     const isNum = !isNaN(numTarget);
     const lowerCond = condStr.toLowerCase();
     return (rawV) => {
-        const v = unwrapBlank(rawV);
+        const v = normalizeDateToSerial(unwrapBlank(rawV));
         if (v === "" || v == null) return false;
         if (isNum && typeof v !== "boolean" && !isNaN(Number(v))) {
             return Number(v) === numTarget;
@@ -271,11 +312,41 @@ export function buildConditionMatcher(condition) {
 
 export const EXCEL_ERROR_RE = /^#(ERROR!|DIV\/0!|N\/A|VALUE!|CIRCULAR!|REF!|NAME\?|NUM!|CALC!|SPILL!)$/;
 
+export function getExcelError(val) {
+    const v = unwrapBlank(val);
+    if (typeof v === "string") {
+        const trimmed = v.trim();
+        if (EXCEL_ERROR_RE.test(trimmed)) return trimmed;
+    }
+    return null;
+}
+
+export function findFirstError(...vals) {
+    for (let i = 0; i < vals.length; i++) {
+        const err = getExcelError(vals[i]);
+        if (err) return err;
+    }
+    return null;
+}
+
+function toStrictExcelNumber(val) {
+    const err = getExcelError(val);
+    if (err) return { error: err, num: NaN };
+    const uv = normalizeDateToSerial(unwrapBlank(val));
+    if (typeof uv === "boolean") return { error: null, num: uv ? 1 : 0 };
+    if (uv === "" || uv == null) return { error: null, num: 0 };
+    const n = Number(uv);
+    if (!Number.isFinite(n)) return { error: "#VALUE!", num: NaN };
+    return { error: null, num: n };
+}
+
+
+
 export function collectNumericValues(args) {
     const flat = flattenArray(args);
     const nums = [];
     for (let i = 0; i < flat.length; i++) {
-        const v = unwrapBlank(flat[i]);
+        const v = normalizeDateToSerial(unwrapBlank(flat[i]));
         if (typeof v === "string" && EXCEL_ERROR_RE.test(v.trim())) {
             return { error: v.trim(), nums: [] };
         }
@@ -360,12 +431,37 @@ export const FORMULA_FUNCTIONS = {
         return max;
     },
     COUNT(...args) {
-        const flat = flattenArray(args);
-        return flat.filter(x => typeof x !== "boolean" && String(x ?? "").trim() !== "" && !isNaN(Number(String(x).trim()))).length;
+        // Excel仕様: 範囲内の数値のみカウント（文字列・論理値・エラー・空白は除外）、直接引数の数値文字列はカウント
+        let count = 0;
+        for (let i = 0; i < args.length; i++) {
+            const arg = args[i];
+            if (Array.isArray(arg)) {
+                const flat = flattenArray(arg);
+                for (let j = 0; j < flat.length; j++) {
+                    const v = unwrapBlank(flat[j]);
+                    if (typeof v === "number" && Number.isFinite(v)) count++;
+                }
+            } else {
+                const v = unwrapBlank(arg);
+                if (typeof v === "number" && Number.isFinite(v)) {
+                    count++;
+                } else if (typeof v === "boolean") {
+                    count++;
+                } else if (typeof v === "string" && v.trim() !== "" && !getExcelError(v)) {
+                    const n = Number(v.trim());
+                    if (Number.isFinite(n)) count++;
+                }
+            }
+        }
+        return count;
     },
     COUNTA(...args) {
         const flat = flattenArray(args);
-        return flat.filter(x => String(x ?? "").trim() !== "").length;
+        let count = 0;
+        for (let i = 0; i < flat.length; i++) {
+            if (!isBlankVal(flat[i])) count++;
+        }
+        return count;
     },
     PRODUCT(...args) {
         const { error, nums } = collectNumericValues(args);
@@ -373,19 +469,45 @@ export const FORMULA_FUNCTIONS = {
         if (!nums.length) return 0;
         return nums.reduce((acc, v) => acc * v, 1);
     },
-    ADD(a, b) { return Number(a) + Number(b); },
-    SUBTRACT(a, b) { return Number(a) - Number(b); },
-    DIVIDE(a, b) { return Number(b) !== 0 ? Number(a) / Number(b) : "#DIV/0!"; },
-    POWER(a, b) { return Math.pow(Number(a), Number(b)); },
-    SQRT(a) { return Math.sqrt(Number(a)); },
-    MOD(a, b) {
-        const n = Number(unwrapBlank(a));
-        const d = Number(unwrapBlank(b));
-        if (!Number.isFinite(n) || !Number.isFinite(d)) return "#VALUE!";
-        if (d === 0) return "#DIV/0!";
-        return n - d * Math.floor(n / d);
+    ADD(a, b) {
+        const na = toStrictExcelNumber(a); if (na.error) return na.error;
+        const nb = toStrictExcelNumber(b); if (nb.error) return nb.error;
+        return na.num + nb.num;
     },
-    ABS(a) { return Math.abs(Number(a)); },
+    SUBTRACT(a, b) {
+        const na = toStrictExcelNumber(a); if (na.error) return na.error;
+        const nb = toStrictExcelNumber(b); if (nb.error) return nb.error;
+        return na.num - nb.num;
+    },
+    DIVIDE(a, b) {
+        const na = toStrictExcelNumber(a); if (na.error) return na.error;
+        const nb = toStrictExcelNumber(b); if (nb.error) return nb.error;
+        return nb.num !== 0 ? na.num / nb.num : "#DIV/0!";
+    },
+    POWER(a, b) {
+        const na = toStrictExcelNumber(a); if (na.error) return na.error;
+        const nb = toStrictExcelNumber(b); if (nb.error) return nb.error;
+        if (na.num === 0 && nb.num === 0) return "#NUM!";
+        if (na.num === 0 && nb.num < 0) return "#DIV/0!";
+        const res = Math.pow(na.num, nb.num);
+        if (Number.isNaN(res)) return "#NUM!";
+        return Number.isFinite(res) ? res : "#NUM!";
+    },
+    SQRT(a) {
+        const na = toStrictExcelNumber(a); if (na.error) return na.error;
+        if (na.num < 0) return "#NUM!";
+        return Math.sqrt(na.num);
+    },
+    MOD(a, b) {
+        const na = toStrictExcelNumber(a); if (na.error) return na.error;
+        const nb = toStrictExcelNumber(b); if (nb.error) return nb.error;
+        if (nb.num === 0) return "#DIV/0!";
+        return na.num - nb.num * Math.floor(na.num / nb.num);
+    },
+    ABS(a) {
+        const na = toStrictExcelNumber(a); if (na.error) return na.error;
+        return Math.abs(na.num);
+    },
     ROUND(num, digits = 0) {
         const n = Number(unwrapBlank(num)), d = Math.trunc(Number(unwrapBlank(digits)));
         if (!isFinite(n) || isNaN(d)) return "#VALUE!";
@@ -444,47 +566,76 @@ export const FORMULA_FUNCTIONS = {
             const v = unwrapBlank(flat[i]);
             if (typeof v === "string" && EXCEL_ERROR_RE.test(v.trim())) return v.trim();
         }
-        return flat.map(v => String(unwrapBlank(v) ?? "")).join("");
+        return flat.map(v => String(normalizeDateToSerial(unwrapBlank(v)) ?? "")).join("");
     },
-    UPPER(text) { return String(text).toUpperCase(); },
-    LOWER(text) { return String(text).toLowerCase(); },
+    UPPER(text) {
+        const err = getExcelError(text); if (err) return err;
+        return String(unwrapBlank(text) ?? "").toUpperCase();
+    },
+    LOWER(text) {
+        const err = getExcelError(text); if (err) return err;
+        return String(unwrapBlank(text) ?? "").toLowerCase();
+    },
     LEFT(text, count = 1) {
+        const err = findFirstError(text, count); if (err) return err;
         const cnt = Math.trunc(Number(unwrapBlank(count)));
         if (isNaN(cnt) || cnt < 0) return "#VALUE!";
         return String(unwrapBlank(text) ?? "").substring(0, cnt);
     },
     RIGHT(text, count = 1) {
+        const err = findFirstError(text, count); if (err) return err;
         const cnt = Math.trunc(Number(unwrapBlank(count)));
         if (isNaN(cnt) || cnt < 0) return "#VALUE!";
         if (cnt === 0) return "";
         return String(unwrapBlank(text) ?? "").slice(-cnt);
     },
     MID(text, start, count) {
+        const err = findFirstError(text, start, count); if (err) return err;
         const st = Math.trunc(Number(unwrapBlank(start)));
         const cnt = Math.trunc(Number(unwrapBlank(count)));
         if (isNaN(st) || isNaN(cnt) || st < 1 || cnt < 0) return "#VALUE!";
         return String(unwrapBlank(text) ?? "").slice(st - 1, st - 1 + cnt);
     },
-    TRIM(text) { return String(unwrapBlank(text) ?? "").trim().replace(/\s+/g, " "); },
-    LEN(text) { return String(unwrapBlank(text) ?? "").length; },
+    TRIM(text) {
+        const err = getExcelError(text); if (err) return err;
+        return String(unwrapBlank(text) ?? "").trim().replace(/\s+/g, " ");
+    },
+    LEN(text) {
+        const err = getExcelError(text); if (err) return err;
+        return String(unwrapBlank(text) ?? "").length;
+    },
     FIND(findText, withinText, startNum = 1) {
+        const err = findFirstError(findText, withinText, startNum); if (err) return err;
         const st = Math.trunc(Number(unwrapBlank(startNum)));
         if (isNaN(st) || st < 1) return "#VALUE!";
         const idx = String(unwrapBlank(withinText) ?? "").indexOf(String(unwrapBlank(findText) ?? ""), st - 1);
         return idx === -1 ? "#VALUE!" : idx + 1;
     },
     REPLACE(text, start, count, newText) {
-        const s = String(text);
-        const st = Number(start) - 1;
-        const cnt = Number(count);
-        return s.substring(0, st) + newText + s.substring(st + cnt);
+        const err = findFirstError(text, start, count, newText); if (err) return err;
+        const s = String(unwrapBlank(text) ?? "");
+        const st = Math.trunc(Number(unwrapBlank(start))) - 1;
+        const cnt = Math.trunc(Number(unwrapBlank(count)));
+        if (isNaN(st) || isNaN(cnt) || st < 0 || cnt < 0) return "#VALUE!";
+        return s.substring(0, st) + String(unwrapBlank(newText) ?? "") + s.substring(st + cnt);
     },
 
     IF(condition, trueValue, falseValue = false) {
+        const err = getExcelError(condition);
+        if (err) return err;
         const raw = unwrapBlank(condition);
-        const cond = typeof raw === "string"
-            ? raw.trim().toUpperCase() === "TRUE"
-            : Boolean(raw);
+        let cond;
+        if (typeof raw === "boolean") cond = raw;
+        else if (typeof raw === "number") cond = raw !== 0;
+        else if (raw === "" || raw == null) cond = false;
+        else if (typeof raw === "string") {
+            const up = raw.trim().toUpperCase();
+            if (up === "TRUE") cond = true;
+            else if (up === "FALSE") cond = false;
+            else return "#VALUE!";
+        } else {
+            cond = Boolean(raw);
+        }
         return cond ? trueValue : falseValue;
     },
     IFERROR(value, valueIfError = "") {
@@ -537,6 +688,7 @@ export const FORMULA_FUNCTIONS = {
         return isBlankVal(array[rNum - 1]) ? 0 : array[rNum - 1];
     },
     MATCH(lookupValue, array, matchType = 1) {
+        const err = findFirstError(lookupValue, matchType); if (err) return err;
         const flat = flattenArray(array);
         const lv = unwrapBlank(lookupValue);
         const mt = Math.trunc(Number(unwrapBlank(matchType)));
@@ -584,6 +736,7 @@ export const FORMULA_FUNCTIONS = {
         return "#N/A";
     },
     VLOOKUP(lookupValue, tableArray, colIndex, rangeLookup = true) {
+        const err = findFirstError(lookupValue, colIndex, rangeLookup); if (err) return err;
         const cIdx = Math.trunc(Number(unwrapBlank(colIndex)));
         if (!Array.isArray(tableArray) || isNaN(cIdx) || cIdx < 1) return "#VALUE!";
         const lv = unwrapBlank(lookupValue);
@@ -610,8 +763,11 @@ export const FORMULA_FUNCTIONS = {
         return bestMatch !== null ? bestMatch : "#N/A";
     },
     HLOOKUP(lookupValue, tableArray, rowIndex, rangeLookup = true) {
-        const rIdx = Math.trunc(Number(rowIndex));
+        const err = findFirstError(lookupValue, rowIndex, rangeLookup); if (err) return err;
+        const rIdx = Math.trunc(Number(unwrapBlank(rowIndex)));
         if (!Array.isArray(tableArray) || !Array.isArray(tableArray[0]) || isNaN(rIdx) || rIdx < 1) return "#VALUE!";
+        if (rIdx > tableArray.length) return "#REF!";
+        const lv = unwrapBlank(lookupValue);
         const isRangeLookup = typeof rangeLookup === "string"
             ? !["FALSE", "0"].includes(rangeLookup.trim().toUpperCase())
             : Boolean(rangeLookup);
@@ -619,17 +775,23 @@ export const FORMULA_FUNCTIONS = {
         let bestMatch = null;
         for (let c = 0; c < headerRow.length; c++) {
             if (isBlankVal(headerRow[c])) continue;
+            const cellVal = unwrapBlank(headerRow[c]);
+            const rawRet = tableArray[rIdx - 1]?.[c];
+            const retVal = isBlankVal(rawRet) ? 0 : unwrapBlank(rawRet);
             if (isRangeLookup) {
-                if (headerRow[c] <= lookupValue) {
-                    bestMatch = tableArray[rIdx - 1]?.[c] ?? "#REF!";
+                if (typeof cellVal === "number" && typeof lv === "number" && cellVal <= lv) {
+                    bestMatch = retVal;
+                } else if (typeof cellVal === "string" && typeof lv === "string" && cellVal.toLowerCase() <= lv.toLowerCase()) {
+                    bestMatch = retVal;
                 }
             } else {
-                if (excelEquals(headerRow[c], lookupValue)) return tableArray[rIdx - 1]?.[c] ?? "#REF!";
+                if (excelEquals(cellVal, lv)) return retVal;
             }
         }
         return bestMatch !== null ? bestMatch : "#N/A";
     },
     XLOOKUP(lookupValue, lookupArray, returnArray, ifNotFound = "#N/A", matchMode = 0, searchMode = 1) {
+        const err = findFirstError(lookupValue, matchMode, searchMode); if (err) return err;
         const lv = unwrapBlank(lookupValue);
         const lMat = to2DArray(lookupArray);
         const rMat = to2DArray(returnArray);
@@ -760,7 +922,16 @@ export const FORMULA_FUNCTIONS = {
         return v !== "" && v != null && typeof v !== "boolean" && !isNaN(Number(v));
     },
 
-    DATE(year, month, day) { return new Date(Number(year), Number(month) - 1, Number(day)); },
+    DATE(year, month, day) {
+        const ny = toStrictExcelNumber(year); if (ny.error) return ny.error;
+        const nm = toStrictExcelNumber(month); if (nm.error) return nm.error;
+        const nd = toStrictExcelNumber(day); if (nd.error) return nd.error;
+        const y = Math.trunc(ny.num);
+        if (y < 0 || y >= 10000) return "#NUM!";
+        const actualY = y < 1900 ? 1900 + y : y;
+        const d = new Date(actualY, Math.trunc(nm.num) - 1, Math.trunc(nd.num));
+        return isNaN(d.getTime()) ? "#NUM!" : d;
+    },
     TODAY() { const now = new Date(); return new Date(now.getFullYear(), now.getMonth(), now.getDate()); },
     NOW() { return new Date(); },
     YEAR(dateInput) { const d = parseExcelDate(dateInput); return d ? d.getFullYear() : "#VALUE!"; },
@@ -852,15 +1023,32 @@ export const FORMULA_FUNCTIONS = {
         return d ? dateToSerial(d) : "#VALUE!";
     },
     IFS(...pairs) {
+        if (pairs.length < 2 || pairs.length % 2 !== 0) return "#VALUE!";
         for (let i = 0; i < pairs.length - 1; i += 2) {
-            const cond = typeof pairs[i] === "string" ? pairs[i].trim().toUpperCase() === "TRUE" : Boolean(pairs[i]);
+            const err = getExcelError(pairs[i]);
+            if (err) return err;
+            const raw = unwrapBlank(pairs[i]);
+            let cond;
+            if (typeof raw === "boolean") cond = raw;
+            else if (typeof raw === "number") cond = raw !== 0;
+            else if (raw === "" || raw == null) cond = false;
+            else if (typeof raw === "string") {
+                const up = raw.trim().toUpperCase();
+                if (up === "TRUE") cond = true;
+                else if (up === "FALSE") cond = false;
+                else return "#VALUE!";
+            } else {
+                cond = Boolean(raw);
+            }
             if (cond) return pairs[i + 1];
         }
         return "#N/A";
     },
     SWITCH(expr, ...args) {
+        const err = getExcelError(expr);
+        if (err) return err;
         for (let i = 0; i < args.length - 1; i += 2) {
-            if (expr == args[i]) return args[i + 1];
+            if (excelEquals(expr, args[i])) return args[i + 1];
         }
         return args.length % 2 === 1 ? args[args.length - 1] : "#N/A";
     },
@@ -930,9 +1118,17 @@ export const FORMULA_FUNCTIONS = {
         return idx !== -1 ? idx + 1 : "#N/A";
     },
     FILTER(array, include, ifEmpty = "#CALC!") {
-        const rows = Array.isArray(array) ? array : [[array]];
+        const rows = to2DArray(array);
         const flags = flattenArray(include);
-        const out = rows.filter((_, i) => Boolean(flags[i]));
+        if (flags.length !== rows.length) return "#VALUE!";
+        const out = [];
+        for (let i = 0; i < rows.length; i++) {
+            const err = getExcelError(flags[i]);
+            if (err) return err;
+            const fv = unwrapBlank(flags[i]);
+            const keep = typeof fv === "boolean" ? fv : (typeof fv === "number" ? fv !== 0 : false);
+            if (keep) out.push(rows[i]);
+        }
         return out.length ? out : ifEmpty;
     },
     UNIQUE(array, byCol = false, exactlyOnce = false) {
@@ -1193,30 +1389,65 @@ export const FORMULA_FUNCTIONS = {
     SORTBY(array, byArray, sortOrder = 1) {
         if (!Array.isArray(array)) return array;
         const keys = flattenArray(byArray);
-        const dir = Number(sortOrder) >= 0 ? 1 : -1;
-        return array.map((row, i) => ({ row, key: keys[i] }))
-            .sort((a, b) => a.key == b.key ? 0 : (a.key > b.key ? dir : -dir))
+        if (keys.length !== array.length) return "#VALUE!";
+        const dir = Number(unwrapBlank(sortOrder) ?? 1) >= 0 ? 1 : -1;
+        const typeRank = (v) => {
+            if (v === "" || v == null) return 4;
+            if (typeof v === "number") return 1;
+            if (typeof v === "string") return 2;
+            if (typeof v === "boolean") return 3;
+            return 4;
+        };
+        return array.map((row, i) => ({ row, key: unwrapBlank(keys[i]) }))
+            .sort((a, b) => {
+                const ra = typeRank(a.key), rb = typeRank(b.key);
+                if (ra === 4 && rb === 4) return 0;
+                if (ra === 4) return 1;
+                if (rb === 4) return -1;
+                if (ra !== rb) return (ra - rb) * dir;
+                if (ra === 1) return (a.key - b.key) * dir;
+                if (ra === 3) return ((a.key ? 1 : 0) - (b.key ? 1 : 0)) * dir;
+                const la = String(a.key).toLowerCase(), lb = String(b.key).toLowerCase();
+                return la === lb ? 0 : (la > lb ? dir : -dir);
+            })
             .map(x => x.row);
     },
     TAKE(array, rows, cols = null) {
-        if (!Array.isArray(array)) return array;
-        const rSliced = Number(rows) >= 0 ? array.slice(0, Number(rows)) : array.slice(Number(rows));
-        if (cols == null) return rSliced;
-        return rSliced.map(r => Array.isArray(r) ? (Number(cols) >= 0 ? r.slice(0, Number(cols)) : r.slice(Number(cols))) : r);
+        const src = to2DArray(array);
+        const rNum = (rows == null || isBlankVal(rows)) ? src.length : Math.trunc(Number(unwrapBlank(rows)));
+        if (Number.isNaN(rNum) || rNum === 0) return "#CALC!";
+        const rSliced = rNum > 0 ? src.slice(0, rNum) : src.slice(rNum);
+        if (cols == null || isBlankVal(cols)) return rSliced.length ? rSliced : "#CALC!";
+        const cNum = Math.trunc(Number(unwrapBlank(cols)));
+        if (Number.isNaN(cNum) || cNum === 0) return "#CALC!";
+        const out = rSliced.map(r => (cNum > 0 ? r.slice(0, cNum) : r.slice(cNum)));
+        return out.length && out[0]?.length ? out : "#CALC!";
     },
     DROP(array, rows, cols = null) {
-        if (!Array.isArray(array)) return array;
-        const rSliced = Number(rows) >= 0 ? array.slice(Number(rows)) : array.slice(0, array.length + Number(rows));
-        if (cols == null) return rSliced;
-        return rSliced.map(r => Array.isArray(r) ? (Number(cols) >= 0 ? r.slice(Number(cols)) : r.slice(0, r.length + Number(cols))) : r);
+        const src = to2DArray(array);
+        const rNum = (rows == null || isBlankVal(rows)) ? 0 : Math.trunc(Number(unwrapBlank(rows)));
+        if (Number.isNaN(rNum)) return "#VALUE!";
+        const rSliced = rNum >= 0 ? src.slice(rNum) : src.slice(0, Math.max(0, src.length + rNum));
+        if (!rSliced.length) return "#CALC!";
+        if (cols == null || isBlankVal(cols)) return rSliced;
+        const cNum = Math.trunc(Number(unwrapBlank(cols)));
+        if (Number.isNaN(cNum)) return "#VALUE!";
+        const out = rSliced.map(r => (cNum >= 0 ? r.slice(cNum) : r.slice(0, Math.max(0, r.length + cNum))));
+        return out.length && out[0]?.length ? out : "#CALC!";
     },
-    EXPAND(array, rows, cols, padWith = "") {
-        const src = Array.isArray(array) ? array : [[array]];
+    EXPAND(array, rows, cols = null, padWith = "#N/A") {
+        const src = to2DArray(array);
+        const srcR = src.length;
+        const srcC = src[0]?.length || 1;
+        const targetR = (rows == null || isBlankVal(rows)) ? srcR : Math.trunc(Number(unwrapBlank(rows)));
+        const targetC = (cols == null || isBlankVal(cols)) ? srcC : Math.trunc(Number(unwrapBlank(cols)));
+        if (Number.isNaN(targetR) || Number.isNaN(targetC) || targetR < srcR || targetC < srcC) return "#VALUE!";
+        if (targetR * targetC > 50000) return "#NUM!";
         const out = [];
-        for (let r = 0; r < Number(rows); r++) {
+        for (let r = 0; r < targetR; r++) {
             const row = [];
-            for (let c = 0; c < Number(cols); c++) {
-                row.push(src[r]?.[c] ?? padWith);
+            for (let c = 0; c < targetC; c++) {
+                row.push((r < srcR && c < srcC && src[r]?.[c] !== undefined) ? src[r][c] : padWith);
             }
             out.push(row);
         }
@@ -1341,19 +1572,25 @@ export const FORMULA_FUNCTIONS = {
         return total;
     },
     CEILING(num, sig = 1) {
-        const n = Number(num), s = Number(sig);
-        if (s === 0) return 0;
-        return Math.ceil(n / s) * s;
+        const nn = toStrictExcelNumber(num); if (nn.error) return nn.error;
+        const ns = toStrictExcelNumber(sig); if (ns.error) return ns.error;
+        if (ns.num === 0) return 0;
+        if (nn.num > 0 && ns.num < 0) return "#NUM!";
+        return Math.ceil(nn.num / ns.num) * ns.num;
     },
     FLOOR(num, sig = 1) {
-        const n = Number(num), s = Number(sig);
-        if (s === 0) return "#DIV/0!";
-        return Math.floor(n / s) * s;
+        const nn = toStrictExcelNumber(num); if (nn.error) return nn.error;
+        const ns = toStrictExcelNumber(sig); if (ns.error) return ns.error;
+        if (ns.num === 0) return "#DIV/0!";
+        if (nn.num > 0 && ns.num < 0) return "#NUM!";
+        return Math.floor(nn.num / ns.num) * ns.num;
     },
     MROUND(num, mult) {
-        const n = Number(num), m = Number(mult);
-        if (m === 0) return 0;
-        return Math.round(n / m) * m;
+        const nn = toStrictExcelNumber(num); if (nn.error) return nn.error;
+        const nm = toStrictExcelNumber(mult); if (nm.error) return nm.error;
+        if (nm.num === 0) return 0;
+        if ((nn.num > 0 && nm.num < 0) || (nn.num < 0 && nm.num > 0)) return "#NUM!";
+        return Math.round(nn.num / nm.num) * nm.num;
     },
     TRUNC(num, digits = 0) {
         const factor = Math.pow(10, Math.trunc(Number(digits)));
@@ -1362,16 +1599,37 @@ export const FORMULA_FUNCTIONS = {
     SIGN(num) { return Math.sign(Number(num)); },
     EVEN(num) { const n = Number(num); const ceil = Math.ceil(Math.abs(n)); const res = ceil % 2 === 0 ? ceil : ceil + 1; return n < 0 ? -res : res; },
     ODD(num) { const n = Number(num); const ceil = Math.ceil(Math.abs(n)); const res = ceil % 2 === 1 ? ceil : ceil + 1; return n < 0 ? -res : res; },
-    FACT(num) { let r = 1; for (let i = 2; i <= Math.trunc(Number(num)); i++) r *= i; return r; },
+    FACT(num) {
+        const nn = toStrictExcelNumber(num); if (nn.error) return nn.error;
+        const n = Math.trunc(nn.num);
+        if (n < 0 || n > 170) return "#NUM!";
+        let r = 1;
+        for (let i = 2; i <= n; i++) r *= i;
+        return r;
+    },
     PI() { return Math.PI; },
     SIN(x) { return Math.sin(Number(x)); },
     COS(x) { return Math.cos(Number(x)); },
     TAN(x) { return Math.tan(Number(x)); },
     RADIANS(deg) { return Number(deg) * Math.PI / 180; },
     DEGREES(rad) { return Number(rad) * 180 / Math.PI; },
-    LOG(num, base = 10) { return Math.log(Number(num)) / Math.log(Number(base)); },
-    LOG10(num) { return Math.log10(Number(num)); },
-    LN(num) { return Math.log(Number(num)); },
+    LOG(num, base = 10) {
+        const nn = toStrictExcelNumber(num); if (nn.error) return nn.error;
+        const nb = toStrictExcelNumber(base); if (nb.error) return nb.error;
+        if (nn.num <= 0 || nb.num <= 0) return "#NUM!";
+        if (nb.num === 1) return "#DIV/0!";
+        return Math.log(nn.num) / Math.log(nb.num);
+    },
+    LOG10(num) {
+        const nn = toStrictExcelNumber(num); if (nn.error) return nn.error;
+        if (nn.num <= 0) return "#NUM!";
+        return Math.log10(nn.num);
+    },
+    LN(num) {
+        const nn = toStrictExcelNumber(num); if (nn.error) return nn.error;
+        if (nn.num <= 0) return "#NUM!";
+        return Math.log(nn.num);
+    },
     EXP(num) { return Math.exp(Number(num)); },
     RAND() { return Math.random(); },
     RANDBETWEEN(bottom, top) { return Math.floor(Math.random() * (Number(top) - Number(bottom) + 1)) + Number(bottom); },

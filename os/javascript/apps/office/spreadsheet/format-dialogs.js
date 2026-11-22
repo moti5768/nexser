@@ -297,7 +297,7 @@ export function createFormatDialogsModule(ctx) {
                 const cell = getVisibleCell(r, c);
                 if (!cell || cell.style.display === "none") continue;
                 clearAppliedConditionalStyle(cell);
-                const rawVal = cell.dataset.formula ? evaluateFormula(cell.dataset.formula) : (cell.dataset.rawValue ?? cell.textContent);
+                const rawVal = cell.dataset.formula ? (cell.dataset.rawValue ?? "") : (cell.dataset.rawValue ?? getCellPureText(cell));
                 const isNumeric = String(rawVal ?? "").trim() !== "" && !isNaN(parseFormattedNumber(rawVal));
 
                 if (opts.border) {
@@ -806,7 +806,7 @@ export function createFormatDialogsModule(ctx) {
                             }
 
                             if (fcDirty.number || fcDirty.hAlign || fcDirty.rot || fcDirty.vertical) {
-                                const raw = td.dataset.formula ? evaluateFormula(td.dataset.formula) : (td.dataset.rawValue ?? getCellPureText(td));
+                                const raw = td.dataset.formula ? (td.dataset.rawValue ?? "") : (td.dataset.rawValue ?? getCellPureText(td));
                                 setCellFormattedValue(td, raw);
                             }
                             if (fcDirty.shrink || fcDirty.fontSize || fcDirty.fontFam || fcDirty.number) {
