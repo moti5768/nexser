@@ -480,7 +480,7 @@ export const FORMULA_FUNCTIONS = {
         return s.substring(0, st) + newText + s.substring(st + cnt);
     },
 
-    IF(condition, trueValue, falseValue = "") {
+    IF(condition, trueValue, falseValue = false) {
         const raw = unwrapBlank(condition);
         const cond = typeof raw === "string"
             ? raw.trim().toUpperCase() === "TRUE"
@@ -629,11 +629,82 @@ export const FORMULA_FUNCTIONS = {
         }
         return bestMatch !== null ? bestMatch : "#N/A";
     },
-    XLOOKUP(lookupValue, lookupArray, returnArray, ifNotFound = "#N/A") {
-        const keys = flattenArray(lookupArray);
-        const vals = flattenArray(returnArray);
-        const idx = keys.findIndex(v => excelEquals(v, lookupValue));
-        return idx !== -1 ? (vals[idx] ?? ifNotFound) : ifNotFound;
+    XLOOKUP(lookupValue, lookupArray, returnArray, ifNotFound = "#N/A", matchMode = 0, searchMode = 1) {
+        const lv = unwrapBlank(lookupValue);
+        const lMat = to2DArray(lookupArray);
+        const rMat = to2DArray(returnArray);
+        const isHorizontal = lMat.length === 1 && (lMat[0]?.length || 0) > 1;
+        const keys = isHorizontal ? lMat[0] : lMat.map(r => r[0]);
+        const mMode = Math.trunc(Number(unwrapBlank(matchMode ?? 0)));
+        const sMode = Math.trunc(Number(unwrapBlank(searchMode ?? 1)));
+        if (isNaN(mMode) || isNaN(sMode)) return "#VALUE!";
+
+        const wcRegex = (mMode === 2 && typeof lv === "string") ? buildWildcardRegex(lv) : null;
+        const cmpOrdered = (a, b) => {
+            const ua = unwrapBlank(a);
+            const ub = unwrapBlank(b);
+            if (typeof ua === "number" && typeof ub === "number") return ua - ub;
+            if (typeof ua === "string" && typeof ub === "string") {
+                const la = ua.toLowerCase(), lb = ub.toLowerCase();
+                return la < lb ? -1 : (la > lb ? 1 : 0);
+            }
+            return null;
+        };
+
+        const order = [];
+        if (sMode === -1) {
+            for (let i = keys.length - 1; i >= 0; i--) order.push(i);
+        } else {
+            for (let i = 0; i < keys.length; i++) order.push(i);
+        }
+
+        let foundIdx = -1;
+        if (mMode === 0 || mMode === 2) {
+            for (const i of order) {
+                const k = unwrapBlank(keys[i]);
+                const hit = wcRegex ? (k !== "" && k != null && wcRegex.test(String(k))) : excelEquals(k, lv);
+                if (hit) { foundIdx = i; break; }
+            }
+        } else if (mMode === -1 || mMode === 1) {
+            let bestVal = null;
+            for (const i of order) {
+                const k = unwrapBlank(keys[i]);
+                if (k === "" || k == null) continue;
+                if (excelEquals(k, lv)) { foundIdx = i; break; }
+                const diff = cmpOrdered(k, lv);
+                if (diff === null) continue;
+                if (mMode === -1 && diff < 0) {
+                    if (bestVal === null || cmpOrdered(k, bestVal) > 0) {
+                        bestVal = k;
+                        foundIdx = i;
+                    }
+                } else if (mMode === 1 && diff > 0) {
+                    if (bestVal === null || cmpOrdered(k, bestVal) < 0) {
+                        bestVal = k;
+                        foundIdx = i;
+                    }
+                }
+            }
+        } else {
+            return "#VALUE!";
+        }
+
+        if (foundIdx === -1) return ifNotFound;
+
+        if (isHorizontal) {
+            if (rMat.length === 1) {
+                const v = rMat[0]?.[foundIdx];
+                return v === undefined ? ifNotFound : (isBlankVal(v) ? 0 : unwrapBlank(v));
+            }
+            return rMat.map(row => [isBlankVal(row[foundIdx]) ? 0 : unwrapBlank(row[foundIdx])]);
+        }
+
+        const matchedRow = rMat[foundIdx];
+        if (!matchedRow) return ifNotFound;
+        if (matchedRow.length === 1) {
+            return isBlankVal(matchedRow[0]) ? 0 : unwrapBlank(matchedRow[0]);
+        }
+        return [matchedRow.map(v => (isBlankVal(v) ? 0 : unwrapBlank(v)))];
     },
     SUMIFS(sumRange, ...criteriaPairs) {
         const targets = flattenArray(sumRange);
@@ -864,8 +935,61 @@ export const FORMULA_FUNCTIONS = {
         const out = rows.filter((_, i) => Boolean(flags[i]));
         return out.length ? out : ifEmpty;
     },
-    UNIQUE(array) {
-        return Array.from(new Set(flattenArray(array)));
+    UNIQUE(array, byCol = false, exactlyOnce = false) {
+        const mat = to2DArray(array);
+        const useCol = Boolean(unwrapBlank(byCol));
+        const onlyOnce = Boolean(unwrapBlank(exactlyOnce));
+        const normKeyVal = (v) => {
+            const u = unwrapBlank(v);
+            if (u === "" || u == null) return "B:";
+            if (typeof u === "number") return `N:${u}`;
+            if (typeof u === "boolean") return `L:${u}`;
+            return `S:${String(u).toLowerCase()}`;
+        };
+
+        if (useCol) {
+            const rows = mat.length;
+            const cols = mat[0]?.length || 0;
+            const colCounts = new Map();
+            const colKeys = [];
+            for (let c = 0; c < cols; c++) {
+                const key = mat.map(r => normKeyVal(r[c])).join("\0");
+                colKeys.push(key);
+                colCounts.set(key, (colCounts.get(key) || 0) + 1);
+            }
+            const seen = new Set();
+            const keepCols = [];
+            for (let c = 0; c < cols; c++) {
+                const k = colKeys[c];
+                if (onlyOnce) {
+                    if (colCounts.get(k) === 1) keepCols.push(c);
+                } else if (!seen.has(k)) {
+                    seen.add(k);
+                    keepCols.push(c);
+                }
+            }
+            if (!keepCols.length) return "#CALC!";
+            return Array.from({ length: rows }, (_, r) => keepCols.map(c => unwrapBlank(mat[r][c]) ?? ""));
+        }
+
+        const rowCounts = new Map();
+        const rowKeys = mat.map(row => {
+            const key = row.map(normKeyVal).join("\0");
+            rowCounts.set(key, (rowCounts.get(key) || 0) + 1);
+            return key;
+        });
+        const seen = new Set();
+        const out = [];
+        for (let r = 0; r < mat.length; r++) {
+            const k = rowKeys[r];
+            if (onlyOnce) {
+                if (rowCounts.get(k) === 1) out.push(mat[r].map(v => unwrapBlank(v) ?? ""));
+            } else if (!seen.has(k)) {
+                seen.add(k);
+                out.push(mat[r].map(v => unwrapBlank(v) ?? ""));
+            }
+        }
+        return out.length ? out : "#CALC!";
     },
     CHOOSECOLS(array, ...colNums) {
         if (!Array.isArray(array)) return array;
@@ -907,14 +1031,36 @@ export const FORMULA_FUNCTIONS = {
         return Math.sqrt(variance);
     },
     SUBTOTAL(funcNum, ...refs) {
-        const code = Number(funcNum) % 100;
+        const code = Number(unwrapBlank(funcNum)) % 100;
         if (code === 1) return FORMULA_FUNCTIONS.AVERAGE(...refs);
         if (code === 2) return FORMULA_FUNCTIONS.COUNT(...refs);
         if (code === 3) return FORMULA_FUNCTIONS.COUNTA(...refs);
         if (code === 4) return FORMULA_FUNCTIONS.MAX(...refs);
         if (code === 5) return FORMULA_FUNCTIONS.MIN(...refs);
         if (code === 6) return FORMULA_FUNCTIONS.PRODUCT(...refs);
+        if (code === 7) return FORMULA_FUNCTIONS.STDEV(...refs);
+        if (code === 8) {
+            const { error, nums } = collectNumericValues(refs);
+            if (error) return error;
+            if (!nums.length) return "#DIV/0!";
+            const mean = nums.reduce((a, b) => a + b, 0) / nums.length;
+            return Math.sqrt(nums.reduce((acc, v) => acc + Math.pow(v - mean, 2), 0) / nums.length);
+        }
         if (code === 9) return FORMULA_FUNCTIONS.SUM(...refs);
+        if (code === 10) {
+            const { error, nums } = collectNumericValues(refs);
+            if (error) return error;
+            if (nums.length < 2) return "#DIV/0!";
+            const mean = nums.reduce((a, b) => a + b, 0) / nums.length;
+            return nums.reduce((acc, v) => acc + Math.pow(v - mean, 2), 0) / (nums.length - 1);
+        }
+        if (code === 11) {
+            const { error, nums } = collectNumericValues(refs);
+            if (error) return error;
+            if (!nums.length) return "#DIV/0!";
+            const mean = nums.reduce((a, b) => a + b, 0) / nums.length;
+            return nums.reduce((acc, v) => acc + Math.pow(v - mean, 2), 0) / nums.length;
+        }
         return "#VALUE!";
     },
     AGGREGATE(funcNum, _options, ...refs) {
@@ -1021,12 +1167,27 @@ export const FORMULA_FUNCTIONS = {
     },
     SORT(array, sortIndex = 1, sortOrder = 1) {
         if (!Array.isArray(array)) return array;
-        const idx = Number(sortIndex) - 1;
-        const dir = Number(sortOrder) >= 0 ? 1 : -1;
+        const idx = Math.trunc(Number(unwrapBlank(sortIndex) || 1)) - 1;
+        const dir = Number(unwrapBlank(sortOrder) ?? 1) >= 0 ? 1 : -1;
+        const typeRank = (v) => {
+            if (v === "" || v == null) return 4;
+            if (typeof v === "number") return 1;
+            if (typeof v === "string") return 2;
+            if (typeof v === "boolean") return 3;
+            return 4;
+        };
         return [...array].sort((a, b) => {
-            const va = Array.isArray(a) ? a[idx] : a;
-            const vb = Array.isArray(b) ? b[idx] : b;
-            return va == vb ? 0 : (va > vb ? dir : -dir);
+            const va = unwrapBlank(Array.isArray(a) ? a[idx] : a);
+            const vb = unwrapBlank(Array.isArray(b) ? b[idx] : b);
+            const ra = typeRank(va), rb = typeRank(vb);
+            if (ra === 4 && rb === 4) return 0;
+            if (ra === 4) return 1;
+            if (rb === 4) return -1;
+            if (ra !== rb) return (ra - rb) * dir;
+            if (ra === 1) return (va - vb) * dir;
+            if (ra === 3) return ((va ? 1 : 0) - (vb ? 1 : 0)) * dir;
+            const la = String(va).toLowerCase(), lb = String(vb).toLowerCase();
+            return la === lb ? 0 : (la > lb ? dir : -dir);
         });
     },
     SORTBY(array, byArray, sortOrder = 1) {

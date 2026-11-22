@@ -50,11 +50,13 @@ export const SPREADSHEET_TEMPLATE_HTML = `
                                     <span class="ss-btn-ico-lg">📋</span>
                                     <span class="ss-btn-lbl">貼付▼</span>
                                 </span>
-                                <ul class="pulldown_menu" style="min-width:195px;">
+                                <ul class="pulldown_menu" style="min-width:225px;">
                                     <li class="button" data-action="paste">貼り付け (Ctrl+V)</li>
                                     <li class="button" data-action="paste-values">値のみ貼り付け (Ctrl+Shift+V)</li>
                                     <li class="button" data-action="paste-formats">書式のみ貼り付け</li>
                                     <li class="button" data-action="paste-transpose">行列を入れ替えて貼り付け</li>
+                                    <li class="ss-menu-sep"></li>
+                                    <li class="button" data-action="paste-special">形式を選択して貼り付け... (Ctrl+Alt+V)</li>
                                 </ul>
                             </div>
                             <div class="ss-ribbon-col ss-ribbon-col-stack">
@@ -462,15 +464,31 @@ export const SPREADSHEET_TEMPLATE_HTML = `
                                     <span class="ss-btn-ico-lg">⇅</span>
                                     <span class="ss-btn-lbl">並替▼</span>
                                 </span>
-                                <ul class="pulldown_menu" style="min-width:165px;">
+                                <ul class="pulldown_menu" style="min-width:190px;">
                                     <li class="button" data-sort="asc">昇順 (A→Z / 小→大)</li>
                                     <li class="button" data-sort="desc">降順 (Z→A / 大→小)</li>
+                                    <li class="ss-menu-sep"></li>
+                                    <li class="button" data-action="custom-sort">ユーザー設定の並べ替え...</li>
                                 </ul>
                             </div>
-                            <span class="button ss-btn-large" data-action="find-replace" title="検索と置換 (Ctrl+F)">
-                                <span class="ss-btn-ico-lg">🔍</span>
-                                <span class="ss-btn-lbl">検索<br>選択</span>
-                            </span>
+                            <div class="pulldown_menu_parent">
+                                <span class="button pulldown_btn ss-btn-large" title="検索と選択 (Ctrl+F / Ctrl+G)">
+                                    <span class="ss-btn-ico-lg">🔍</span>
+                                    <span class="ss-btn-lbl">検索<br>選択▼</span>
+                                </span>
+                                <ul class="pulldown_menu" style="left:auto; right:0; min-width:215px;">
+                                    <li class="button" data-action="find-replace">検索... (Ctrl+F)</li>
+                                    <li class="button" data-action="open-replace">置換... (Ctrl+H)</li>
+                                    <li class="button" data-action="go-to">ジャンプ... (Ctrl+G / F5)</li>
+                                    <li class="button" data-action="go-to-special">条件を選択してジャンプ...</li>
+                                    <li class="ss-menu-sep"></li>
+                                    <li class="button" data-action="select-formulas">数式セルを選択</li>
+                                    <li class="button" data-action="select-blanks">空白セルを選択</li>
+                                    <li class="button" data-action="select-visible">可視セルのみ選択 (Alt+;)</li>
+                                    <li class="button" data-action="select-cf">条件付き書式セルを選択</li>
+                                    <li class="button" data-action="select-dv">データの入力規則セルを選択</li>
+                                </ul>
+                            </div>
                         </div>
                         <div class="ss-ribbon-group-title">編集</div>
                     </div>
@@ -756,6 +774,24 @@ export const SPREADSHEET_TEMPLATE_HTML = `
                     </div>
                     <div class="ss-ribbon-group">
                         <div class="ss-ribbon-group-body">
+                            <div class="ss-ribbon-col ss-ribbon-col-stack">
+                                <span class="button" data-action="trace-precedents" title="選択セルの数式が参照しているセルへ矢印を表示">↙ 参照元</span>
+                                <span class="button" data-action="trace-dependents" title="選択セルを参照している数式セルへ矢印を表示">↗ 参照先</span>
+                                <span class="button" data-action="clear-trace-arrows" title="表示中のトレース矢印をすべて削除">✕ 矢印削除</span>
+                            </div>
+                            <span class="button ss-btn-large ss-show-formulas-btn" data-action="toggle-show-formulas" title="計算結果の代わりに数式をそのまま表示 (Ctrl+Shift+@)">
+                                <span class="ss-btn-ico-lg">fx</span>
+                                <span class="ss-btn-lbl">数式の<br>表示</span>
+                            </span>
+                            <span class="button ss-btn-large" data-action="error-check" title="シート内の数式エラーを一括検出して確認">
+                                <span class="ss-btn-ico-lg">⚠</span>
+                                <span class="ss-btn-lbl">エラー<br>確認</span>
+                            </span>
+                        </div>
+                        <div class="ss-ribbon-group-title">ワークシート分析</div>
+                    </div>
+                    <div class="ss-ribbon-group">
+                        <div class="ss-ribbon-group-body">
                             <span class="button ss-btn-large" data-action="recalc-all" title="ブック全体の数式を再計算">
                                 <span class="ss-btn-ico-lg">🔄</span>
                                 <span class="ss-btn-lbl">再計算</span>
@@ -773,6 +809,10 @@ export const SPREADSHEET_TEMPLATE_HTML = `
                                 <span class="button" data-sort="asc">A↓Z 昇順</span>
                                 <span class="button" data-sort="desc">Z↓A 降順</span>
                             </div>
+                            <span class="button ss-btn-large" data-action="custom-sort" title="複数条件（第1〜第5優先キー）で並べ替え">
+                                <span class="ss-btn-ico-lg">⇅</span>
+                                <span class="ss-btn-lbl">複数<br>並べ替え</span>
+                            </span>
                             <span class="button ss-toggle-filter-btn ss-btn-large" data-action="toggle-autofilter" title="オートフィルターの切り替え (Ctrl+Shift+L)">
                                 <span class="ss-btn-ico-lg">🔽</span>
                                 <span class="ss-btn-lbl">フィルター</span>
@@ -788,6 +828,10 @@ export const SPREADSHEET_TEMPLATE_HTML = `
                             <span class="button ss-btn-large" data-action="text-to-columns" title="1列のテキストを区切り文字で複数列に分割">
                                 <span class="ss-btn-ico-lg">✂</span>
                                 <span class="ss-btn-lbl">区切り位置</span>
+                            </span>
+                            <span class="button ss-btn-large" data-action="flash-fill" title="入力例からパターンを学習して自動入力 (Ctrl+E)">
+                                <span class="ss-btn-ico-lg">⚡</span>
+                                <span class="ss-btn-lbl">フラッシュ<br>フィル</span>
                             </span>
                             <div class="ss-ribbon-col">
                                 <span class="button" data-action="remove-duplicates" title="選択範囲から重複する行を削除">🧹 重複の削除</span>

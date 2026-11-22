@@ -95,6 +95,7 @@ export function createChartsModule(ctx) {
     }
 
     function attachObjectHandles(box) {
+        const handleSignal = box._abortController?.signal || signal;
         box.querySelectorAll(".ss-obj-handle, .ss-obj-rotate-line, .ss-obj-rotate-handle").forEach(el => el.remove());
 
         const rotLine = document.createElement("div");
@@ -128,9 +129,9 @@ export function createChartsModule(ctx) {
                 hideResizeTooltip();
                 debouncedSaveState();
             };
-            document.addEventListener("mousemove", onRotateMove, { signal });
-            document.addEventListener("mouseup", onRotateUp, { signal });
-        }, { signal });
+            document.addEventListener("mousemove", onRotateMove, { signal: handleSignal });
+            document.addEventListener("mouseup", onRotateUp, { signal: handleSignal });
+        }, { signal: handleSignal });
 
         const dirs = ["nw", "n", "ne", "e", "se", "s", "sw", "w"];
         dirs.forEach(dir => {
@@ -200,9 +201,9 @@ export function createChartsModule(ctx) {
                     debouncedSaveState();
                 };
 
-                document.addEventListener("mousemove", onResizeMove, { signal });
-                document.addEventListener("mouseup", onResizeUp, { signal });
-            }, { signal });
+                document.addEventListener("mousemove", onResizeMove, { signal: handleSignal });
+                document.addEventListener("mouseup", onResizeUp, { signal: handleSignal });
+            }, { signal: handleSignal });
         });
     }
 
@@ -432,6 +433,9 @@ export function createChartsModule(ctx) {
         const xNumericVals = [];
         const seriesData = seriesNames.map(() => []);
         for (let r = dataStartR; r <= maxR; r++) {
+            // Excel準拠：フィルターや手動操作で非表示の行はグラフから除外
+            const tr = getRow(r);
+            if (tr && tr.style.display === "none") continue;
             const catCell = getVisibleCell(r, minC);
             const catRaw = catCell?.dataset.rawValue ?? catCell?.textContent ?? "";
             const catText = (catCell?.textContent || `項目${r - dataStartR + 1}`).trim();
@@ -798,6 +802,7 @@ export function createChartsModule(ctx) {
     }
 
     function attachChartControls(chartBox) {
+        const ctrlSignal = chartBox._abortController?.signal || signal;
         chartBox.querySelectorAll(".floating-textbox-delete, .floating-chart-settings").forEach(el => el.remove());
 
         const setBtn = document.createElement("span");
@@ -808,7 +813,7 @@ export function createChartsModule(ctx) {
             e.stopPropagation();
             e.preventDefault();
             openChartSettingsDialog(chartBox);
-        }, { signal });
+        }, { signal: ctrlSignal });
         chartBox.appendChild(setBtn);
 
         const delBtn = document.createElement("span");
@@ -821,13 +826,16 @@ export function createChartsModule(ctx) {
             removeFloatingObject(chartBox);
             setDirtyState(true);
             debouncedSaveState();
-        }, { signal });
+        }, { signal: ctrlSignal });
         chartBox.appendChild(delBtn);
 
-        chartBox.addEventListener("dblclick", (e) => {
-            e.stopPropagation();
-            openChartSettingsDialog(chartBox);
-        }, { signal });
+        if (!chartBox._chartDblClickBound) {
+            chartBox._chartDblClickBound = true;
+            chartBox.addEventListener("dblclick", (e) => {
+                e.stopPropagation();
+                openChartSettingsDialog(chartBox);
+            }, { signal: ctrlSignal });
+        }
     }
 
     function updateAllFloatingCharts() {

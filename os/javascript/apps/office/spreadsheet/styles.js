@@ -1690,6 +1690,23 @@ const SCOPED_CSS = `
     display: none !important;
 }
 
+/* ===== 数式監査（トレース矢印SVGレイヤー＆数式表示モード） ===== */
+.nexser-spreadsheet-app .ss-audit-svg-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    overflow: visible;
+    z-index: 23;
+}
+.nexser-spreadsheet-app.ss-show-formulas .ss-table td[data-formula] {
+    font-family: Consolas, 'MS Gothic', monospace;
+    text-align: left !important;
+    background-image: linear-gradient(transparent calc(100% - 2px), rgba(16, 124, 65, 0.45) 2px);
+}
+
 @media print {
     html, body {
         height: auto !important;

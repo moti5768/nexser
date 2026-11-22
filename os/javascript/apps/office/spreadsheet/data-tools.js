@@ -56,6 +56,7 @@ export function createDataToolsModule(ctx) {
         getCurrentColumns,
         getSheets,
         getActiveSheetIndex,
+        isCurrentSheetProtected,
         getCell,
         getVisibleCell,
         getRow,
@@ -66,6 +67,9 @@ export function createDataToolsModule(ctx) {
         renderSheetTabs,
         extractCellStyleObject,
         applyCellStyleData,
+        syncCellAnnotationMark,
+        applyShrinkToFit,
+        clearSpillCellsFromAnchor,
         adjustFormula,
         evaluateFormula,
         setCellFormattedValue,
@@ -125,6 +129,10 @@ export function createDataToolsModule(ctx) {
     }
 
     function openRemoveDuplicatesDialog() {
+        if (isCurrentSheetProtected?.()) {
+            showAlert("シートが保護されているため、重複の削除は実行できません。", "シートの保護");
+            return;
+        }
         flushPendingEdits();
         const bounds = detectDataBlockBounds(getActiveCell());
         if (!bounds || bounds.maxRow <= bounds.minRow) {
@@ -242,6 +250,7 @@ export function createDataToolsModule(ctx) {
                 rowCells.push({
                     value: cell?.dataset.rawValue ?? cell?.textContent ?? "",
                     formula: cell?.dataset.formula || "",
+                    quotePrefix: cell?.dataset.quotePrefix || "",
                     numFormat: cell?.dataset.numFormat || "",
                     decimalPlaces: cell?.dataset.decimalPlaces ?? "",
                     dropdownList: cell?.dataset.dropdownList || "",
@@ -250,6 +259,13 @@ export function createDataToolsModule(ctx) {
                     dateValue: cell?.dataset.dateValue || "",
                     richRuns: cell?.dataset.richRuns || "",
                     hyperlink: cell?.dataset.hyperlink || "",
+                    note: cell?.dataset.note || "",
+                    comment: cell?.dataset.comment || "",
+                    indent: cell?.dataset.indent || "",
+                    shrinkToFit: cell?.dataset.shrinkToFit || "",
+                    textRotation: cell?.dataset.textRotation || "",
+                    locked: cell?.dataset.locked || "",
+                    formulaHidden: cell?.dataset.formulaHidden || "",
                     styleObj: cell ? extractCellStyleObject(cell) : null
                 });
             }
@@ -269,6 +285,8 @@ export function createDataToolsModule(ctx) {
                 const dest = getCell(destRow, bounds.minCol + cIdx);
                 if (!dest) return;
 
+                if (item.quotePrefix === "1") dest.dataset.quotePrefix = "1";
+                else delete dest.dataset.quotePrefix;
                 if (item.numFormat) dest.dataset.numFormat = item.numFormat;
                 else delete dest.dataset.numFormat;
                 if (item.decimalPlaces !== "") dest.dataset.decimalPlaces = item.decimalPlaces;
@@ -283,6 +301,20 @@ export function createDataToolsModule(ctx) {
                 else delete dest.dataset.dateValue;
                 if (item.richRuns && !item.formula) dest.dataset.richRuns = item.richRuns;
                 else delete dest.dataset.richRuns;
+                if (item.note) dest.dataset.note = item.note;
+                else delete dest.dataset.note;
+                if (item.comment) dest.dataset.comment = item.comment;
+                else delete dest.dataset.comment;
+                if (item.indent) dest.dataset.indent = item.indent;
+                else delete dest.dataset.indent;
+                if (item.shrinkToFit === "1") dest.dataset.shrinkToFit = "1";
+                else delete dest.dataset.shrinkToFit;
+                if (item.textRotation) dest.dataset.textRotation = item.textRotation;
+                else delete dest.dataset.textRotation;
+                if (item.locked === "0") dest.dataset.locked = "0";
+                else delete dest.dataset.locked;
+                if (item.formulaHidden === "1") dest.dataset.formulaHidden = "1";
+                else delete dest.dataset.formulaHidden;
                 if (item.hyperlink) {
                     dest.dataset.hyperlink = item.hyperlink;
                     dest.classList.add("ss-hyperlink");
@@ -302,6 +334,8 @@ export function createDataToolsModule(ctx) {
                     setCellFormattedValue(dest, item.value);
                 }
                 applyCellStyleData(dest, item.styleObj);
+                syncCellAnnotationMark?.(dest);
+                if (item.shrinkToFit === "1") applyShrinkToFit?.(dest);
             });
         });
 
@@ -310,6 +344,7 @@ export function createDataToolsModule(ctx) {
             for (let c = bounds.minCol; c <= bounds.maxCol; c++) {
                 const cell = getCell(r, c);
                 if (!cell) continue;
+                clearSpillCellsFromAnchor?.(r, c);
                 clearAppliedConditionalStyle(cell);
                 cell.textContent = "";
                 cell.removeAttribute("style");
@@ -339,6 +374,10 @@ export function createDataToolsModule(ctx) {
     // 区切り位置（Text to Columns）
     // =========================================================
     function openTextToColumnsDialog() {
+        if (isCurrentSheetProtected?.()) {
+            showAlert("シートが保護されているため、区切り位置は実行できません。", "シートの保護");
+            return;
+        }
         flushPendingEdits();
         const bounds = getSelectedRangeBounds();
         if (!bounds) return;
@@ -950,6 +989,282 @@ export function createDataToolsModule(ctx) {
         debouncedSaveState();
     }
 
+    // =========================================================
+    // フラッシュフィル（Ctrl+E / パターン自動学習＆一括展開）
+    // =========================================================
+    function inferFlashFillTransform(examples) {
+        if (!examples.length) return null;
+        const first = examples[0];
+        const colCount = first.srcs.length;
+        const verifyAll = (fn) => examples.every(ex => {
+            try {
+                return fn(ex.srcs) === ex.target;
+            } catch {
+                return false;
+            }
+        });
+
+        const toProperCase = (s) => String(s).replace(/\w\S*/g, w => w[0].toUpperCase() + w.slice(1).toLowerCase());
+
+        // 1. 単一列の直接変換（大文字・小文字・タイトルケース・空白除去）
+        for (let ci = 0; ci < colCount; ci++) {
+            const directCandidates = [
+                (srcs) => srcs[ci].toUpperCase(),
+                (srcs) => srcs[ci].toLowerCase(),
+                (srcs) => toProperCase(srcs[ci]),
+                (srcs) => srcs[ci].replace(/\s+/g, "")
+            ];
+            for (const fn of directCandidates) {
+                if (verifyAll(fn)) return fn;
+            }
+        }
+
+        // 2. 複数列結合・前後リテラル付加テンプレート（例: A列 + " " + B列, "[" + A列 + "] " + B列, A列 + "様"）
+        {
+            const tgt = first.target;
+            const matches = [];
+            const usedIntervals = [];
+            const orderCols = Array.from({ length: colCount }, (_, i) => i)
+                .filter(i => first.srcs[i] !== "")
+                .sort((a, b) => first.srcs[b].length - first.srcs[a].length);
+
+            for (const ci of orderCols) {
+                const needle = first.srcs[ci];
+                let pos = tgt.indexOf(needle);
+                while (pos !== -1) {
+                    const end = pos + needle.length;
+                    const overlaps = usedIntervals.some(([s, e]) => !(end <= s || pos >= e));
+                    if (!overlaps) {
+                        usedIntervals.push([pos, end]);
+                        matches.push({ start: pos, end, colIdx: ci });
+                        break;
+                    }
+                    pos = tgt.indexOf(needle, pos + 1);
+                }
+            }
+
+            if (matches.length > 0) {
+                matches.sort((a, b) => a.start - b.start);
+                const segments = [];
+                let cursor = 0;
+                for (const m of matches) {
+                    if (m.start > cursor) segments.push({ type: "lit", val: tgt.slice(cursor, m.start) });
+                    segments.push({ type: "col", colIdx: m.colIdx });
+                    cursor = m.end;
+                }
+                if (cursor < tgt.length) segments.push({ type: "lit", val: tgt.slice(cursor) });
+
+                const templateFn = (srcs) => segments.map(seg => (seg.type === "lit" ? seg.val : (srcs[seg.colIdx] ?? ""))).join("");
+                if (verifyAll(templateFn)) return templateFn;
+            }
+        }
+
+        // 3. 区切り文字による分割・トークン抽出（前後文字付き含む）
+        const delimiters = [" ", " ", ",", "、", "-", "_", "/", "@", ":", ".", "|", "（", "）", "(", ")"];
+        for (let ci = 0; ci < colCount; ci++) {
+            const src0 = first.srcs[ci];
+            if (!src0) continue;
+
+            for (const d of delimiters) {
+                if (!src0.includes(d)) continue;
+                const parts0 = src0.split(d).filter(p => p !== "");
+                if (parts0.length < 2) continue;
+
+                // 先頭からのインデックス・末尾からのインデックスで一致するトークンを探索
+                for (let pi = 0; pi < parts0.length; pi++) {
+                    const tok = parts0[pi];
+                    const idxInTgt = first.target.indexOf(tok);
+                    if (idxInTgt === -1) continue;
+                    const pre = first.target.slice(0, idxInTgt);
+                    const post = first.target.slice(idxInTgt + tok.length);
+
+                    const fromStartFn = (srcs) => {
+                        const arr = (srcs[ci] || "").split(d).filter(p => p !== "");
+                        return pre + (arr[pi] ?? "") + post;
+                    };
+                    if (verifyAll(fromStartFn)) return fromStartFn;
+
+                    const fromEndOffset = parts0.length - pi;
+                    const fromEndFn = (srcs) => {
+                        const arr = (srcs[ci] || "").split(d).filter(p => p !== "");
+                        return pre + (arr[arr.length - fromEndOffset] ?? "") + post;
+                    };
+                    if (verifyAll(fromEndFn)) return fromEndFn;
+                }
+            }
+        }
+
+        // 4. 括弧内抽出・数字のみ／英字のみ抽出
+        for (let ci = 0; ci < colCount; ci++) {
+            const regexExtractors = [
+                (srcs) => (srcs[ci].match(/\d+/g) || []).join(""),
+                (srcs) => (srcs[ci].match(/\d+/) || [""])[0],
+                (srcs) => {
+                    const all = srcs[ci].match(/\d+/g) || [];
+                    return all[all.length - 1] ?? "";
+                },
+                (srcs) => (srcs[ci].match(/[A-Za-z]+/g) || []).join(""),
+                (srcs) => (srcs[ci].match(/[（(]([^）)]+)[）)]/) || ["", ""])[1],
+                (srcs) => (srcs[ci].match(/\[([^\]]+)\]/) || ["", ""])[1],
+                (srcs) => (srcs[ci].match(/【([^】]+)】/) || ["", ""])[1]
+            ];
+            for (const fn of regexExtractors) {
+                if (verifyAll(fn)) return fn;
+            }
+        }
+
+        // 5. 先頭・末尾・固定位置スライス（例: 先頭3文字 / 末尾4文字 / 部分文字列）
+        for (let ci = 0; ci < colCount; ci++) {
+            const src0 = first.srcs[ci];
+            const tgt0 = first.target;
+            if (!src0 || !tgt0) continue;
+
+            if (src0.startsWith(tgt0)) {
+                const len = tgt0.length;
+                const fn = (srcs) => (srcs[ci] || "").slice(0, len);
+                if (verifyAll(fn)) return fn;
+            }
+            if (src0.endsWith(tgt0)) {
+                const len = tgt0.length;
+                const fn = (srcs) => (srcs[ci] || "").slice(-len);
+                if (verifyAll(fn)) return fn;
+            }
+            const pos = src0.indexOf(tgt0);
+            if (pos > 0) {
+                const len = tgt0.length;
+                const fn = (srcs) => (srcs[ci] || "").slice(pos, pos + len);
+                if (verifyAll(fn)) return fn;
+            }
+        }
+
+        return null;
+    }
+
+    function executeFlashFill() {
+        if (isCurrentSheetProtected?.()) {
+            showAlert("シートが保護されているため、フラッシュフィルは実行できません。", "シートの保護");
+            return;
+        }
+        flushPendingEdits();
+        const activeCell = getActiveCell();
+        if (!activeCell) return;
+
+        const targetCol = parseInt(activeCell.dataset.col, 10);
+        const activeRow = parseInt(activeCell.dataset.row, 10);
+        const curRowCount = getRowCount();
+        const curCols = getCurrentColumns();
+
+        const getCellText = (r, c) => (getCell(r, c)?.textContent ?? "").trim();
+
+        // 隣接するソース列群（左側に連続する非空列、なければ右側）を特定
+        const hasAnyDataInColNear = (c) => {
+            if (c < 0 || c >= curCols) return false;
+            return getCellText(activeRow, c) !== "" ||
+                (activeRow > 1 && getCellText(activeRow - 1, c) !== "") ||
+                (activeRow + 1 < curRowCount && getCellText(activeRow + 1, c) !== "");
+        };
+
+        const sourceCols = [];
+        if (hasAnyDataInColNear(targetCol - 1)) {
+            let c = targetCol - 1;
+            while (c >= 0 && hasAnyDataInColNear(c)) {
+                sourceCols.unshift(c);
+                c--;
+            }
+        } else if (hasAnyDataInColNear(targetCol + 1)) {
+            let c = targetCol + 1;
+            while (c < curCols && hasAnyDataInColNear(c)) {
+                sourceCols.push(c);
+                c++;
+            }
+        }
+
+        if (!sourceCols.length) {
+            showAlert("フラッシュフィルの参照元となる隣接データ列が見つかりません。", "フラッシュフィル");
+            return;
+        }
+
+        const isRowSourceFilled = (r) => sourceCols.some(c => getCellText(r, c) !== "");
+        let anchorRow = activeRow;
+        if (!isRowSourceFilled(anchorRow)) {
+            if (anchorRow > 1 && isRowSourceFilled(anchorRow - 1)) anchorRow--;
+            else if (anchorRow + 1 < curRowCount && isRowSourceFilled(anchorRow + 1)) anchorRow++;
+        }
+        if (!isRowSourceFilled(anchorRow)) {
+            showAlert("フラッシュフィルを実行するデータ範囲が見つかりません。", "フラッシュフィル");
+            return;
+        }
+
+        let minRow = anchorRow;
+        let maxRow = anchorRow;
+        while (minRow > 1 && isRowSourceFilled(minRow - 1)) minRow--;
+        while (maxRow < curRowCount - 1 && isRowSourceFilled(maxRow + 1)) maxRow++;
+
+        // 先頭行が見出し行かどうかを推定（太字/背景色あり、または例示が2行目以降にも存在する場合は見出し行を除外）
+        let dataStartRow = minRow;
+        const firstRowTarget = getCellText(minRow, targetCol);
+        const hasExampleBelowHeader = (() => {
+            for (let r = minRow + 1; r <= maxRow; r++) {
+                if (getCellText(r, targetCol) !== "") return true;
+            }
+            return false;
+        })();
+        const firstSrcCell = getCell(minRow, sourceCols[0]);
+        const looksLikeHeader = Boolean(
+            firstSrcCell && (firstSrcCell.style.fontWeight === "bold" || firstSrcCell.style.backgroundColor)
+        );
+        if (maxRow > minRow && hasExampleBelowHeader && (looksLikeHeader || firstRowTarget !== "")) {
+            dataStartRow = minRow + 1;
+        }
+
+        const examples = [];
+        for (let r = dataStartRow; r <= maxRow; r++) {
+            const tgtVal = getCellText(r, targetCol);
+            if (tgtVal === "") continue;
+            const srcs = sourceCols.map(c => getCellText(r, c));
+            examples.push({ row: r, srcs, target: tgtVal });
+        }
+
+        if (!examples.length) {
+            showAlert("フラッシュフィルの手本となる入力例を、対象列に1〜2件入力してから実行してください。", "フラッシュフィル");
+            return;
+        }
+
+        const transformFn = inferFlashFillTransform(examples);
+        if (!transformFn) {
+            showAlert("データのパターンを検出できませんでした。\n入力例を2件以上入力して再度お試しください。", "フラッシュフィル");
+            return;
+        }
+
+        let filledCount = 0;
+        for (let r = dataStartRow; r <= maxRow; r++) {
+            const dest = getCell(r, targetCol);
+            if (!dest || dest.style.display === "none") continue;
+            if (getCellText(r, targetCol) !== "" || dest.dataset.formula) continue;
+            const srcs = sourceCols.map(c => getCellText(r, c));
+            const nextVal = transformFn(srcs);
+            delete dest.dataset.formula;
+            delete dest.dataset.richRuns;
+            setCellFormattedValue(dest, nextVal);
+            filledCount++;
+        }
+
+        if (filledCount === 0) {
+            showAlert("フラッシュフィルで埋める空白セルがありませんでした。", "フラッシュフィル");
+            return;
+        }
+
+        updateAllFormulas();
+        applyConditionalFormats();
+        if (hasAutoFilters()) applyAutoFilterRows();
+        updateFillHandle();
+        updateSelectedCellsDisplay();
+        statusBarState.stateText = `フラッシュフィルで ${filledCount} 件を自動入力しました`;
+        renderWindowStatusBar();
+        setDirtyState(true);
+        debouncedSaveState();
+    }
+
     return {
         detectDataBlockBounds,
         openRemoveDuplicatesDialog,
@@ -957,6 +1272,7 @@ export function createDataToolsModule(ctx) {
         openTextToColumnsDialog,
         executeTextToColumns,
         openPivotTableDialog,
-        buildPivotTable
+        buildPivotTable,
+        executeFlashFill
     };
 }
