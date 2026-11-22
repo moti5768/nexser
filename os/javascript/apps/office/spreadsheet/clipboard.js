@@ -658,8 +658,8 @@ export function createClipboardModule(ctx) {
                 }
                 delete dest.dataset.richRuns;
                 if (newFormula) {
+                    // 貼り付けループ後の updateAllFormulas() で一括キャッシュ計算するため、ここでの個別再評価を省略
                     dest.dataset.formula = newFormula;
-                    setCellFormattedValue(dest, evaluateFormula(newFormula));
                 } else {
                     delete dest.dataset.formula;
                     if (item.quotePrefix === "1") dest.dataset.quotePrefix = "1";
@@ -700,7 +700,7 @@ export function createClipboardModule(ctx) {
                 else delete dest.dataset.valueType;
                 if (item.dateValue) dest.dataset.dateValue = item.dateValue;
                 else delete dest.dataset.dateValue;
-                setCellFormattedValue(dest, evaluateFormula(newFormula));
+                // 貼り付けループ後の updateAllFormulas() で一括キャッシュ計算するため、ここでの個別再評価を省略
             } else {
                 delete dest.dataset.formula;
                 if (item.quotePrefix === "1") dest.dataset.quotePrefix = "1";

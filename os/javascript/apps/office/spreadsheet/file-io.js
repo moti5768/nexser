@@ -132,14 +132,71 @@ export function createFileIOModule(ctx) {
     } = ctx;
 
     const RECOVERY_STORAGE_KEY = "nexser_ss_autosave_recovery_v1";
+    const WORKER_CSV_MIN_CHARS = 16_000;
+    const WORKER_SNAPSHOT_MIN_CELLS = 250;
 
     let undoHistory = [];
     let redoHistory = [];
     let saveStateTimeout = null;
     let savedSnapshotJSON = null;
+    let asyncSaveSeq = 0;
 
     let currentFilePath = null;
     let lockedFilePath = null;
+
+    // 遅延起動 Web Worker ブリッジ（起動失敗時は自動的にメインスレッドへフォールバック）
+    let ioWorker = null;
+    let ioWorkerUnavailable = false;
+    let workerReqSeq = 0;
+    const workerPending = new Map();
+
+    function getIOWorker() {
+        if (ioWorkerUnavailable || typeof Worker === "undefined") return null;
+        if (ioWorker) return ioWorker;
+        try {
+            ioWorker = new Worker(new URL("./spreadsheet.worker.js", import.meta.url), { type: "module" });
+            ioWorker.addEventListener("message", (e) => {
+                const { id, ok, result, error } = e.data || {};
+                const pending = workerPending.get(id);
+                if (!pending) return;
+                workerPending.delete(id);
+                if (ok) pending.resolve(result);
+                else pending.reject(new Error(error || "Worker task failed"));
+            });
+            ioWorker.addEventListener("error", () => {
+                terminateIOWorker(true);
+            });
+            return ioWorker;
+        } catch {
+            ioWorkerUnavailable = true;
+            return null;
+        }
+    }
+
+    function terminateIOWorker(markUnavailable = false) {
+        if (ioWorker) {
+            try { ioWorker.terminate(); } catch { /* ignore */ }
+            ioWorker = null;
+        }
+        if (markUnavailable) ioWorkerUnavailable = true;
+        workerPending.forEach(({ reject }) => reject(new Error("Worker terminated")));
+        workerPending.clear();
+    }
+
+    function runWorkerTask(type, payload) {
+        const worker = getIOWorker();
+        if (!worker) return Promise.resolve(null);
+        return new Promise((resolve, reject) => {
+            const id = ++workerReqSeq;
+            workerPending.set(id, { resolve, reject });
+            try {
+                worker.postMessage({ id, type, payload });
+            } catch (err) {
+                workerPending.delete(id);
+                reject(err);
+            }
+        }).catch(() => null);
+    }
 
     function getCurrentFilePath() {
         return currentFilePath;
@@ -200,21 +257,72 @@ export function createFileIOModule(ctx) {
         }
     }
 
+    function pushSerializedSnapshot(serialized) {
+        if (!serialized) return;
+        if (undoHistory.length > 0 && undoHistory[undoHistory.length - 1] === serialized) return;
+        redoHistory = [];
+        undoHistory.push(serialized);
+        if (undoHistory.length > 50) undoHistory.shift();
+        updateQATButtonsState();
+        if (getIsDirty()) persistCrashRecoveryBackup(serialized);
+    }
+
+    function buildSnapshotObject({ flush = true, recalcBackground = true } = {}) {
+        captureCurrentSheetDOM({ flush });
+        if (recalcBackground) {
+            recalculateBackgroundSheets();
+        }
+        return {
+            format: "nexser-spreadsheet",
+            version: 4,
+            activeSheetIndex: getActiveSheetIndex(),
+            definedNames: getDefinedNames(),
+            sheets: getSheets()
+        };
+    }
+
+    function countTotalCellsInSheets(sheetsArr) {
+        let total = 0;
+        if (!Array.isArray(sheetsArr)) return 0;
+        for (let i = 0; i < sheetsArr.length; i++) {
+            total += Array.isArray(sheetsArr[i]?.cells) ? sheetsArr[i].cells.length : 0;
+        }
+        return total;
+    }
+
     function saveState() {
+        asyncSaveSeq++;
         try {
             const serialized = serializeSheetSnapshot({ flush: false, recalcBackground: false });
-            if (undoHistory.length > 0 && undoHistory[undoHistory.length - 1] === serialized) return;
-            redoHistory = [];
-            undoHistory.push(serialized);
-            if (undoHistory.length > 50) undoHistory.shift();
-            updateQATButtonsState();
-            if (getIsDirty()) persistCrashRecoveryBackup(serialized);
+            pushSerializedSnapshot(serialized);
         } catch (err) {
             console.warn("[Spreadsheet] スナップショット保存中にエラーが発生しました:", err);
         }
     }
 
+    async function saveStateInBackground() {
+        const mySeq = ++asyncSaveSeq;
+        try {
+            const snapshotObj = buildSnapshotObject({ flush: false, recalcBackground: false });
+            const totalCells = countTotalCellsInSheets(snapshotObj.sheets);
+
+            let serialized = null;
+            if (totalCells >= WORKER_SNAPSHOT_MIN_CELLS) {
+                serialized = await runWorkerTask("stringify-snapshot", snapshotObj);
+            }
+            // 非同期処理中に別の操作（Undo/Redo/新規作成/即時保存等）が入った場合は破棄
+            if (mySeq !== asyncSaveSeq) return;
+            if (serialized === null) {
+                serialized = JSON.stringify(snapshotObj);
+            }
+            pushSerializedSnapshot(serialized);
+        } catch (err) {
+            console.warn("[Spreadsheet] バックグラウンドスナップショット保存中にエラーが発生しました:", err);
+        }
+    }
+
     function cancelDebouncedSaveState() {
+        asyncSaveSeq++;
         if (saveStateTimeout) {
             clearManagedTimeout(saveStateTimeout);
             saveStateTimeout = null;
@@ -225,7 +333,7 @@ export function createFileIOModule(ctx) {
         cancelDebouncedSaveState();
         saveStateTimeout = managedTimeout(() => {
             saveStateTimeout = null;
-            saveState();
+            void saveStateInBackground();
         }, delay);
     }
 
@@ -241,6 +349,7 @@ export function createFileIOModule(ctx) {
     }
 
     function resetUndoRedoBaseline() {
+        asyncSaveSeq++;
         undoHistory = [];
         redoHistory = [];
         saveState();
@@ -248,12 +357,14 @@ export function createFileIOModule(ctx) {
     }
 
     function resetUndoRedoHistoryOnly() {
+        asyncSaveSeq++;
         undoHistory = [];
         redoHistory = [];
         saveState();
     }
 
     async function loadState(stateJSON) {
+        asyncSaveSeq++;
         const prevTop = container.scrollTop;
         const prevLeft = container.scrollLeft;
         await applyDeserializedPayload(stateJSON, { isUndoRedo: true });
@@ -504,17 +615,7 @@ export function createFileIOModule(ctx) {
     }
 
     function serializeSheetSnapshot({ flush = true, recalcBackground = true } = {}) {
-        captureCurrentSheetDOM({ flush });
-        if (recalcBackground) {
-            recalculateBackgroundSheets();
-        }
-        return JSON.stringify({
-            format: "nexser-spreadsheet",
-            version: 4,
-            activeSheetIndex: getActiveSheetIndex(),
-            definedNames: getDefinedNames(),
-            sheets: getSheets()
-        });
+        return JSON.stringify(buildSnapshotObject({ flush, recalcBackground }));
     }
 
     function serializeSpreadsheetPayload() {
@@ -848,9 +949,17 @@ export function createFileIOModule(ctx) {
         });
     }
 
-    function parseAndLoadCSV(csvText) {
+    async function parseAndLoadCSV(csvText) {
         clearSheetToBlank();
-        const parsedRows = parseCSVRows(csvText);
+        const rawText = String(csvText ?? "");
+        let parsedRows = null;
+        if (rawText.length >= WORKER_CSV_MIN_CHARS) {
+            parsedRows = await runWorkerTask("parse-csv", rawText);
+        }
+        if (!Array.isArray(parsedRows)) {
+            parsedRows = parseCSVRows(rawText);
+        }
+
         const neededRows = parsedRows.length;
         const neededCols = parsedRows.reduce((m, cols) => Math.max(m, cols.length), 0);
         const curRowCount = getRowCount();
@@ -900,7 +1009,7 @@ export function createFileIOModule(ctx) {
             }
 
             if (normalized.toLowerCase().endsWith(".csv")) {
-                parseAndLoadCSV(contentData);
+                await parseAndLoadCSV(contentData);
             } else if (contentData.trim() !== "") {
                 await applyDeserializedPayload(contentData);
             } else {
@@ -962,9 +1071,16 @@ export function createFileIOModule(ctx) {
         statusBarState.stateText = "保存中...";
         let wasLockedBySelf = false;
         try {
-            const payload = normalized.toLowerCase().endsWith(".csv")
-                ? generateCSVText()
-                : serializeSpreadsheetPayload();
+            let payload;
+            if (normalized.toLowerCase().endsWith(".csv")) {
+                payload = await generateCSVTextAsync();
+            } else {
+                const snapObj = buildSnapshotObject({ flush: true, recalcBackground: true });
+                const totalCells = countTotalCellsInSheets(snapObj.sheets);
+                payload = totalCells >= WORKER_SNAPSHOT_MIN_CELLS
+                    ? ((await runWorkerTask("stringify-snapshot", snapObj)) ?? JSON.stringify(snapObj))
+                    : JSON.stringify(snapObj);
+            }
 
             if (lockedFilePath === normalized) {
                 wasLockedBySelf = unlockFile(normalized, lockOwnerPid);
@@ -1023,13 +1139,29 @@ export function createFileIOModule(ctx) {
         }
     }
 
-    function generateCSVText() {
+    function extractCSVDisplayMatrix() {
         flushPendingEdits();
         const getCleanCellDisplay = (cell) => {
             if (!cell) return "";
-            const clone = cell.cloneNode(true);
-            clone.querySelectorAll(".ss-filter-arrow, .ss-cell-dropdown-btn").forEach(el => el.remove());
-            return clone.textContent || "";
+            // cloneNode(true) を廃止し、textContent の直接取得で DOM 複製コストを大幅削減
+            if (!cell.querySelector(".ss-filter-arrow, .ss-cell-dropdown-btn, .fill-handle, .ss-anno-mark")) {
+                return cell.textContent || "";
+            }
+            let txt = "";
+            cell.childNodes.forEach(node => {
+                if (node.nodeType === Node.TEXT_NODE) {
+                    txt += node.nodeValue;
+                } else if (
+                    node.nodeType === Node.ELEMENT_NODE &&
+                    !node.classList.contains("ss-filter-arrow") &&
+                    !node.classList.contains("ss-cell-dropdown-btn") &&
+                    !node.classList.contains("fill-handle") &&
+                    !node.classList.contains("ss-anno-mark")
+                ) {
+                    txt += node.textContent;
+                }
+            });
+            return txt;
         };
 
         let maxR = 0, maxC = 0;
@@ -1043,27 +1175,54 @@ export function createFileIOModule(ctx) {
                 }
             }
         }
-        const rows = [];
+        const matrix = [];
         for (let r = 1; r <= maxR; r++) {
-            const cols = [];
+            const row = new Array(maxC + 1);
             for (let c = 0; c <= maxC; c++) {
-                const rawText = getCleanCellDisplay(getCell(r, c));
-                const needsQuote = /[",\r\n]/.test(rawText);
-                const escaped = rawText.replace(/"/g, '""');
-                cols.push(needsQuote ? `"${escaped}"` : escaped);
+                row[c] = getCleanCellDisplay(getCell(r, c));
             }
-            rows.push(cols.join(","));
+            matrix.push(row);
         }
-        return rows.join("\n");
+        return matrix;
     }
 
-    function exportLocalFile(ext = ".nxs") {
+    function generateCSVText() {
+        const matrix = extractCSVDisplayMatrix();
+        return matrix.map(cols => cols.map(rawText => {
+            const needsQuote = /[",\r\n]/.test(rawText);
+            return needsQuote ? `"${rawText.replace(/"/g, '""')}"` : rawText;
+        }).join(",")).join("\n");
+    }
+
+    async function generateCSVTextAsync() {
+        const matrix = extractCSVDisplayMatrix();
+        const totalCells = matrix.length * (matrix[0]?.length || 0);
+        if (totalCells >= WORKER_SNAPSHOT_MIN_CELLS) {
+            const workerCsv = await runWorkerTask("generate-csv", matrix);
+            if (typeof workerCsv === "string") return workerCsv;
+        }
+        return matrix.map(cols => cols.map(rawText => {
+            const needsQuote = /[",\r\n]/.test(rawText);
+            return needsQuote ? `"${rawText.replace(/"/g, '""')}"` : rawText;
+        }).join(",")).join("\n");
+    }
+
+    async function exportLocalFile(ext = ".nxs") {
         try {
             const baseTitle = (currentFilePath ? basename(currentFilePath) : "無題.nxs")
                 .replace(/\.(nxs|csv|json)$/i, "");
             const fileName = `${baseTitle}${ext}`;
             const isCSV = ext.toLowerCase() === ".csv";
-            const contentStr = isCSV ? ("\uFEFF" + generateCSVText()) : serializeSpreadsheetPayload();
+            let contentStr;
+            if (isCSV) {
+                contentStr = "\uFEFF" + (await generateCSVTextAsync());
+            } else {
+                const snapObj = buildSnapshotObject({ flush: true, recalcBackground: true });
+                const totalCells = countTotalCellsInSheets(snapObj.sheets);
+                contentStr = totalCells >= WORKER_SNAPSHOT_MIN_CELLS
+                    ? ((await runWorkerTask("stringify-snapshot", snapObj)) ?? JSON.stringify(snapObj))
+                    : JSON.stringify(snapObj);
+            }
             const mimeType = isCSV ? "text/csv;charset=utf-8;" : "application/json;charset=utf-8;";
 
             const blob = new Blob([contentStr], { type: mimeType });
@@ -1095,7 +1254,7 @@ export function createFileIOModule(ctx) {
             try {
                 const text = await file.text();
                 if (file.name.toLowerCase().endsWith(".csv")) {
-                    parseAndLoadCSV(text);
+                    await parseAndLoadCSV(text);
                 } else {
                     await applyDeserializedPayload(text);
                 }
@@ -1263,6 +1422,7 @@ export function createFileIOModule(ctx) {
 
     function disposeFileIO({ destroyDialog = true, stopInertia = true, stopAutoScroll = true, removePrint = true } = {}) {
         flushDebouncedSaveState();
+        terminateIOWorker(false);
         if (stopInertia) stopTouchInertia();
         if (stopAutoScroll) stopDragAutoScroll();
         if (destroyDialog) destroyFindDialog();

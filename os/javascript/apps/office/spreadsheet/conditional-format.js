@@ -191,15 +191,56 @@ export function createConditionalFormattingModule(ctx) {
         return buildConditionMatcher(`${op}${resolvedVal1}`)(str);
     }
 
+    // 前回適用したセルのみを保持し、リセット時の tbody 全走査（querySelectorAll）を廃止
+    const appliedCfCells = new Set();
+    const appliedCfIconCells = new Set();
+
+    const CF_ICON_SETS = {
+        arrows3: [
+            { char: "▼", color: "#d13438" },
+            { char: "▶", color: "#e39c00" },
+            { char: "▲", color: "#107c41" }
+        ],
+        traffic3: [
+            { char: "●", color: "#d13438" },
+            { char: "●", color: "#e39c00" },
+            { char: "●", color: "#107c41" }
+        ],
+        signs3: [
+            { char: "✖", color: "#d13438" },
+            { char: "❗", color: "#e39c00" },
+            { char: "✔", color: "#107c41" }
+        ],
+        stars3: [
+            { char: "☆", color: "#b8860b" },
+            { char: "⯪", color: "#daa520" },
+            { char: "★", color: "#daa520" }
+        ]
+    };
+
+    const CF_NEEDS_NUMERIC_STATS = new Set([
+        "databar", "colorscale", "iconset",
+        "topN", "topPercent", "bottomN", "bottomPercent",
+        "aboveAvg", "belowAvg", "aboveEqAvg", "belowEqAvg"
+    ]);
+    const CF_NEEDS_RANK_SORT = new Set(["topN", "topPercent", "bottomN", "bottomPercent"]);
+    const CF_NEEDS_VALUE_COUNT = new Set(["duplicate", "unique"]);
+
     function applyConditionalFormats() {
         const rules = getActiveSheet()?.conditionalFormats || [];
-        tbody.querySelectorAll("td[data-cf-icon]").forEach(td => {
-            delete td.dataset.cfIcon;
-            td.style.removeProperty("--cf-icon-color");
-        });
-        tbody.querySelectorAll("td[data-cf-applied]").forEach(td => {
-            clearAppliedConditionalStyle(td);
-        });
+
+        // 前回適用セルのみを O(適用数) で即座にリセット（ルール0件時は実質0ms）
+        if (appliedCfIconCells.size > 0) {
+            appliedCfIconCells.forEach(td => {
+                delete td.dataset.cfIcon;
+                td.style.removeProperty("--cf-icon-color");
+            });
+            appliedCfIconCells.clear();
+        }
+        if (appliedCfCells.size > 0) {
+            appliedCfCells.forEach(td => clearAppliedConditionalStyle(td));
+            appliedCfCells.clear();
+        }
         if (!rules.length) return;
 
         const stoppedCells = new Set();
@@ -225,45 +266,75 @@ export function createConditionalFormattingModule(ctx) {
                 td.dataset.cfOrigOutline = td.style.outline || "";
                 td.dataset.cfOrigOutlineOffset = td.style.outlineOffset || "";
                 td.dataset.cfApplied = "1";
+                appliedCfCells.add(td);
             }
         };
 
+        const totalRows = tbody.rows.length;
+        const maxColIdx = getCurrentColumns() - 1;
+
         for (const rule of rules) {
             const ruleOp = String(rule.op || "expr");
-            const rangeNums = [];
-            const valueCountMap = new Map();
-            const maxExistingRow = Math.min(rule.maxRow, tbody.rows.length);
-            const maxExistingCol = Math.min(rule.maxCol, getCurrentColumns() - 1);
-            for (let r = rule.minRow; r <= maxExistingRow; r++) {
-                for (let c = rule.minCol; c <= maxExistingCol; c++) {
-                    const rawTd = peekCell(r, c);
-                    if (!rawTd || rawTd.style.display === "none") continue;
-                    const rawStr = getCellPureText(rawTd).trim();
-                    if (rawStr !== "") valueCountMap.set(rawStr, (valueCountMap.get(rawStr) || 0) + 1);
-                    const v = parseFormattedNumber(rawStr);
-                    if (!isNaN(v)) rangeNums.push(v);
+            const maxExistingRow = Math.min(rule.maxRow, totalRows);
+            const maxExistingCol = Math.min(rule.maxCol, maxColIdx);
+            if (maxExistingRow < rule.minRow || maxExistingCol < rule.minCol) continue;
+
+            const needsNumStats = CF_NEEDS_NUMERIC_STATS.has(ruleOp);
+            const needsRankSort = CF_NEEDS_RANK_SORT.has(ruleOp);
+            const needsValCount = CF_NEEDS_VALUE_COUNT.has(ruleOp);
+
+            let minNum = 0;
+            let maxNum = 1;
+            let avgNum = 0;
+            let topCut = Infinity;
+            let bottomCut = -Infinity;
+            let valueCountMap = null;
+
+            // 統計・重複カウントが必要なルールだけ事前走査（通常の数値比較・文字列・数式ルールは事前走査0回）
+            if (needsNumStats || needsValCount) {
+                const rangeNums = needsNumStats ? [] : null;
+                if (needsValCount) valueCountMap = new Map();
+
+                for (let r = rule.minRow; r <= maxExistingRow; r++) {
+                    for (let c = rule.minCol; c <= maxExistingCol; c++) {
+                        const rawTd = peekCell(r, c);
+                        if (!rawTd || rawTd.style.display === "none") continue;
+                        const rawStr = getCellPureText(rawTd).trim();
+                        if (needsValCount && rawStr !== "") {
+                            valueCountMap.set(rawStr, (valueCountMap.get(rawStr) || 0) + 1);
+                        }
+                        if (needsNumStats) {
+                            const v = parseFormattedNumber(rawStr);
+                            if (!isNaN(v)) rangeNums.push(v);
+                        }
+                    }
+                }
+
+                if (needsNumStats && rangeNums.length > 0) {
+                    minNum = Infinity;
+                    maxNum = -Infinity;
+                    let sumNum = 0;
+                    for (let i = 0; i < rangeNums.length; i++) {
+                        const v = rangeNums[i];
+                        if (v < minNum) minNum = v;
+                        if (v > maxNum) maxNum = v;
+                        sumNum += v;
+                    }
+                    avgNum = sumNum / rangeNums.length;
+
+                    if (needsRankSort) {
+                        // ソートは昇順1回だけ行い、上位・下位どちらもインデックス計算で取得
+                        rangeNums.sort((a, b) => a - b);
+                        const rankVal = Math.max(1, Number(rule.rank) || 10);
+                        const nCount = ruleOp.endsWith("Percent")
+                            ? Math.max(1, Math.floor((rangeNums.length * rankVal) / 100))
+                            : rankVal;
+                        const clampedN = Math.min(rangeNums.length, nCount);
+                        bottomCut = rangeNums[clampedN - 1] ?? -Infinity;
+                        topCut = rangeNums[rangeNums.length - clampedN] ?? Infinity;
+                    }
                 }
             }
-            let minNum = Infinity, maxNum = -Infinity, sumNum = 0;
-            for (let i = 0; i < rangeNums.length; i++) {
-                const v = rangeNums[i];
-                if (v < minNum) minNum = v;
-                if (v > maxNum) maxNum = v;
-                sumNum += v;
-            }
-            if (!rangeNums.length) {
-                minNum = 0;
-                maxNum = 1;
-            }
-            const avgNum = rangeNums.length ? sumNum / rangeNums.length : 0;
-            const sortedDesc = [...rangeNums].sort((a, b) => b - a);
-            const sortedAsc = [...rangeNums].sort((a, b) => a - b);
-            const rankVal = Math.max(1, Number(rule.rank) || 10);
-            const nCount = ruleOp.endsWith("Percent")
-                ? Math.max(1, Math.floor((rangeNums.length * rankVal) / 100))
-                : rankVal;
-            const topCut = sortedDesc[Math.min(sortedDesc.length - 1, nCount - 1)] ?? Infinity;
-            const bottomCut = sortedAsc[Math.min(sortedAsc.length - 1, nCount - 1)] ?? -Infinity;
 
             for (let r = rule.minRow; r <= maxExistingRow; r++) {
                 for (let c = rule.minCol; c <= maxExistingCol; c++) {
@@ -272,7 +343,7 @@ export function createConditionalFormattingModule(ctx) {
                     const td = peekCell(r, c);
                     if (!td || td.style.display === "none") continue;
                     const rawVal = getCellPureText(td);
-                    const num = parseFormattedNumber(rawVal);
+                    const num = needsNumStats ? parseFormattedNumber(rawVal) : NaN;
 
                     if (ruleOp === "databar" && !isNaN(num)) {
                         const locked = getLockedSet(cellKey);
@@ -324,33 +395,11 @@ export function createConditionalFormattingModule(ctx) {
                         if (!locked.has("icon")) {
                             saveOrig(td);
                             const pct = maxNum === minNum ? 100 : ((num - minNum) / (maxNum - minNum)) * 100;
-                            const setType = rule.iconSet || "arrows3";
-                            const sets = {
-                                arrows3: [
-                                    { char: "▼", color: "#d13438" },
-                                    { char: "▶", color: "#e39c00" },
-                                    { char: "▲", color: "#107c41" }
-                                ],
-                                traffic3: [
-                                    { char: "●", color: "#d13438" },
-                                    { char: "●", color: "#e39c00" },
-                                    { char: "●", color: "#107c41" }
-                                ],
-                                signs3: [
-                                    { char: "✖", color: "#d13438" },
-                                    { char: "❗", color: "#e39c00" },
-                                    { char: "✔", color: "#107c41" }
-                                ],
-                                stars3: [
-                                    { char: "☆", color: "#b8860b" },
-                                    { char: "⯪", color: "#daa520" },
-                                    { char: "★", color: "#daa520" }
-                                ]
-                            };
-                            const palette = sets[setType] || sets.arrows3;
+                            const palette = CF_ICON_SETS[rule.iconSet || "arrows3"] || CF_ICON_SETS.arrows3;
                             const icon = pct >= 67 ? palette[2] : (pct >= 33 ? palette[1] : palette[0]);
                             td.dataset.cfIcon = icon.char;
                             td.style.setProperty("--cf-icon-color", icon.color);
+                            appliedCfIconCells.add(td);
                             locked.add("icon");
                         }
                         if (rule.stopIfTrue) stoppedCells.add(cellKey);

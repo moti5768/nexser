@@ -171,18 +171,12 @@ export function createFormulaEngineModule(ctx) {
         return getSheetCellValue(getActiveSheetIndex(), parseInt(cell.dataset.row, 10), parseInt(cell.dataset.col, 10), visited);
     }
 
-    function buildRange2DLiteral(sheetIdx, startRef, endRef, visited, hiddenMode = "none", stringLiterals = null) {
-        const startMatch = startRef?.match(/^\$?([A-Za-z]+)\$?(\d+)$/);
-        const endMatch = endRef?.match(/^\$?([A-Za-z]+)\$?(\d+)$/);
-        if (!startMatch || !endMatch) return "[]";
-
-        const startCol = columnLettersToIndex(startMatch[1]);
-        const startRow = parseInt(startMatch[2], 10);
-        const endCol = columnLettersToIndex(endMatch[1]);
-        const endRow = parseInt(endMatch[2], 10);
-
+    // hiddenModeCode: 0 = すべて含む, 1 = フィルター非表示のみ除外, 2 = すべての非表示行を除外
+    function readRange2DValues(sheetIdx, startRow, startCol, endRow, endCol, visited, hiddenModeCode = 0) {
         const sheets = getSheets();
         const activeSheetIndex = getActiveSheetIndex();
+        if (sheetIdx < 0 || !sheets[sheetIdx]) return [["#REF!"]];
+
         let maxR = getRowCount() - 1;
         let maxC = getCurrentColumns() - 1;
         if (sheetIdx !== activeSheetIndex && Array.isArray(sheets[sheetIdx]?.cells)) {
@@ -193,65 +187,57 @@ export function createFormulaEngineModule(ctx) {
                 if (ic > maxC) maxC = ic;
             }
         }
-        const rStart = Math.min(startRow, endRow);
+
+        const rStart = Math.max(1, Math.min(startRow, endRow));
         const rEnd = Math.min(Math.max(startRow, endRow), maxR);
-        const cStart = Math.min(startCol, endCol);
+        const cStart = Math.max(0, Math.min(startCol, endCol));
         const cEnd = Math.min(Math.max(startCol, endCol), maxC);
         const matrix = [];
+
         for (let r = rStart; r <= rEnd; r++) {
-            if (hiddenMode !== "none" && sheetIdx === activeSheetIndex) {
+            if (hiddenModeCode !== 0 && sheetIdx === activeSheetIndex) {
                 const tr = getRow(r);
                 if (tr) {
-                    if (hiddenMode === "all" && tr.style.display === "none") continue;
-                    if (hiddenMode === "filterOnly" && tr.dataset.filterHidden === "1") continue;
+                    if (hiddenModeCode === 2 && tr.style.display === "none") continue;
+                    if (hiddenModeCode === 1 && tr.dataset.filterHidden === "1") continue;
                 }
             }
             const rowVals = [];
             for (let c = cStart; c <= cEnd; c++) {
                 const val = getSheetCellValue(sheetIdx, r, c, visited);
-                rowVals.push(toJSValueLiteral(val, false, stringLiterals));
+                rowVals.push(isBlankVal(val) ? "" : val);
             }
-            matrix.push(`[${rowVals.join(",")}]`);
+            matrix.push(rowVals);
         }
-        return `[${matrix.join(",")}]`;
+        return matrix;
     }
 
-    function evaluateFormula(formula, visited = new Set(), contextSheetIdx = getActiveSheetIndex(), evalCoord = null) {
-        if (!formula) return formula;
-        if (formula === "=") return "=";
-        if (formula[0] !== "=") return formula;
+    const ALLOWED_IDENTIFIERS = new Set([
+        "EXCEL_BLANK_CELL", "__XL_EQ", "__XL_OP", "__XL_U", "__XL_REF",
+        "__XL_CELL", "__XL_XCELL", "__XL_RNG", "__XL_XRNG",
+        "__XL_COLRNG", "__XL_ROWRNG", "__XL_ROW", "__XL_COL",
+        "INDIRECT", "OFFSET", "true", "false", "undefined", ...FORMULA_FN_NAMES
+    ]);
+    const BUILTIN_FN_SET = new Set(["INDIRECT", "OFFSET", ...FORMULA_FN_NAMES]);
 
-        let expr = formula.substring(1).trim();
-        if (!expr) return "=";
-
-        const sheets = getSheets();
-        const activeSheetIndex = getActiveSheetIndex();
-        const definedNames = getDefinedNames();
+    function compileFormulaTemplate(resolvedExpr, rawFormula) {
+        const cached = compiledFormulaCache.get(resolvedExpr);
+        if (cached) return cached;
 
         try {
-            // 1. 最優先で文字列リテラルを退避し、内部の "=", "<>", "%" 等が破壊されるのを防ぐ
+            let expr = resolvedExpr;
             const stringLiterals = [];
-            expr = expr.replace(/"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'(?!\s*!)/g, (m) => {
+            const pushLiteral = (quotedStr) => {
                 const token = `__STR_LIT_${stringLiterals.length}__`;
-                stringLiterals.push(m);
+                stringLiterals.push(quotedStr);
                 return token;
-            });
+            };
 
+            expr = expr.replace(/"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'(?!\s*!)/g, (m) => pushLiteral(m));
             expr = preprocessAllNestedIFs(expr);
 
-            expr = resolveStructuredReferences(expr, contextSheetIdx);
-            if (typeof definedNames === "object" && definedNames) {
-                const nameEntries = Object.entries(definedNames).sort((a, b) => b[0].length - a[0].length);
-                for (const [dName, dRef] of nameEntries) {
-                    const escaped = dName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-                    const re = new RegExp(`(?<![A-Za-z0-9_\\u3040-\\u30FF\\u4E00-\\u9FAF$!])${escaped}(?![A-Za-z0-9_\\u3040-\\u30FF\\u4E00-\\u9FAF(])`, "g");
-                    expr = expr.replace(re, dRef);
-                }
-            }
-
-            // Excelの演算子優先順位（比較 < & < 四則）と等価比較（__XL_EQ）への変換
+            // Excelの演算子優先順位（比較 < & < 四則）と等価比較への変換
             const convertExcelConcat = (src) => {
-                // 1. まず括弧 (...) 内部を再帰変換（関数引数のカンマ境界を破壊しない）
                 let resolved = "";
                 for (let i = 0; i < src.length; i++) {
                     if (src[i] === "(") {
@@ -263,7 +249,6 @@ export function createFormulaEngineModule(ctx) {
                             j++;
                         }
                         const inner = src.slice(i + 1, j - 1);
-                        // カンマ区切り（関数引数）ごとに独立して変換
                         const args = [];
                         let argBuf = "";
                         let d = 0;
@@ -286,7 +271,6 @@ export function createFormulaEngineModule(ctx) {
                     }
                 }
 
-                // 2. トップレベルの比較演算子で分割し、各辺ごとに & を CONCAT(...) に変換
                 const cmpSegments = [];
                 let seg = "";
                 let depth = 0;
@@ -340,24 +324,7 @@ export function createFormulaEngineModule(ctx) {
                         if (op === "<>" || op === "!=") return `__XL_OP("!=", ${lhs}, ${rhs})`;
                     }
                 }
-
                 return cmpSegments.map(s => convertAmp(s.text) + s.op).join("");
-            };
-
-            // 列全体参照 ($A:$C)・行全体参照 ($1:$5) をシート使用範囲へ展開する補助関数
-            const expandWholeAxisRefs = (src) => {
-                const maxUsedRow = Math.max(1, tbody.rows.length);
-                const maxUsedCol = Math.max(0, getCurrentColumns() - 1);
-                const maxColName = getColumnName(maxUsedCol);
-                // 列全体参照（例: A:C, $B:$B）
-                let out = src.replace(/(?<![A-Za-z0-9_:])(\$?[A-Za-z]+):(\$?[A-Za-z]+)(?![A-Za-z0-9_(])/g, (_, c1, c2) => {
-                    return `${c1}1:${c2}${maxUsedRow}`;
-                });
-                // 行全体参照（例: 1:3, $2:$2）
-                out = out.replace(/(?<![A-Za-z0-9_:])(\$?\d+):(\$?\d+)(?![A-Za-z0-9_])/g, (_, r1, r2) => {
-                    return `A${r1}:${maxColName}${r2}`;
-                });
-                return out;
             };
 
             // Excel仕様: 単項マイナスはべき乗(^)より高優先 (-2^2 === 4)
@@ -367,8 +334,7 @@ export function createFormulaEngineModule(ctx) {
                     .replace(/\^/g, "**");
             };
 
-            // Excel演算子・リテラル・関数名の大文字正規化（後置%はrewriteArrayOpsでネスト括弧・関数・配列まで統一処理）
-            expr = expandWholeAxisRefs(convertExcelConcat(expr));
+            expr = convertExcelConcat(expr);
             expr = normalizeExcelPower(expr)
                 .replace(/<>/g, "!=")
                 .replace(/(?<![<>!=])=(?!=)/g, "==")
@@ -376,14 +342,42 @@ export function createFormulaEngineModule(ctx) {
                 .replace(/\bFALSE\b/gi, "false")
                 .replace(/\b([A-Za-z_][A-Za-z0-9_.]*)\s*(?=\()/g, (_, fn) => fn.toUpperCase().replace(/\./g, "_"));
 
-            // ROW() / COLUMN() の座標解決（セル参照の値展開より先に処理）
+            // SUBTOTAL(1-11:1 / 101-111:2)・AGGREGATE(1/3/5/7:2) 判定ヘルパー
+            const getSubtotalHiddenCode = (src, offset) => {
+                let depth = 0;
+                for (let i = offset - 1; i >= 0; i--) {
+                    const ch = src[i];
+                    if (ch === ")") depth++;
+                    else if (ch === "(") {
+                        if (depth === 0) {
+                            const before = src.slice(Math.max(0, i - 16), i);
+                            const fnMatch = before.match(/\b(SUBTOTAL|AGGREGATE)\s*$/i);
+                            if (!fnMatch) return 0;
+                            const fnName = fnMatch[1].toUpperCase();
+                            const afterOpen = src.slice(i + 1, offset);
+                            if (fnName === "SUBTOTAL") {
+                                const m = afterOpen.match(/^\s*(\d+)\s*,/);
+                                const code = m ? Number(m[1]) : 9;
+                                return code >= 101 ? 2 : 1;
+                            }
+                            const aggMatch = afterOpen.match(/^\s*\d+\s*,\s*(\d+)\s*,/);
+                            const opt = aggMatch ? Number(aggMatch[1]) : 5;
+                            return [1, 3, 5, 7].includes(opt) ? 2 : 1;
+                        }
+                        depth--;
+                    }
+                }
+                return 0;
+            };
+
+            // ROW() / COLUMN() をランタイム呼び出し or 固定値へ変換
             expr = expr
-                .replace(/\bROW\s*\(\s*\)/g, () => String(evalCoord?.row ?? 1))
-                .replace(/\bCOLUMN\s*\(\s*\)/g, () => String((evalCoord?.col ?? 0) + 1))
+                .replace(/\bROW\s*\(\s*\)/g, "__XL_ROW()")
+                .replace(/\bCOLUMN\s*\(\s*\)/g, "__XL_COL()")
                 .replace(/\bROW\s*\(\s*(?:(?:'[^']+'|[A-Za-z0-9_\u3040-\u30FF\u4E00-\u9FAF]+)!)?\$?[A-Za-z]+\$?(\d+)(?::\$?[A-Za-z]+\$?\d+)?\s*\)/g, (_, r) => String(parseInt(r, 10)))
                 .replace(/\bCOLUMN\s*\(\s*(?:(?:'[^']+'|[A-Za-z0-9_\u3040-\u30FF\u4E00-\u9FAF]+)!)?\$?([A-Za-z]+)\$?\d+(?::\$?[A-Za-z]+\$?\d+)?\s*\)/g, (_, colL) => String(columnLettersToIndex(colL) + 1));
 
-            // OFFSET の第1引数がセル/範囲参照の場合、値展開される前に座標オブジェクト __XL_REF(...) へ変換
+            // OFFSET の第1引数をランタイム座標オブジェクト __XL_REF(...) へ変換（シート名も動的解決）
             const rewriteOffsetFirstArg = (src) => {
                 let out = "";
                 let i = 0;
@@ -415,14 +409,14 @@ export function createFormulaEngineModule(ctx) {
                         );
                         if (refMatch) {
                             const sName = refMatch[1] ?? refMatch[2];
-                            const sIdx = sName ? sheets.findIndex(s => s.name === sName) : contextSheetIdx;
+                            const sTok = sName ? pushLiteral(JSON.stringify(sName)) : "undefined";
                             const c1 = columnLettersToIndex(refMatch[3]);
                             const r1 = parseInt(refMatch[4], 10);
                             const c2 = refMatch[5] ? columnLettersToIndex(refMatch[5]) : c1;
                             const r2 = refMatch[6] ? parseInt(refMatch[6], 10) : r1;
                             const minR = Math.min(r1, r2), maxR = Math.max(r1, r2);
                             const minC = Math.min(c1, c2), maxC = Math.max(c1, c2);
-                            out += `OFFSET(__XL_REF(${sIdx},${minR},${minC},${maxR},${maxC})${rewriteOffsetFirstArg(tail)}`;
+                            out += `OFFSET(__XL_REF(${sTok},${minR},${minC},${maxR},${maxC})${rewriteOffsetFirstArg(tail)}`;
                         } else {
                             out += `OFFSET(${rewriteOffsetFirstArg(firstArg)}${rewriteOffsetFirstArg(tail)}`;
                         }
@@ -437,74 +431,61 @@ export function createFormulaEngineModule(ctx) {
                 expr = rewriteOffsetFirstArg(expr);
             }
 
-            // 他シート範囲参照（例: Sheet2!A1:C5 / '売上表'!A1:C5）
+            // 列全体参照 ($A:$C)・行全体参照 ($1:$5) をランタイム関数へ変換（シート拡張時もキャッシュ有効）
+            expr = expr.replace(/(?<![A-Za-z0-9_:])(\$?[A-Za-z]+):(\$?[A-Za-z]+)(?![A-Za-z0-9_(])/g, (m, c1, c2, offset, fullStr) => {
+                const i1 = columnLettersToIndex(c1.replace(/^\$/, ""));
+                const i2 = columnLettersToIndex(c2.replace(/^\$/, ""));
+                const hCode = getSubtotalHiddenCode(fullStr, offset);
+                return `__XL_COLRNG(${i1},${i2},${hCode})`;
+            });
+            expr = expr.replace(/(?<![A-Za-z0-9_:])(\$?\d+):(\$?\d+)(?![A-Za-z0-9_])/g, (m, r1, r2, offset, fullStr) => {
+                const n1 = parseInt(r1.replace(/^\$/, ""), 10);
+                const n2 = parseInt(r2.replace(/^\$/, ""), 10);
+                const hCode = getSubtotalHiddenCode(fullStr, offset);
+                return `__XL_ROWRNG(${n1},${n2},${hCode})`;
+            });
+
+            // 他シート範囲参照 → __XL_XRNG("Sheet2", r1, c1, r2, c2, 0)
             expr = expr.replace(CROSS_SHEET_RANGE_REGEX, (_, qName, plainName, sRef, eRef) => {
                 const sName = qName ?? plainName;
-                const sIdx = sheets.findIndex(s => s.name === sName);
-                if (sIdx === -1) return `[[${toJSValueLiteral("#REF!", false, stringLiterals)}]]`;
-                return buildRange2DLiteral(sIdx, sRef, eRef, visited, "none", stringLiterals);
+                const sm = sRef.match(/^\$?([A-Za-z]+)\$?(\d+)$/);
+                const em = eRef.match(/^\$?([A-Za-z]+)\$?(\d+)$/);
+                if (!sm || !em) return "[]";
+                const sTok = pushLiteral(JSON.stringify(sName));
+                return `__XL_XRNG(${sTok},${parseInt(sm[2], 10)},${columnLettersToIndex(sm[1])},${parseInt(em[2], 10)},${columnLettersToIndex(em[1])},0)`;
             });
 
-            // 他シート単一セル参照（例: Sheet2!B3）
+            // 他シート単一セル参照 → __XL_XCELL("Sheet2", r, c)
             expr = expr.replace(CROSS_SHEET_CELL_REGEX, (_, qName, plainName, cellRef) => {
                 const sName = qName ?? plainName;
-                const sIdx = sheets.findIndex(s => s.name === sName);
-                if (sIdx === -1) return toJSValueLiteral("#REF!", false, stringLiterals);
                 const m = cellRef.match(/^\$?([A-Za-z]+)\$?(\d+)$/);
-                if (!m) return toJSValueLiteral("#REF!", false, stringLiterals);
-                const val = getSheetCellValue(sIdx, parseInt(m[2], 10), columnLettersToIndex(m[1]), visited);
-                return toJSValueLiteral(val, true, stringLiterals);
+                if (!m) return pushLiteral('"#REF!"');
+                const sTok = pushLiteral(JSON.stringify(sName));
+                return `__XL_XCELL(${sTok},${parseInt(m[2], 10)},${columnLettersToIndex(m[1])})`;
             });
 
-            // 自シート範囲参照：SUBTOTAL(1-11:フィルター除外 / 101-111:全非表示除外)・AGGREGATEオプションを厳密判定
-            const getSubtotalHiddenMode = (src, offset) => {
-                let depth = 0;
-                for (let i = offset - 1; i >= 0; i--) {
-                    const ch = src[i];
-                    if (ch === ")") depth++;
-                    else if (ch === "(") {
-                        if (depth === 0) {
-                            const before = src.slice(Math.max(0, i - 16), i);
-                            const fnMatch = before.match(/\b(SUBTOTAL|AGGREGATE)\s*$/i);
-                            if (!fnMatch) return "none";
-                            const fnName = fnMatch[1].toUpperCase();
-                            const afterOpen = src.slice(i + 1, offset);
-                            if (fnName === "SUBTOTAL") {
-                                const m = afterOpen.match(/^\s*(\d+)\s*,/);
-                                const code = m ? Number(m[1]) : 9;
-                                return code >= 101 ? "all" : "filterOnly";
-                            }
-                            const aggMatch = afterOpen.match(/^\s*\d+\s*,\s*(\d+)\s*,/);
-                            const opt = aggMatch ? Number(aggMatch[1]) : 5;
-                            return [1, 3, 5, 7].includes(opt) ? "all" : "filterOnly";
-                        }
-                        depth--;
-                    }
-                }
-                return "none";
-            };
+            // 自シート範囲参照 → __XL_RNG(r1, c1, r2, c2, hiddenCode)
             expr = expr.replace(RANGE_REF_REGEX, (match, _g1, offset, fullStr) => {
-                const [startRef, endRef] = match.split(":");
-                const hiddenMode = getSubtotalHiddenMode(fullStr, offset);
-                return buildRange2DLiteral(contextSheetIdx, startRef, endRef, visited, hiddenMode, stringLiterals);
+                const [sRef, eRef] = match.split(":");
+                const sm = sRef.match(/^\$?([A-Za-z]+)\$?(\d+)$/);
+                const em = eRef.match(/^\$?([A-Za-z]+)\$?(\d+)$/);
+                if (!sm || !em) return "[]";
+                const hCode = getSubtotalHiddenCode(fullStr, offset);
+                return `__XL_RNG(${parseInt(sm[2], 10)},${columnLettersToIndex(sm[1])},${parseInt(em[2], 10)},${columnLettersToIndex(em[1])},${hCode})`;
             });
 
-            // 自シート単一セル参照
+            // 自シート単一セル参照 → __XL_CELL(r, c)
             expr = expr.replace(SINGLE_REF_REGEX, (_, _absC, colLetters, _absR, rowStr) => {
-                const colIndex = columnLettersToIndex(colLetters);
-                const rowNumber = parseInt(rowStr, 10);
-                const val = getSheetCellValue(contextSheetIdx, rowNumber, colIndex, visited);
-                return toJSValueLiteral(val, true, stringLiterals);
+                return `__XL_CELL(${parseInt(rowStr, 10)},${columnLettersToIndex(colLetters)})`;
             });
 
-            // 配列同士・配列とスカラーの四則/比較/単項演算を要素ごと演算 (__XL_OP / __XL_U) に書き換え
+            // 配列・スカラー演算の統一 AST 書き換え（後置%含む）
             const rewriteArrayOps = (src) => {
                 const tokens = [];
                 const tokenRe = /\s*(?:(\d+(?:\.\d+)?(?:[eE][+-]?\d+)?|\.\d+(?:[eE][+-]?\d+)?)|([A-Za-z_$][A-Za-z0-9_$]*)|("(?:\\.|[^"\\])*")|(\*\*|<=|>=|==|!=|[()[\],+\-*/%<>!]))/y;
                 let lastIdx = 0;
                 while (lastIdx < src.length) {
-                    const restWs = src.slice(lastIdx).match(/^\s+$/);
-                    if (restWs) break;
+                    if (/^\s+$/.test(src.slice(lastIdx))) break;
                     tokenRe.lastIndex = lastIdx;
                     const m = tokenRe.exec(src);
                     if (!m) return src;
@@ -522,7 +503,6 @@ export function createFormulaEngineModule(ctx) {
                 const consume = () => tokens[idx++];
 
                 const parseExpr = () => parseComparison();
-
                 const parseComparison = () => {
                     let left = parseAdditive();
                     while (peek() && peek().type === "op" && ["==", "!=", "<", "<=", ">", ">="].includes(peek().val)) {
@@ -532,7 +512,6 @@ export function createFormulaEngineModule(ctx) {
                     }
                     return left;
                 };
-
                 const parseAdditive = () => {
                     let left = parseMultiplicative();
                     while (peek() && peek().type === "op" && (peek().val === "+" || peek().val === "-")) {
@@ -542,7 +521,6 @@ export function createFormulaEngineModule(ctx) {
                     }
                     return left;
                 };
-
                 const parseMultiplicative = () => {
                     let left = parsePower();
                     while (peek() && peek().type === "op" && (peek().val === "*" || peek().val === "/")) {
@@ -552,7 +530,6 @@ export function createFormulaEngineModule(ctx) {
                     }
                     return left;
                 };
-
                 const parsePower = () => {
                     let left = parseUnary();
                     if (peek() && peek().type === "op" && peek().val === "**") {
@@ -562,7 +539,6 @@ export function createFormulaEngineModule(ctx) {
                     }
                     return left;
                 };
-
                 const parseUnary = () => {
                     if (peek() && peek().type === "op" && (peek().val === "-" || peek().val === "+" || peek().val === "!")) {
                         const op = consume().val;
@@ -571,23 +547,16 @@ export function createFormulaEngineModule(ctx) {
                     }
                     return parsePrimary();
                 };
-
                 const parsePrimary = () => {
                     const tok = peek();
-                    if (!tok) {
-                        failed = true;
-                        return "";
-                    }
+                    if (!tok) { failed = true; return ""; }
                     let node = "";
                     if (tok.type === "num" || tok.type === "id" || tok.type === "str") {
                         node = consume().val;
                     } else if (tok.type === "op" && tok.val === "(") {
                         consume();
                         const inner = parseExpr();
-                        if (!peek() || peek().val !== ")") {
-                            failed = true;
-                            return "";
-                        }
+                        if (!peek() || peek().val !== ")") { failed = true; return ""; }
                         consume();
                         node = `(${inner})`;
                     } else if (tok.type === "op" && tok.val === "[") {
@@ -596,17 +565,11 @@ export function createFormulaEngineModule(ctx) {
                         if (peek() && peek().val !== "]") {
                             while (true) {
                                 elems.push(parseExpr());
-                                if (peek() && peek().val === ",") {
-                                    consume();
-                                    continue;
-                                }
+                                if (peek() && peek().val === ",") { consume(); continue; }
                                 break;
                             }
                         }
-                        if (!peek() || peek().val !== "]") {
-                            failed = true;
-                            return "";
-                        }
+                        if (!peek() || peek().val !== "]") { failed = true; return ""; }
                         consume();
                         node = `[${elems.join(",")}]`;
                     } else {
@@ -614,7 +577,6 @@ export function createFormulaEngineModule(ctx) {
                         return "";
                     }
 
-                    // 関数呼び出し（LAMBDA(...)(10, 25) のような連続呼び出しにも対応）
                     while (peek() && peek().type === "op" && peek().val === "(") {
                         consume();
                         const args = [];
@@ -625,22 +587,15 @@ export function createFormulaEngineModule(ctx) {
                                 } else {
                                     args.push(parseExpr());
                                 }
-                                if (peek() && peek().val === ",") {
-                                    consume();
-                                    continue;
-                                }
+                                if (peek() && peek().val === ",") { consume(); continue; }
                                 break;
                             }
                         }
-                        if (!peek() || peek().val !== ")") {
-                            failed = true;
-                            return "";
-                        }
+                        if (!peek() || peek().val !== ")") { failed = true; return ""; }
                         consume();
                         node = `${node}(${args.join(",")})`;
                     }
 
-                    // 後置パーセント演算子（数値・セル・ネスト括弧・関数結果・配列すべてに対応）
                     while (peek() && peek().type === "op" && peek().val === "%") {
                         consume();
                         node = `__XL_OP("/",${node},100)`;
@@ -654,13 +609,11 @@ export function createFormulaEngineModule(ctx) {
             };
             expr = rewriteArrayOps(expr);
 
-            // LET / LAMBDA を安全なネスト式へ展開（Excel準拠：変数名の大文字小文字非区別）
-            const BUILTIN_FN_SET = new Set(["INDIRECT", "OFFSET", ...FORMULA_FN_NAMES]);
+            // LET / LAMBDA 変換
             const splitTopLevelArgs = (inner) => {
                 const args = [];
                 let buf = "";
-                let depth = 0;
-                let sqDepth = 0;
+                let depth = 0, sqDepth = 0;
                 for (let k = 0; k < inner.length; k++) {
                     const ch = inner[k];
                     if (ch === "(") depth++;
@@ -677,19 +630,15 @@ export function createFormulaEngineModule(ctx) {
                 args.push(buf.trim());
                 return args;
             };
-
             const replaceLocalVar = (code, rawName, safeName) => {
                 const escaped = rawName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
                 const re = new RegExp(`(?<![A-Za-z0-9_$.])${escaped}(?![A-Za-z0-9_])`, "gi");
                 return code.replace(re, (m, offset, full) => {
                     const after = full.slice(offset + m.length).trimStart();
-                    if (after.startsWith("(") && BUILTIN_FN_SET.has(m.toUpperCase())) {
-                        return m;
-                    }
+                    if (after.startsWith("(") && BUILTIN_FN_SET.has(m.toUpperCase())) return m;
                     return safeName;
                 });
             };
-
             const transformLetAndLambda = (src) => {
                 let out = "";
                 let i = 0;
@@ -724,7 +673,6 @@ export function createFormulaEngineModule(ctx) {
                             }
                             out += bodyExpr;
                         } else {
-                            // LAMBDA(param1, [param2, ...], calculation)
                             if (rawArgs.length < 2) return '"#VALUE!"';
                             const params = rawArgs.slice(0, -1).map(p => p.trim());
                             if (params.some(p => !/^[A-Za-z_][A-Za-z0-9_]*$/.test(p))) return '"#NAME?"';
@@ -738,35 +686,157 @@ export function createFormulaEngineModule(ctx) {
                         }
                         i = pos;
                     } else {
-                        out += src[i];
-                        i++;
+                        out += src[i++];
                     }
                 }
                 return out;
             };
-
             if (/\b(LET|LAMBDA)\s*\(/.test(expr)) {
                 expr = transformLetAndLambda(expr);
             }
 
-            // 文字列リテラル復元前に、許可された識別子のみであることを検証（任意JS実行防止 & #NAME? 判定）
-            const ALLOWED_IDENTIFIERS = new Set([
-                "EXCEL_BLANK_CELL", "__XL_EQ", "__XL_OP", "__XL_U", "__XL_REF",
-                "INDIRECT", "OFFSET", "true", "false", "undefined", ...FORMULA_FN_NAMES
-            ]);
+            // 許可識別子のみに制限（任意JS実行防止 & #NAME? 判定）
             const unsafeIdentMatch = expr.match(/\b[A-Za-z_$][A-Za-z0-9_$]*\b/g);
             if (unsafeIdentMatch) {
                 for (const ident of unsafeIdentMatch) {
                     if (/^__STR_LIT_\d+__$/.test(ident) || /^__LV_[A-Z0-9_]+$/.test(ident)) continue;
                     if (!ALLOWED_IDENTIFIERS.has(ident)) {
-                        return "#NAME?";
+                        const errEntry = { error: "#NAME?" };
+                        compiledFormulaCache.set(resolvedExpr, errEntry);
+                        return errEntry;
                     }
                 }
             }
 
-            expr = expr.replace(/__STR_LIT_(\d+)__/g, (_, idx) => stringLiterals[Number(idx)]);
+            const finalJsExpr = expr.replace(/__STR_LIT_(\d+)__/g, (_, idx) => stringLiterals[Number(idx)]);
 
-            const makeXlRef = (sheetIdx, r1, c1, r2, c2) => ({ __isXlRef: true, sheetIdx, r1, c1, r2, c2 });
+            const fn = new Function(
+                "EXCEL_BLANK_CELL",
+                "__XL_EQ",
+                "__XL_OP",
+                "__XL_U",
+                "__XL_REF",
+                "__XL_CELL",
+                "__XL_XCELL",
+                "__XL_RNG",
+                "__XL_XRNG",
+                "__XL_COLRNG",
+                "__XL_ROWRNG",
+                "__XL_ROW",
+                "__XL_COL",
+                "INDIRECT",
+                "OFFSET",
+                ...FORMULA_FN_NAMES,
+                `"use strict"; return (${finalJsExpr});`
+            );
+
+            // 日付判定メタ情報も1回だけ解析してキャッシュ
+            const singleRefMatch = resolvedExpr.match(/^(?:(?:'([^']+)'|([A-Za-z0-9_\u3040-\u30FF\u4E00-\u9FAF]+))!)?\$?([A-Za-z]+)\$?(\d+)$/);
+            const directRef = singleRefMatch
+                ? { sheetName: singleRefMatch[1] ?? singleRefMatch[2] ?? null, row: parseInt(singleRefMatch[4], 10), col: columnLettersToIndex(singleRefMatch[3]) }
+                : null;
+
+            const strippedForRefs = resolvedExpr.replace(/"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'(?!\s*!)/g, "");
+            const hasPlusMinus = /[+-]/.test(strippedForRefs);
+            const dateCandidateRefs = [];
+            if (!directRef && hasPlusMinus) {
+                const allRefRegex = /(?:(?:'([^']+)'|([A-Za-z0-9_\u3040-\u30FF\u4E00-\u9FAF]+))!)?(?<![A-Za-z0-9_])\$?([A-Za-z]+)\$?(\d+)(?!\s*\()/g;
+                let m;
+                while ((m = allRefRegex.exec(strippedForRefs)) !== null) {
+                    dateCandidateRefs.push({
+                        sheetName: m[1] ?? m[2] ?? null,
+                        row: parseInt(m[4], 10),
+                        col: columnLettersToIndex(m[3])
+                    });
+                }
+            }
+
+            const returnsNumericDateInfo = /^\s*=\s*(YEAR|MONTH|DAY|HOUR|MINUTE|SECOND|WEEKDAY|DAYS|DATEDIF|NETWORKDAYS|DATEVALUE|TIMEVALUE)\s*\(/i.test(rawFormula);
+            const hasDateFunc = !returnsNumericDateInfo && /\b(TODAY|NOW|DATE|EDATE|EOMONTH|WORKDAY)\s*\(/i.test(rawFormula);
+
+            const entry = {
+                fn,
+                directRef,
+                hasPlusMinus,
+                dateCandidateRefs,
+                hasDateFunc
+            };
+
+            if (compiledFormulaCache.size > 3000) compiledFormulaCache.clear();
+            compiledFormulaCache.set(resolvedExpr, entry);
+            return entry;
+        } catch {
+            return { error: "#ERROR!" };
+        }
+    }
+
+    function evaluateFormula(formula, visited = new Set(), contextSheetIdx = getActiveSheetIndex(), evalCoord = null) {
+        if (!formula) return formula;
+        if (formula === "=") return "=";
+        if (formula[0] !== "=") return formula;
+
+        let resolvedExpr = formula.substring(1).trim();
+        if (!resolvedExpr) return "=";
+
+        const sheets = getSheets();
+        const activeSheetIndex = getActiveSheetIndex();
+        const definedNames = getDefinedNames();
+
+        // 構造化参照や定義済み名前を含む場合のみ事前解決（通常数式はオーバーヘッドゼロでキャッシュ直行）
+        if (resolvedExpr.includes("[")) {
+            resolvedExpr = resolveStructuredReferences(resolvedExpr, contextSheetIdx);
+        }
+        if (definedNames && typeof definedNames === "object") {
+            const nameKeys = Object.keys(definedNames);
+            if (nameKeys.length > 0) {
+                const nameEntries = nameKeys.sort((a, b) => b.length - a.length);
+                const lits = [];
+                const masked = resolvedExpr.replace(/"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'(?!\s*!)/g, (m) => {
+                    const tok = `__DNSTR_${lits.length}__`;
+                    lits.push(m);
+                    return tok;
+                });
+                let replaced = masked;
+                for (const dName of nameEntries) {
+                    const escaped = dName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+                    const re = new RegExp(`(?<![A-Za-z0-9_\\u3040-\\u30FF\\u4E00-\\u9FAF$!])${escaped}(?![A-Za-z0-9_\\u3040-\\u30FF\\u4E00-\\u9FAF(])`, "g");
+                    replaced = replaced.replace(re, definedNames[dName]);
+                }
+                resolvedExpr = replaced.replace(/__DNSTR_(\d+)__/g, (_, i) => lits[Number(i)]);
+            }
+        }
+
+        const compiled = compileFormulaTemplate(resolvedExpr, formula);
+        if (!compiled || compiled.error) return compiled?.error || "#ERROR!";
+
+        try {
+            const findSheetIdx = (sName) => {
+                if (!sName) return contextSheetIdx;
+                return sheets.findIndex(s => s.name === sName);
+            };
+
+            const runtimeCell = (r, c) => {
+                const v = getSheetCellValue(contextSheetIdx, r, c, visited);
+                return isBlankVal(v) ? EXCEL_BLANK_CELL : v;
+            };
+            const runtimeXCell = (sName, r, c) => {
+                const sIdx = findSheetIdx(sName);
+                if (sIdx === -1) return "#REF!";
+                const v = getSheetCellValue(sIdx, r, c, visited);
+                return isBlankVal(v) ? EXCEL_BLANK_CELL : v;
+            };
+            const runtimeRange = (r1, c1, r2, c2, hCode) => readRange2DValues(contextSheetIdx, r1, c1, r2, c2, visited, hCode);
+            const runtimeXRange = (sName, r1, c1, r2, c2, hCode) => readRange2DValues(findSheetIdx(sName), r1, c1, r2, c2, visited, hCode);
+            const runtimeColRange = (c1, c2, hCode) => readRange2DValues(contextSheetIdx, 1, c1, Math.max(1, tbody.rows.length), c2, visited, hCode);
+            const runtimeRowRange = (r1, r2, hCode) => readRange2DValues(contextSheetIdx, r1, 0, r2, Math.max(0, getCurrentColumns() - 1), visited, hCode);
+            const runtimeRow = () => evalCoord?.row ?? 1;
+            const runtimeCol = () => (evalCoord?.col ?? 0) + 1;
+
+            const makeXlRef = (sName, r1, c1, r2, c2) => ({
+                __isXlRef: true,
+                sheetIdx: findSheetIdx(sName),
+                r1, c1, r2, c2
+            });
 
             const runtimeIndirect = (refText, a1 = true) => {
                 const raw = String(unwrapBlank(refText) ?? "").trim();
@@ -779,53 +849,47 @@ export function createFormulaEngineModule(ctx) {
                 const sheetSplit = raw.match(/^(?:(?:'([^']+)'|([A-Za-z0-9_\u3040-\u30FF\u4E00-\u9FAF]+))!)?(.+)$/);
                 if (!sheetSplit) return "#REF!";
                 const sName = sheetSplit[1] ?? sheetSplit[2];
-                const targetSIdx = sName ? sheets.findIndex(s => s.name === sName) : contextSheetIdx;
+                const targetSIdx = sName ? findSheetIdx(sName) : contextSheetIdx;
                 if (targetSIdx < 0 || !sheets[targetSIdx]) return "#REF!";
 
                 const body = sheetSplit[3].trim();
-                let maxR = getRowCount() - 1;
-                let maxC = getCurrentColumns() - 1;
-                if (targetSIdx !== activeSheetIndex && Array.isArray(sheets[targetSIdx]?.cells)) {
-                    for (const item of sheets[targetSIdx].cells) {
-                        const ir = Number(item.r) || 0;
-                        const ic = Number(item.c) || 0;
-                        if (ir > maxR) maxR = ir;
-                        if (ic > maxC) maxC = ic;
-                    }
-                }
-
-                const buildMat = (r1, c1, r2, c2) => {
-                    const rs = Math.min(r1, r2), re = Math.min(Math.max(r1, r2), maxR);
-                    const cs = Math.min(c1, c2), ce = Math.min(Math.max(c1, c2), maxC);
-                    const mat = [];
-                    for (let r = rs; r <= re; r++) {
-                        const rowVals = [];
-                        for (let c = cs; c <= ce; c++) {
-                            rowVals.push(getSheetCellValue(targetSIdx, r, c, visited));
-                        }
-                        mat.push(rowVals);
-                    }
-                    return mat;
-                };
-
                 const rangeM = body.match(/^\$?([A-Za-z]+)\$?(\d+):\$?([A-Za-z]+)\$?(\d+)$/);
                 if (rangeM) {
-                    return buildMat(
+                    return readRange2DValues(
+                        targetSIdx,
                         parseInt(rangeM[2], 10),
                         columnLettersToIndex(rangeM[1]),
                         parseInt(rangeM[4], 10),
-                        columnLettersToIndex(rangeM[3])
+                        columnLettersToIndex(rangeM[3]),
+                        visited,
+                        0
                     );
                 }
 
                 const colRangeM = body.match(/^\$?([A-Za-z]+):\$?([A-Za-z]+)$/);
                 if (colRangeM) {
-                    return buildMat(1, columnLettersToIndex(colRangeM[1]), maxR, columnLettersToIndex(colRangeM[2]));
+                    return readRange2DValues(
+                        targetSIdx,
+                        1,
+                        columnLettersToIndex(colRangeM[1]),
+                        Math.max(1, getRowCount() - 1),
+                        columnLettersToIndex(colRangeM[2]),
+                        visited,
+                        0
+                    );
                 }
 
                 const rowRangeM = body.match(/^\$?(\d+):\$?(\d+)$/);
                 if (rowRangeM) {
-                    return buildMat(parseInt(rowRangeM[1], 10), 0, parseInt(rowRangeM[2], 10), maxC);
+                    return readRange2DValues(
+                        targetSIdx,
+                        parseInt(rowRangeM[1], 10),
+                        0,
+                        parseInt(rowRangeM[2], 10),
+                        Math.max(0, getCurrentColumns() - 1),
+                        visited,
+                        0
+                    );
                 }
 
                 const cellM = body.match(/^\$?([A-Za-z]+)\$?(\d+)$/);
@@ -833,7 +897,6 @@ export function createFormulaEngineModule(ctx) {
                     const v = getSheetCellValue(targetSIdx, parseInt(cellM[2], 10), columnLettersToIndex(cellM[1]), visited);
                     return isBlankVal(v) ? EXCEL_BLANK_CELL : v;
                 }
-
                 return "#REF!";
             };
 
@@ -863,48 +926,32 @@ export function createFormulaEngineModule(ctx) {
                     const v = getSheetCellValue(refObj.sheetIdx, rStart, cStart, visited);
                     return isBlankVal(v) ? EXCEL_BLANK_CELL : v;
                 }
-                const out = [];
-                for (let r = rStart; r <= rEnd; r++) {
-                    const rowVals = [];
-                    for (let c = cStart; c <= cEnd; c++) {
-                        rowVals.push(getSheetCellValue(refObj.sheetIdx, r, c, visited));
-                    }
-                    out.push(rowVals);
-                }
-                return out;
+                return readRange2DValues(refObj.sheetIdx, rStart, cStart, rEnd, cEnd, visited, 0);
             };
 
-            let evaluator = compiledFormulaCache.get(expr);
-            if (!evaluator) {
-                evaluator = new Function(
-                    "EXCEL_BLANK_CELL",
-                    "__XL_EQ",
-                    "__XL_OP",
-                    "__XL_U",
-                    "__XL_REF",
-                    "INDIRECT",
-                    "OFFSET",
-                    ...FORMULA_FN_NAMES,
-                    `"use strict"; return (${expr});`
-                );
-                if (compiledFormulaCache.size > 2000) compiledFormulaCache.clear();
-                compiledFormulaCache.set(expr, evaluator);
-            }
-            const rawEval = evaluator(
+            const rawEval = compiled.fn(
                 EXCEL_BLANK_CELL,
                 (a, b) => excelBinaryOp("==", a, b),
                 excelBinaryOp,
                 excelUnaryOp,
                 makeXlRef,
+                runtimeCell,
+                runtimeXCell,
+                runtimeRange,
+                runtimeXRange,
+                runtimeColRange,
+                runtimeRowRange,
+                runtimeRow,
+                runtimeCol,
                 runtimeIndirect,
                 runtimeOffset,
                 ...FORMULA_FN_VALUES
             );
+
             let result = unwrapBlank(rawEval);
             if (typeof result === "number") {
                 if (Number.isNaN(result)) return "#VALUE!";
                 if (!Number.isFinite(result)) return "#DIV/0!";
-                // Excel準拠：15桁有効数字で浮動小数点誤差（例: 1650.0000000000002 → 1650）を正規化
                 result = Number(result.toPrecision(15));
                 if (Object.is(result, -0)) result = 0;
             }
@@ -914,6 +961,7 @@ export function createFormulaEngineModule(ctx) {
             if (Array.isArray(result)) {
                 return result;
             }
+
             const isDateCellAt = (sIdx, rNum, cIdx) => {
                 if (sIdx === activeSheetIndex) {
                     const refCell = peekCell(rNum, cIdx);
@@ -926,34 +974,26 @@ export function createFormulaEngineModule(ctx) {
                 return false;
             };
 
-            const singleRefMatch = formula.trim().match(/^=(?:(?:'([^']+)'|([A-Za-z0-9_\u3040-\u30FF\u4E00-\u9FAF]+))!)?\$?([A-Za-z]+)\$?(\d+)$/);
             let isDirectDateRef = false;
-            if (singleRefMatch) {
-                const refSheetName = singleRefMatch[1] ?? singleRefMatch[2];
-                const targetSIdx = refSheetName ? sheets.findIndex(s => s.name === refSheetName) : contextSheetIdx;
-                isDirectDateRef = isDateCellAt(targetSIdx, parseInt(singleRefMatch[4], 10), columnLettersToIndex(singleRefMatch[3]));
+            if (compiled.directRef) {
+                const targetSIdx = findSheetIdx(compiled.directRef.sheetName);
+                if (targetSIdx >= 0) {
+                    isDirectDateRef = isDateCellAt(targetSIdx, compiled.directRef.row, compiled.directRef.col);
+                }
             }
 
-            // 加減算結果が日付シリアル範囲のときは、実際に日付セルを参照している場合のみ日付化
             let hasDateCellRef = isDirectDateRef;
-            if (!hasDateCellRef && typeof result === "number" && result >= 36526 && result <= 73050 && /[+-]/.test(expr)) {
-                const stripped = formula.substring(1).replace(/"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'(?!\s*!)/g, "");
-                const allRefRegex = /(?:(?:'([^']+)'|([A-Za-z0-9_\u3040-\u30FF\u4E00-\u9FAF]+))!)?(?<![A-Za-z0-9_])\$?([A-Za-z]+)\$?(\d+)(?!\s*\()/g;
-                let m;
-                while ((m = allRefRegex.exec(stripped)) !== null) {
-                    const sName = m[1] ?? m[2];
-                    const sIdx = sName ? sheets.findIndex(s => s.name === sName) : contextSheetIdx;
-                    if (sIdx >= 0 && isDateCellAt(sIdx, parseInt(m[4], 10), columnLettersToIndex(m[3]))) {
+            if (!hasDateCellRef && typeof result === "number" && result >= 36526 && result <= 73050 && compiled.hasPlusMinus) {
+                for (const ref of compiled.dateCandidateRefs) {
+                    const sIdx = findSheetIdx(ref.sheetName);
+                    if (sIdx >= 0 && isDateCellAt(sIdx, ref.row, ref.col)) {
                         hasDateCellRef = true;
                         break;
                     }
                 }
             }
 
-            const returnsNumericDateInfo = /^\s*=\s*(YEAR|MONTH|DAY|HOUR|MINUTE|SECOND|WEEKDAY|DAYS|DATEDIF|NETWORKDAYS|DATEVALUE|TIMEVALUE)\s*\(/i.test(formula);
-            const hasDateFunc = !returnsNumericDateInfo && /\b(TODAY|NOW|DATE|EDATE|EOMONTH|WORKDAY)\s*\(/i.test(formula);
-            const hasDateOp = isDirectDateRef || hasDateFunc || hasDateCellRef;
-            if (hasDateOp && typeof result === "number" && isFinite(result)) {
+            if ((isDirectDateRef || compiled.hasDateFunc || hasDateCellRef) && typeof result === "number" && isFinite(result)) {
                 return formatDate(serialToDate(result));
             }
             return typeof result === "function" ? "" : result;
@@ -1005,85 +1045,258 @@ export function createFormulaEngineModule(ctx) {
         return matrix[0]?.[0] ?? "";
     }
 
-    function extractLocalFormulaDependencies(formula) {
-        const deps = new Set();
-        if (!formula || formula[0] !== "=") return deps;
+    // =========================================================
+    // Excel準拠 依存関係グラフ（Dependency Graph）＆ 差分再計算エンジン
+    // =========================================================
+    const VOLATILE_FN_RE = /\b(NOW|TODAY|RAND|RANDBETWEEN|RANDARRAY|INDIRECT|OFFSET)\s*\(/i;
+    const COL_AXIS_REF_RE = /(?<![A-Za-z0-9_:])(\$?[A-Za-z]+):(\$?[A-Za-z]+)(?![A-Za-z0-9_(])/g;
+    const ROW_AXIS_REF_RE = /(?<![A-Za-z0-9_:])(\$?\d+):(\$?\d+)(?![A-Za-z0-9_])/g;
 
-        // 文字列リテラルと他シート参照（Sheet2!A1等）を除外して自シート参照のみ抽出
-        const cleaned = formula
+    let depGraphBuilt = false;
+    let depGraphSheetIndex = -1;
+    const formulaDepsByFormula = new Map(); // formulaKey -> { cell, cells: Set<string>, ranges: Array<{r0,r1,c0,c1}>, isVolatile: boolean }
+    const dependentsByCell = new Map();     // cellKey -> Set<formulaKey>
+    const rangeDependents = new Set();      // Set<{ formulaKey, r0, r1, c0, c1 }>
+    const volatileFormulaKeys = new Set();  // Set<formulaKey>
+
+    function invalidateDependencyGraph() {
+        depGraphBuilt = false;
+        depGraphSheetIndex = -1;
+        formulaDepsByFormula.clear();
+        dependentsByCell.clear();
+        rangeDependents.clear();
+        volatileFormulaKeys.clear();
+    }
+
+    function parseFormulaDependencies(formula) {
+        const cells = new Set();
+        const ranges = [];
+        if (!formula || formula[0] !== "=") {
+            return { cells, ranges, isVolatile: false };
+        }
+
+        const definedNames = getDefinedNames();
+        const hasDefinedNames = Boolean(definedNames && Object.keys(definedNames).length > 0);
+
+        // 文字列リテラルを除外
+        const noStrings = formula
             .substring(1)
-            .replace(/"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'(?!\s*!)/g, "")
-            .replace(/(?:'[^']+'|[A-Za-z0-9_\u3040-\u30FF\u4E00-\u9FAF]+)!\$?[A-Za-z]+\$?\d+(?::\$?[A-Za-z]+\$?\d+)?/g, "");
+            .replace(/"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'(?!\s*!)/g, " ");
 
-        // 範囲参照（A1:B5）の展開
-        const withoutRanges = cleaned.replace(RANGE_REF_REGEX, (match) => {
+        // 揮発性関数・構造化参照・名前定義を含む数式は常に再計算対象として追跡
+        const isVolatile =
+            VOLATILE_FN_RE.test(noStrings) ||
+            noStrings.includes("[") ||
+            (hasDefinedNames && Object.keys(definedNames).some(name => noStrings.includes(name)));
+
+        // 他シート参照を除外して自シート依存を抽出
+        const cleaned = noStrings.replace(
+            /(?:'(?:''|[^'])+'|[A-Za-z0-9_\u3040-\u30FF\u4E00-\u9FAF]+)!\$?[A-Za-z0-9]+(?::\$?[A-Za-z0-9]+)?/g,
+            " "
+        );
+
+        // 1. 通常範囲参照（A1:B5）
+        let rest = cleaned.replace(RANGE_REF_REGEX, (match) => {
             const [sRef, eRef] = match.split(":");
             const s = parseCellReference(sRef.toUpperCase());
             const e = parseCellReference(eRef.toUpperCase());
             if (s && e) {
-                const r0 = Math.min(s.row, e.row), r1 = Math.max(s.row, e.row);
-                const c0 = Math.min(s.col, e.col), c1 = Math.max(s.col, e.col);
-                if ((r1 - r0 + 1) * (c1 - c0 + 1) <= 2000) {
-                    for (let r = r0; r <= r1; r++) {
-                        for (let c = c0; c <= c1; c++) {
-                            deps.add(`${r},${c}`);
-                        }
-                    }
-                }
+                ranges.push({
+                    r0: Math.min(s.row, e.row),
+                    r1: Math.max(s.row, e.row),
+                    c0: Math.min(s.col, e.col),
+                    c1: Math.max(s.col, e.col)
+                });
             }
             return " ";
         });
 
-        // 単一セル参照（A1）の抽出
-        withoutRanges.replace(SINGLE_REF_REGEX, (_, _absC, colLetters, _absR, rowStr) => {
-            deps.add(`${parseInt(rowStr, 10)},${columnLettersToIndex(colLetters)}`);
-            return "";
+        // 2. 列全体参照（A:C）
+        rest = rest.replace(COL_AXIS_REF_RE, (_, c1, c2) => {
+            const i1 = columnLettersToIndex(c1.replace(/^\$/, ""));
+            const i2 = columnLettersToIndex(c2.replace(/^\$/, ""));
+            ranges.push({ r0: 1, r1: Infinity, c0: Math.min(i1, i2), c1: Math.max(i1, i2) });
+            return " ";
         });
 
-        return deps;
+        // 3. 行全体参照（1:5）
+        rest = rest.replace(ROW_AXIS_REF_RE, (_, r1, r2) => {
+            const n1 = parseInt(r1.replace(/^\$/, ""), 10);
+            const n2 = parseInt(r2.replace(/^\$/, ""), 10);
+            ranges.push({ r0: Math.min(n1, n2), r1: Math.max(n1, n2), c0: 0, c1: Infinity });
+            return " ";
+        });
+
+        // 4. 単一セル参照（A1）
+        rest.replace(SINGLE_REF_REGEX, (_, _absC, colLetters, _absR, rowStr) => {
+            cells.add(`${parseInt(rowStr, 10)},${columnLettersToIndex(colLetters)}`);
+            return " ";
+        });
+
+        return { cells, ranges, isVolatile };
     }
 
-    function sortFormulaCellsTopologically(formulaCells) {
-        const cellMap = new Map();
-        for (const cell of formulaCells) {
-            cellMap.set(`${cell.dataset.row},${cell.dataset.col}`, cell);
+    function unregisterFormulaInGraph(formulaKey) {
+        const prev = formulaDepsByFormula.get(formulaKey);
+        if (!prev) return;
+        for (const depCellKey of prev.cells) {
+            const set = dependentsByCell.get(depCellKey);
+            if (set) {
+                set.delete(formulaKey);
+                if (set.size === 0) dependentsByCell.delete(depCellKey);
+            }
         }
+        for (const rngObj of prev.rangeEntries) {
+            rangeDependents.delete(rngObj);
+        }
+        volatileFormulaKeys.delete(formulaKey);
+        formulaDepsByFormula.delete(formulaKey);
+    }
 
+    function registerFormulaInGraph(cell) {
+        const formulaKey = `${cell.dataset.row},${cell.dataset.col}`;
+        unregisterFormulaInGraph(formulaKey);
+        const formula = cell.dataset.formula;
+        if (!formula || formula[0] !== "=") return;
+
+        const { cells, ranges, isVolatile } = parseFormulaDependencies(formula);
+        const rangeEntries = [];
+        for (const depCellKey of cells) {
+            let set = dependentsByCell.get(depCellKey);
+            if (!set) {
+                set = new Set();
+                dependentsByCell.set(depCellKey, set);
+            }
+            set.add(formulaKey);
+        }
+        for (const r of ranges) {
+            const entry = { formulaKey, r0: r.r0, r1: r.r1, c0: r.c0, c1: r.c1 };
+            rangeDependents.add(entry);
+            rangeEntries.push(entry);
+        }
+        if (isVolatile) {
+            volatileFormulaKeys.add(formulaKey);
+        }
+        formulaDepsByFormula.set(formulaKey, {
+            cell,
+            row: parseInt(cell.dataset.row, 10),
+            col: parseInt(cell.dataset.col, 10),
+            cells,
+            ranges,
+            rangeEntries,
+            isVolatile
+        });
+    }
+
+    function rebuildDependencyGraph(preQueriedFormulaCells = null) {
+        invalidateDependencyGraph();
+        const formulaCells = preQueriedFormulaCells || Array.from(tbody.querySelectorAll("td[data-formula]"));
+        for (let i = 0; i < formulaCells.length; i++) {
+            registerFormulaInGraph(formulaCells[i]);
+        }
+        depGraphBuilt = true;
+        depGraphSheetIndex = getActiveSheetIndex();
+        return formulaCells;
+    }
+
+    function ensureDependencyGraph() {
+        if (!depGraphBuilt || depGraphSheetIndex !== getActiveSheetIndex()) {
+            rebuildDependencyGraph();
+        }
+    }
+
+    function sortFormulaKeysTopologically(targetKeys) {
+        const targetSet = new Set(targetKeys);
         const visited = new Set();
         const visiting = new Set();
-        const sorted = [];
+        const sortedCells = [];
+
+        // 行ごとの数式バケットを事前構築し、O(N^2) の全数式総当たりを回避
+        const targetByRow = new Map();
+        for (const key of targetSet) {
+            const info = formulaDepsByFormula.get(key);
+            if (!info || !info.cell?.isConnected) continue;
+            let rowList = targetByRow.get(info.row);
+            if (!rowList) {
+                rowList = [];
+                targetByRow.set(info.row, rowList);
+            }
+            rowList.push({ key, col: info.col });
+        }
+        const sortedRowNums = Array.from(targetByRow.keys()).sort((a, b) => a - b);
+
+        const lowerBoundRow = (targetRow) => {
+            let lo = 0, hi = sortedRowNums.length;
+            while (lo < hi) {
+                const mid = (lo + hi) >> 1;
+                if (sortedRowNums[mid] < targetRow) lo = mid + 1;
+                else hi = mid;
+            }
+            return lo;
+        };
 
         const visit = (key) => {
             if (visited.has(key) || visiting.has(key)) return;
-            const cell = cellMap.get(key);
-            if (!cell) return;
+            const info = formulaDepsByFormula.get(key);
+            if (!info || !info.cell?.isConnected) return;
 
             visiting.add(key);
-            const deps = extractLocalFormulaDependencies(cell.dataset.formula);
-            for (const depKey of deps) {
-                if (cellMap.has(depKey)) {
-                    visit(depKey);
+            // 1. 直接セル依存
+            for (const depKey of info.cells) {
+                if (targetSet.has(depKey)) visit(depKey);
+            }
+            // 2. 範囲依存（二分探索で該当行のみ走査：SUM(A1:A10) 等の広範囲コピーでもほぼ O(N)）
+            if (info.ranges.length > 0 && sortedRowNums.length > 0) {
+                for (let i = 0; i < info.ranges.length; i++) {
+                    const rng = info.ranges[i];
+                    for (let ri = lowerBoundRow(rng.r0); ri < sortedRowNums.length; ri++) {
+                        const rNum = sortedRowNums[ri];
+                        if (rNum > rng.r1) break;
+                        const rowList = targetByRow.get(rNum);
+                        for (let j = 0; j < rowList.length; j++) {
+                            const item = rowList[j];
+                            if (item.col >= rng.c0 && item.col <= rng.c1 && item.key !== key) {
+                                visit(item.key);
+                            }
+                        }
+                    }
                 }
             }
             visiting.delete(key);
             visited.add(key);
-            sorted.push(cell);
+            sortedCells.push(info.cell);
         };
 
-        // 静的依存先を先に評価し、INDIRECT/OFFSET/構造化参照など動的参照を含む数式を後段で評価
         const staticKeys = [];
         const dynamicKeys = [];
-        for (const [key, cell] of cellMap.entries()) {
-            const f = cell.dataset.formula || "";
-            if (/\b(INDIRECT|OFFSET)\s*\(/i.test(f) || f.includes("[")) {
-                dynamicKeys.push(key);
-            } else {
-                staticKeys.push(key);
-            }
+        for (const key of targetSet) {
+            const info = formulaDepsByFormula.get(key);
+            if (!info) continue;
+            if (info.isVolatile) dynamicKeys.push(key);
+            else staticKeys.push(key);
         }
         for (const key of staticKeys) visit(key);
         for (const key of dynamicKeys) visit(key);
-        return sorted;
+        return sortedCells;
+    }
+
+    function hasBackgroundCrossSheetReference() {
+        const sheets = getSheets();
+        if (!Array.isArray(sheets) || sheets.length <= 1) return false;
+        const activeIdx = getActiveSheetIndex();
+        const activeName = sheets[activeIdx]?.name || "";
+        if (!activeName) return true;
+        for (let sIdx = 0; sIdx < sheets.length; sIdx++) {
+            if (sIdx === activeIdx || !Array.isArray(sheets[sIdx]?.cells)) continue;
+            const cells = sheets[sIdx].cells;
+            for (let i = 0; i < cells.length; i++) {
+                const f = cells[i].f;
+                if (f && (f.includes(`${activeName}!`) || f.includes(`'${activeName}'!`) || f.includes("["))) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     function recalculateBackgroundSheets() {
@@ -1103,38 +1316,181 @@ export function createFormulaEngineModule(ctx) {
         });
     }
 
+    function evaluateOrderedFormulaCells(orderedCells, activeSheetIndex, affectedRowsSet = null) {
+        const spilledCoords = [];
+        for (let i = 0; i < orderedCells.length; i++) {
+            const cell = orderedCells[i];
+            if (!cell || !cell.isConnected || isCellEditing(cell)) continue;
+            const r = parseInt(cell.dataset.row, 10);
+            const c = parseInt(cell.dataset.col, 10);
+            clearSpillCellsFromAnchor(r, c);
+
+            const cellKey = `${activeSheetIndex}:${r},${c}`;
+            const visited = new Set([cellKey]);
+            const rawResult = evaluateFormula(cell.dataset.formula, visited, activeSheetIndex, { row: r, col: c });
+
+            if (Array.isArray(rawResult)) {
+                const topVal = applySpillMatrix(cell, r, c, rawResult);
+                formulaEvalCache.set(cellKey, topVal);
+                const mat = Array.isArray(rawResult[0]) ? rawResult : rawResult.map(v => [v]);
+                const rLen = mat.length;
+                const cLen = Math.max(1, ...mat.map(row => (Array.isArray(row) ? row.length : 1)));
+                for (let dr = 0; dr < rLen; dr++) {
+                    const tr = getRow(r + dr);
+                    if (affectedRowsSet && tr) affectedRowsSet.add(tr);
+                    for (let dc = 0; dc < cLen; dc++) {
+                        if (dr === 0 && dc === 0) continue;
+                        spilledCoords.push({ row: r + dr, col: c + dc });
+                    }
+                }
+            } else {
+                const dateSerial = tryParseDateToSerial(rawResult);
+                const cachedVal = dateSerial !== null
+                    ? dateSerial
+                    : ((rawResult !== "" && !isNaN(Number(rawResult))) ? Number(rawResult) : rawResult);
+                formulaEvalCache.set(cellKey, cachedVal);
+                setCellFormattedValue(cell, rawResult);
+                const tr = cell.closest("tr");
+                if (affectedRowsSet && tr) affectedRowsSet.add(tr);
+            }
+        }
+        return spilledCoords;
+    }
+
+    /**
+     * Excel Smart Recalculation:
+     * 変更されたセル座標の依存先（直接・範囲・連鎖）と揮発性関数のみを差分再計算する
+     */
+    function recalculateCells(changedCoords, { formulaChanged = false } = {}) {
+        const list = Array.isArray(changedCoords) ? changedCoords : (changedCoords ? [changedCoords] : []);
+        if (!list.length) return;
+
+        ensureDependencyGraph();
+
+        const affectedRows = new Set();
+        const queue = [];
+        const queuedCoords = new Set();
+        const affectedFormulaKeys = new Set();
+
+        const enqueueCoord = (r, c) => {
+            const k = `${r},${c}`;
+            if (queuedCoords.has(k)) return;
+            queuedCoords.add(k);
+            queue.push({ r, c, k });
+        };
+
+        for (let i = 0; i < list.length; i++) {
+            const { row, col } = list[i];
+            const td = peekCell(row, col);
+            const tr = getRow(row);
+            if (tr) affectedRows.add(tr);
+
+            if (formulaChanged) {
+                if (td && td.dataset.formula) registerFormulaInGraph(td);
+                else unregisterFormulaInGraph(`${row},${col}`);
+            }
+            if (td && td.dataset.formula) {
+                affectedFormulaKeys.add(`${row},${col}`);
+            }
+            enqueueCoord(row, col);
+        }
+
+        // 揮発性関数（TODAY / NOW / RAND / INDIRECT / OFFSET / 構造化参照 / 名前定義）も必ず再計算対象へ追加
+        for (const vKey of volatileFormulaKeys) {
+            if (!affectedFormulaKeys.has(vKey)) {
+                affectedFormulaKeys.add(vKey);
+                const [vr, vc] = vKey.split(",").map(Number);
+                enqueueCoord(vr, vc);
+            }
+        }
+
+        const collectDownstreamFromQueue = () => {
+            let head = 0;
+            while (head < queue.length) {
+                const { r, c, k } = queue[head++];
+
+                const directDeps = dependentsByCell.get(k);
+                if (directDeps) {
+                    for (const fKey of directDeps) {
+                        if (!affectedFormulaKeys.has(fKey)) {
+                            affectedFormulaKeys.add(fKey);
+                            const [fr, fc] = fKey.split(",").map(Number);
+                            enqueueCoord(fr, fc);
+                        }
+                    }
+                }
+
+                for (const rng of rangeDependents) {
+                    if (r >= rng.r0 && r <= rng.r1 && c >= rng.c0 && c <= rng.c1) {
+                        if (!affectedFormulaKeys.has(rng.formulaKey)) {
+                            affectedFormulaKeys.add(rng.formulaKey);
+                            const [fr, fc] = rng.formulaKey.split(",").map(Number);
+                            enqueueCoord(fr, fc);
+                        }
+                    }
+                }
+            }
+        };
+
+        collectDownstreamFromQueue();
+
+        const activeSheetIndex = getActiveSheetIndex();
+        if (affectedFormulaKeys.size > 0) {
+            formulaEvalCache.clear();
+            isBatchRecalculating = true;
+            try {
+                const ordered = sortFormulaKeysTopologically(affectedFormulaKeys);
+                const spilledCoords = evaluateOrderedFormulaCells(ordered, activeSheetIndex, affectedRows);
+
+                // スピル先を参照している下流数式があれば追加で1パス再計算
+                if (spilledCoords.length > 0) {
+                    const prevCount = affectedFormulaKeys.size;
+                    queue.length = 0;
+                    for (let i = 0; i < spilledCoords.length; i++) {
+                        enqueueCoord(spilledCoords[i].row, spilledCoords[i].col);
+                    }
+                    collectDownstreamFromQueue();
+                    if (affectedFormulaKeys.size > prevCount) {
+                        const extraKeys = [];
+                        for (const fKey of affectedFormulaKeys) {
+                            const info = formulaDepsByFormula.get(fKey);
+                            if (info && !ordered.includes(info.cell)) extraKeys.push(fKey);
+                        }
+                        if (extraKeys.length > 0) {
+                            const extraOrdered = sortFormulaKeysTopologically(extraKeys);
+                            evaluateOrderedFormulaCells(extraOrdered, activeSheetIndex, affectedRows);
+                        }
+                    }
+                }
+
+                if (hasBackgroundCrossSheetReference()) {
+                    recalculateBackgroundSheets();
+                }
+            } finally {
+                isBatchRecalculating = false;
+                formulaEvalCache.clear();
+            }
+        } else if (hasBackgroundCrossSheetReference()) {
+            recalculateBackgroundSheets();
+        }
+
+        applyConditionalFormats();
+        updateTextOverflowDisplay(affectedRows.size > 0 ? Array.from(affectedRows) : null);
+        updateAllFloatingCharts();
+    }
+
     function updateAllFormulas() {
         formulaEvalCache.clear();
         isBatchRecalculating = true;
         const activeSheetIndex = getActiveSheetIndex();
         try {
-            const rawFormulaCells = Array.from(tbody.querySelectorAll("td[data-formula]"));
-            const orderedCells = sortFormulaCellsTopologically(rawFormulaCells);
-
-            orderedCells.forEach(cell => {
-                if (isCellEditing(cell)) return;
-                const r = parseInt(cell.dataset.row, 10);
-                const c = parseInt(cell.dataset.col, 10);
-                clearSpillCellsFromAnchor(r, c);
-
-                const cellKey = `${activeSheetIndex}:${r},${c}`;
-                const visited = new Set([cellKey]);
-                const rawResult = evaluateFormula(cell.dataset.formula, visited, activeSheetIndex, { row: r, col: c });
-
-                if (Array.isArray(rawResult)) {
-                    const topVal = applySpillMatrix(cell, r, c, rawResult);
-                    formulaEvalCache.set(cellKey, topVal);
-                } else {
-                    const dateSerial = tryParseDateToSerial(rawResult);
-                    const cachedVal = dateSerial !== null
-                        ? dateSerial
-                        : ((rawResult !== "" && !isNaN(Number(rawResult))) ? Number(rawResult) : rawResult);
-                    formulaEvalCache.set(cellKey, cachedVal);
-                    setCellFormattedValue(cell, rawResult);
-                }
-            });
-
-            recalculateBackgroundSheets();
+            const rawFormulaCells = rebuildDependencyGraph();
+            const allKeys = rawFormulaCells.map(cell => `${cell.dataset.row},${cell.dataset.col}`);
+            const orderedCells = sortFormulaKeysTopologically(allKeys);
+            evaluateOrderedFormulaCells(orderedCells, activeSheetIndex, null);
+            if (hasBackgroundCrossSheetReference()) {
+                recalculateBackgroundSheets();
+            }
         } finally {
             isBatchRecalculating = false;
             formulaEvalCache.clear();
@@ -1147,12 +1503,14 @@ export function createFormulaEngineModule(ctx) {
     return {
         clearFormulaEvalCache,
         invalidateBackgroundSheetCache,
+        invalidateDependencyGraph,
         getBackgroundSheetCellMap,
         getSheetCellValue,
         getCellEvaluatedValue,
         evaluateFormula,
         clearSpillCellsFromAnchor,
         recalculateBackgroundSheets,
+        recalculateCells,
         updateAllFormulas
     };
 }

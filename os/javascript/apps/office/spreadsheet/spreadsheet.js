@@ -478,6 +478,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
     async function switchToSheet(targetIndex) {
         if (targetIndex < 0 || targetIndex >= sheets.length || targetIndex === activeSheetIndex) return;
         clearAuditArrows();
+        invalidateDependencyGraph();
         captureCurrentSheetDOM({ flush: true });
         activeSheetIndex = targetIndex;
         await applySingleSheetToDOM(sheets[activeSheetIndex], { isUndoRedo: true });
@@ -1484,10 +1485,12 @@ export default async function initSpreadsheetApp(content, options = {}) {
     const {
         clearFormulaEvalCache,
         invalidateBackgroundSheetCache,
+        invalidateDependencyGraph,
         getBackgroundSheetCellMap,
         evaluateFormula,
         clearSpillCellsFromAnchor,
         recalculateBackgroundSheets,
+        recalculateCells,
         updateAllFormulas
     } = createFormulaEngineModule({
         tbody,
@@ -1503,7 +1506,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
         resolveStructuredReferences: (expr, sIdx) => resolveStructuredReferences(expr, sIdx),
         setCellFormattedValue: (cell, val) => setCellFormattedValue(cell, val),
         applyConditionalFormats: () => applyConditionalFormats(),
-        updateTextOverflowDisplay: () => updateTextOverflowDisplay(),
+        updateTextOverflowDisplay: (rows) => updateTextOverflowDisplay(rows),
         updateAllFloatingCharts: () => updateAllFloatingCharts()
     });
 
@@ -3305,6 +3308,9 @@ export default async function initSpreadsheetApp(content, options = {}) {
             );
         };
 
+        const cellRow = parseInt(cell.dataset.row, 10);
+        const cellCol = parseInt(cell.dataset.col, 10);
+
         if (rawStr.startsWith("'")) {
             delete cell.dataset.formula;
             delete cell.dataset.valueType;
@@ -3313,7 +3319,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
             setCellFormattedValue(cell, rawStr.slice(1));
             delete cell.dataset.editBy;
             clearCalculationRangeHighlights();
-            updateAllFormulas();
+            recalculateCells([{ row: cellRow, col: cellCol }], { formulaChanged: prevFormula !== "" });
             if (hasCellChanged()) {
                 setDirtyState(true);
                 debouncedSaveState();
@@ -3397,8 +3403,9 @@ export default async function initSpreadsheetApp(content, options = {}) {
 
         delete cell.dataset.editBy;
         clearCalculationRangeHighlights();
-        tryAutoExpandStructuredTable(parseInt(cell.dataset.row, 10), parseInt(cell.dataset.col, 10));
-        updateAllFormulas();
+        tryAutoExpandStructuredTable(cellRow, cellCol);
+        const nextFormulaStr = cell.dataset.formula || "";
+        recalculateCells([{ row: cellRow, col: cellCol }], { formulaChanged: prevFormula !== nextFormulaStr });
         if (cell.dataset.shrinkToFit === "1") {
             applyShrinkToFit(cell);
         }
@@ -3889,7 +3896,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
             const colOffset = (+targetCell.dataset.col) - (+sourceCell.dataset.col);
             const nextFormula = adjustFormula(sourceCell.dataset.formula, rowOffset, colOffset);
             targetCell.dataset.formula = nextFormula;
-            setCellFormattedValue(targetCell, evaluateFormula(nextFormula));
+            // 呼び出し元の updateAllFormulas() でトポロジカル順＆キャッシュ付き一括評価するため個別評価を省略
         } else {
             delete targetCell.dataset.formula;
             const nextVal = overrideValue !== null ? overrideValue : (sourceCell.dataset.rawValue ?? sourceCell.textContent);
@@ -7913,21 +7920,26 @@ export default async function initSpreadsheetApp(content, options = {}) {
             showAlert("保護されたシート上のロックされたセルはクリアできません。", "シートの保護");
             return;
         }
+        const clearedCoords = [];
+        let hadAnyFormula = false;
         targets.forEach(c => {
             if (c.dataset.spillOrigin) return; // Excel準拠：スピル先単体のDeleteは無視（元セル消去で消える）
-            clearSpillCellsFromAnchor(parseInt(c.dataset.row, 10), parseInt(c.dataset.col, 10));
+            const r = parseInt(c.dataset.row, 10);
+            const col = parseInt(c.dataset.col, 10);
+            if (c.dataset.formula) hadAnyFormula = true;
+            clearSpillCellsFromAnchor(r, col);
             delete c.dataset.formula;
             delete c.dataset.quotePrefix;
             delete c.dataset.valueType;
             delete c.dataset.dateValue;
             delete c.dataset.richRuns;
             setCellFormattedValue(c, "");
+            clearedCoords.push({ row: r, col });
         });
         if (activeCell) {
             formulaBarInput.value = activeCell.dataset.formula || (activeCell.dataset.rawValue ?? activeCell.textContent);
         }
-        updateAllFormulas();
-        applyConditionalFormats();
+        recalculateCells(clearedCoords, { formulaChanged: hadAnyFormula });
         updateSelectedCellsDisplay();
         updateFillHandle();
         setDirtyState(true);
