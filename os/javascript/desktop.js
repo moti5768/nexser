@@ -286,7 +286,7 @@ export function buildDesktop() {
     if (taskbar && !taskbar.closest(".window") && !taskbar.classList.contains("vertical")) {
         availableHeight -= (taskbar.offsetHeight || 40);
     }
-    const rowHeight = 90;
+    const rowHeight = 100;
     const colWidth = 90;
     const maxRows = Math.max(1, Math.floor((availableHeight - 40) / rowHeight));
 
@@ -317,7 +317,7 @@ export function buildDesktop() {
         const iconLabel = item.querySelector(".icon-label");
         const expectedIcon = getIcon(name, node);
         if (iconGraphic) {
-            applyIconToElement(iconGraphic, expectedIcon);
+            applyIconToElement(iconGraphic, expectedIcon, "40px");
         }
         const isFolder = node && node.type === "folder";
         const expectedLabel = isFolder ? name : getDisplayFileName(name, showFileExtensions);
@@ -1174,10 +1174,14 @@ function createNewItem(currentPath, container, itemType = "folder") {
     const iconDiv = document.createElement("div");
     iconDiv.className = "icon";
 
-    // 作成中もフォルダ/ファイルのアイコン（グラフィック）を表示する
+    // 作成中もフォルダ/ファイルのカスタムアイコンを表示する
     const iconGraphic = document.createElement("div");
     iconGraphic.className = "icon-graphic";
-    iconGraphic.textContent = itemType === "folder" ? "📁" : "📄";
+    applyIconToElement(
+        iconGraphic,
+        itemType === "folder" ? "./icons/folder_empty.png" : "./icons/file_txt.png",
+        "40px"
+    );
     iconDiv.appendChild(iconGraphic);
 
     const input = document.createElement("input");
@@ -1835,7 +1839,7 @@ async function snapDesktopIconsToGrid(orderedNames = null) {
 
     const names = orderedNames || Object.keys(desktopFS).filter(k => !isSystemMetaKey(k));
     const colWidth = 90;
-    const rowHeight = 90;
+    const rowHeight = 100;
     const maxRows = Math.max(1, Math.floor((iconsContainer.clientHeight - 20) / rowHeight));
     const occupied = new Set();
     const nextPositions = {};

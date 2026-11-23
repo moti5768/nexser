@@ -163,7 +163,7 @@ export function createWindow(title, options = {}) {
     }
     bringToFront(w);
 
-    const initialIcon = "📄";
+    const initialIcon = "./icons/file_default.png";
     const finalIcon = getIcon(title, options.node || { type: "app" });
     if (isFrameless) {
         // 💡 改善: 内部コンテンツは pointer-events: auto を強固に保障
@@ -171,7 +171,7 @@ export function createWindow(title, options = {}) {
     } else {
         w.innerHTML = `
 <div class="title-bar" style="display: flex; align-items: center; padding: 0 5px;">
-    <span class="window-icon" style="margin-right: 6px; font-size: 14px;"></span>
+    <span class="window-icon" style="margin-right: 6px; width: 16px; height: 16px; font-size: 14px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; line-height: 1;"></span>
     <span class="title-text" style="flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></span>
     <div class="window-controls" style="display: flex; flex-shrink: 0;">
         <button class="min-btn" data-tooltip = "最小化"></button>
@@ -199,9 +199,9 @@ ${!options.hideStatus ? `
 `;
     }
 
-    w._currentIcon = initialIcon;
+    w._currentIcon = finalIcon || initialIcon;
     const iconEl = w.querySelector(".window-icon");
-    if (iconEl) applyIconToElement(iconEl, initialIcon);
+    if (iconEl) applyIconToElement(iconEl, w._currentIcon, "16px");
 
     const titleTextEl = w.querySelector(".title-text");
     if (titleTextEl) titleTextEl.textContent = title;
@@ -213,10 +213,10 @@ ${!options.hideStatus ? `
             : finalIcon;
         w._currentIcon = resolvedIcon;
         const iconEl = w.querySelector(".window-icon");
-        if (iconEl) applyIconToElement(iconEl, resolvedIcon);
+        if (iconEl) applyIconToElement(iconEl, resolvedIcon, "16px");
         if (w._taskbarBtn && w._taskbarBtn.isConnected) {
             const tbIcon = w._taskbarBtn.querySelector(".taskbar-icon");
-            if (tbIcon) applyIconToElement(tbIcon, resolvedIcon);
+            if (tbIcon) applyIconToElement(tbIcon, resolvedIcon, "16px");
         }
     };
 
@@ -442,7 +442,8 @@ ${!options.hideStatus ? `
 
         const tbIconSpan = document.createElement("span");
         tbIconSpan.className = "taskbar-icon";
-        applyIconToElement(tbIconSpan, currentIcon);
+        tbIconSpan.style.cssText = "width: 16px; height: 16px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; line-height: 1;";
+        applyIconToElement(tbIconSpan, currentIcon, "16px");
 
         const tbTextSpan = document.createElement("span");
         tbTextSpan.className = "taskbar-text";
@@ -3096,12 +3097,12 @@ export function enableMDI(parentTarget, options = {}) {
         c.style.width = childOptions.width || `${defaultW}px`;
         c.style.height = childOptions.height || `${defaultH}px`;
 
-        const initialIcon = "📄";
+        const initialIcon = "./icons/file_default.png";
         const finalIcon = childOptions.icon || getIcon(childTitle, childOptions.node || { type: "file" });
 
         c.innerHTML = `
 <div class="title-bar" style="display: flex; align-items: center; padding: 0 4px;">
-    <span class="window-icon" style="margin-right: 5px; font-size: 13px;"></span>
+    <span class="window-icon" style="margin-right: 5px; width: 15px; height: 15px; font-size: 13px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; line-height: 1;"></span>
     <span class="title-text" style="flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></span>
     <div class="window-controls" style="display: flex; flex-shrink: 0;">
         <button class="min-btn" data-tooltip="最小化"></button>
@@ -3129,7 +3130,7 @@ ${childOptions.showStatus ? `<div class="window-statusbar resize_icon">Ready</di
         childContent._mdiParent = parentWin;
         childContent._mdiController = controller;
 
-        if (childIconEl) applyIconToElement(childIconEl, finalIcon || initialIcon);
+        if (childIconEl) applyIconToElement(childIconEl, finalIcon || initialIcon, "15px");
         if (childTitleTextEl) childTitleTextEl.textContent = childTitle;
 
         c._applyRealIcon = (newTitle = null, newNode = null) => {
@@ -3138,9 +3139,9 @@ ${childOptions.showStatus ? `<div class="window-statusbar resize_icon">Ready</di
                 ? getIcon(newTitle || c.dataset.title || childTitle, newNode || childOptions.node || { type: "file" })
                 : finalIcon;
             c._currentIcon = resolvedIcon;
-            if (childIconEl) applyIconToElement(childIconEl, resolvedIcon);
+            if (childIconEl) applyIconToElement(childIconEl, resolvedIcon, "15px");
             if (getMaximizedChild() === c) {
-                applyIconToElement(mergedIcon, resolvedIcon);
+                applyIconToElement(mergedIcon, resolvedIcon, "15px");
             }
         };
 

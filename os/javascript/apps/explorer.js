@@ -1693,19 +1693,24 @@ export default async function Explorer(root, options = {}) {
             }
 
             const iconChar = getIcon(name, itemData, childPath, currentPath);
-            const iconHtml = renderIconHTML(iconChar);
+            const iconSize = viewMode === "icon" ? "40px" : "18px";
+            const iconHtml = renderIconHTML(iconChar, iconSize);
             const isFolder = itemData && itemData.type === "folder";
             const displayName = isFolder ? name : getDisplayFileName(name, showFileExtensions);
             const safeDisplayName = escapeHTML(displayName);
 
             if (viewMode === "icon") {
+                item.style.display = "";
+                item.style.alignItems = "";
+                item.style.padding = "";
+                item.style.minHeight = "";
                 if (!autoArrange) {
                     item.style.position = "absolute";
                     if (iconPositions[name]) {
                         item.style.left = `${iconPositions[name].x}px`;
                         item.style.top = `${iconPositions[name].y}px`;
                     } else {
-                        const rowHeight = 90;
+                        const rowHeight = 100;
                         const colWidth = 100;
                         const maxCols = Math.max(1, Math.floor((listContainer.clientWidth || 500) / colWidth));
                         const row = Math.floor(index / maxCols);
@@ -1721,7 +1726,7 @@ export default async function Explorer(root, options = {}) {
                 }
 
                 const newHTML = `
-                    <div class="item-icon-large">${iconHtml}</div>
+                    <div class="item-icon-large" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; line-height: 1;">${iconHtml}</div>
                     <div class="item-name-label">${safeDisplayName}</div>
                 `;
                 if (item.innerHTML !== newHTML) {
@@ -1732,6 +1737,7 @@ export default async function Explorer(root, options = {}) {
 
                 item.style.display = "flex";
                 item.style.alignItems = "center";
+                item.style.minHeight = "24px";
                 item.style.padding = "2px 8px";
                 item.style.position = "";
                 item.style.left = "";
@@ -1753,8 +1759,8 @@ export default async function Explorer(root, options = {}) {
 
                 const newHTML = `
                     <div style="flex: 1 1 auto; min-width: 0; padding: 0 4px 0 8px; display: flex; align-items: center; gap: 6px; overflow: hidden;">
-                        <span class="item-icon-small" style="flex-shrink: 0; display: flex; align-items: center; justify-content: center;">${iconHtml}</span>
-                        <span class="item-name-text">${safeDisplayName}</span>
+                        <span class="item-icon-small" style="width: 18px; height: 18px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; line-height: 1;">${iconHtml}</span>
+                        <span class="item-name-text" style="line-height: 1.4;">${safeDisplayName}</span>
                     </div>
                     <span class="item-type-text" style="flex: 0 0 130px; padding-left: 8px;">${typeLabel}</span>
                     <span class="item-size-text" style="flex: 0 0 100px; padding-left: 8px;">${size}</span>
@@ -1764,11 +1770,15 @@ export default async function Explorer(root, options = {}) {
                     item.innerHTML = newHTML;
                 }
             } else {
+                item.style.display = "";
+                item.style.alignItems = "";
+                item.style.padding = "";
+                item.style.minHeight = "24px";
                 item.style.position = "";
                 item.style.left = "";
                 item.style.top = "";
                 const newHTML = `
-                    <span class="item-icon-small">${iconHtml}</span>
+                    <span class="item-icon-small" style="width: 18px; height: 18px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; line-height: 1;">${iconHtml}</span>
                     <span class="item-name-text">${safeDisplayName}</span>
                 `;
                 if (item.innerHTML !== newHTML) {
@@ -2443,8 +2453,8 @@ export default async function Explorer(root, options = {}) {
         item.onmouseout = () => { if (currentPath !== targetPath) item.style.background = "transparent"; };
 
         const iconSpan = document.createElement("span");
-        iconSpan.style.fontSize = "14px";
-        applyIconToElement(iconSpan, icon);
+        iconSpan.style.cssText = "width: 16px; height: 16px; font-size: 14px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; line-height: 1;";
+        applyIconToElement(iconSpan, icon, "16px");
 
         const textSpan = document.createElement("span");
         textSpan.textContent = label;
@@ -2514,9 +2524,8 @@ export default async function Explorer(root, options = {}) {
                 }
 
                 const iconSpan = document.createElement("span");
-                iconSpan.style.fontSize = "14px";
-                iconSpan.style.flexShrink = "0";
-                applyIconToElement(iconSpan, getIcon(name, child, fullPath, currentPath));
+                iconSpan.style.cssText = "width: 16px; height: 16px; font-size: 14px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; line-height: 1;";
+                applyIconToElement(iconSpan, getIcon(name, child, fullPath, currentPath), "16px");
 
                 const textSpan = document.createElement("span");
                 textSpan.textContent = name;
@@ -2634,12 +2643,12 @@ export default async function Explorer(root, options = {}) {
             }
 
             const iconChar = getIcon(res.name, res.node, res.path, currentPath);
-            const iconHtml = renderIconHTML(iconChar);
+            const iconHtml = renderIconHTML(iconChar, "18px");
             const isFolder = res.node && res.node.type === "folder";
             const displayName = isFolder ? res.name : getDisplayFileName(res.name, showFileExtensions);
 
             item.innerHTML = `
-                <span class="item-icon-small">${iconHtml}</span>
+                <span class="item-icon-small" style="width: 18px; height: 18px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; line-height: 1;">${iconHtml}</span>
                 <span class="item-name-text">${escapeHTML(displayName)}</span>
                 <span style="color:#888; font-size:10px; margin-left:8px;">(${escapeHTML(res.path)})</span>
             `;
@@ -3178,21 +3187,21 @@ export default async function Explorer(root, options = {}) {
 
         const name = path.split("/").pop() || path;
         const node = resolveFS(path);
-        const iconChar = node ? getIcon(name, node, path, currentPath) : "📁";
+        const iconChar = node ? getIcon(name, node, path, currentPath) : "./icons/folder_open.png";
 
         if (titleEl) titleEl.textContent = name;
 
         win._currentIcon = iconChar;
         const windowIcon = win.querySelector(".window-icon");
         if (windowIcon) {
-            applyIconToElement(windowIcon, iconChar);
+            applyIconToElement(windowIcon, iconChar, "16px");
         }
 
         if (taskBtn) {
             const iconSpan = taskBtn.querySelector(".taskbar-icon");
             const textSpan = taskBtn.querySelector(".taskbar-text");
 
-            if (iconSpan) applyIconToElement(iconSpan, iconChar);
+            if (iconSpan) applyIconToElement(iconSpan, iconChar, "16px");
             if (textSpan) textSpan.textContent = name;
             taskBtn.dataset.title = name;
         }
@@ -3527,7 +3536,7 @@ export async function showProperties(name, node, path) {
     const formattedSize = formatSize(size);
     const parentPath = path.split("/").slice(0, -1).join("/") || "(root)";
     const iconChar = getIcon(name, node, path);
-    const iconHtml = renderIconHTML(iconChar);
+    const iconHtml = renderIconHTML(iconChar, "36px");
 
     const isUrl = name.toLowerCase().endsWith(".url") && node.type === "file";
     let urlValue = "";

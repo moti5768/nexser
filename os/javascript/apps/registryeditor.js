@@ -3,7 +3,6 @@ import { openDB } from "../db.js";
 import { attachContextMenu } from "../context-menu.js";
 import { setupRibbon } from "../ribbon.js";
 import { taskbarButtons } from "../window.js";
-import { getIcon } from "../file-associations.js";
 import { resolveFS } from "../fs-utils.js";
 import { getFileContent } from "../fs-db.js";
 
@@ -16,6 +15,44 @@ function getWorker() {
         worker = new Worker(workerUrl, { type: 'module' });
     }
     return worker;
+}
+
+// 安全なHTMLエスケープ
+function escapeHTML(str) {
+    return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+}
+
+// os/javascript/apps/ から見て os/icons/ を参照（フォルダ名が icon なら '../../icon/' に変更）
+function getIconSrc(iconFile) {
+    return new URL(`../../icons/${iconFile}`, import.meta.url).href;
+}
+
+// レジストリ特定のアイコン画像（Windows風、16px x 16px）
+function getRegIcon(typeStr) {
+    let iconFile = "reg_sz.png"; // 文字列(ab)スタンプ
+    if (typeStr === "REG_FOLDER") {
+        iconFile = "folder_empty.png"; // 通常フォルダ
+    } else if (
+        typeStr === "REG_DWORD" ||
+        typeStr === "REG_BINARY" ||
+        typeStr === "REG_CHUNKED" ||
+        typeStr === "REG_JSON" ||
+        typeStr === "REG_MULTI_SZ"
+    ) {
+        iconFile = "reg_dword.png"; // バイナリ・DWORD・設定データ
+    } else if (typeStr === "REG_APP") {
+        iconFile = "shortcut.png"; // アプリ実行リンク
+    } else if (typeStr === "REG_FILE") {
+        iconFile = "file_default.png"; // 一般ファイル
+    } else if (typeStr === "REG_LINK") {
+        iconFile = "file_url.png"; // ショートカット
+    }
+    return `<img class="nexser-custom-icon" src="${escapeHTML(getIconSrc(iconFile))}" style="width:16px; height:16px; margin-right:5px; display:inline-block; vertical-align:middle; flex-shrink:0; pointer-events:none;" />`;
 }
 
 export default function RegistryEditor(root) {
@@ -107,8 +144,11 @@ export default function RegistryEditor(root) {
                 <input type="text" class="border" id="reg-search" style="flex:1; outline:none; padding:1px 3px; background:#fff;" placeholder="Search keys...">
             </div>
             <div style="display:flex; flex:1; overflow:hidden;">
-                <div class="reg-left border" id="reg-tree-container" tabindex="0" style="width:160px; background:#fff; overflow-y:auto; overflow-x:auto; padding:4px; border-right: 1px solid #808080;">
-                    <div style="font-weight:bold; margin-bottom:4px;">💻 My Computer</div>
+                <div class="reg-left border" id="reg-tree-container" tabindex="0" style="width:200px; background:#fff; overflow-y:auto; overflow-x:auto; padding:4px; border-right: 1px solid #808080;">
+                    <div style="font-weight:bold; margin-bottom:4px; display:flex; align-items:center;">
+                        <img class="nexser-custom-icon" src="./icons/pc.png" style="width:16px; height:16px; margin-right:5px;" />
+                        💻 My Computer
+                    </div>
                     <ul style="list-style:none; padding-left:15px; margin:0;" id="reg-tree"></ul>
                 </div>
                 
@@ -119,9 +159,9 @@ export default function RegistryEditor(root) {
                     
                     <div style="background:#c0c0c0; flex-shrink:0; border-bottom:1px solid #808080;">
                         <div style="display: grid; grid-template-columns: 30% 20% 1fr; width: 100%; box-sizing: border-box; padding-right: var(--sb-width, 16px);">
-                            <div style="background-color: #C3C7CB; border: 1.5px solid #808080; border-color: #fff #808080 #808080 #fff; box-shadow: 0.5px 0.5px black; padding:2px;">Name</div>
-                            <div style="background-color: #C3C7CB; border: 1.5px solid #808080; border-color: #fff #808080 #808080 #fff; box-shadow: 0.5px 0.5px black; padding:2px;">Type</div>
-                            <div style="background-color: #C3C7CB; border: 1.5px solid #808080; border-color: #fff #808080 #808080 #fff; box-shadow: 0.5px 0.5px black; padding:2px;">Data</div>
+                            <div style="background-color: #C3C7CB; border: 1.5px solid #808080; border-color: #fff #808080 #808080 #fff; box-shadow: 0.5px 0.5px black; padding:4px 6px; font-weight:bold;">Name</div>
+                            <div style="background-color: #C3C7CB; border: 1.5px solid #808080; border-color: #fff #808080 #808080 #fff; box-shadow: 0.5px 0.5px black; padding:4px 6px; font-weight:bold;">Type</div>
+                            <div style="background-color: #C3C7CB; border: 1.5px solid #808080; border-color: #fff #808080 #808080 #fff; box-shadow: 0.5px 0.5px black; padding:4px 6px; font-weight:bold;">Data</div>
                         </div>
                     </div>
                     
@@ -714,13 +754,13 @@ export default function RegistryEditor(root) {
             // ⭐ 修正: td自体には overflow: hidden を持たせず、中に div を挟む
             tr.innerHTML = `
             <td style="border-right:1px solid gray; padding:0; position:relative;">
-                <div style="padding:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; width:100%; box-sizing:border-box;"></div>
+                <div style="padding:4px 6px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; width:100%; box-sizing:border-box; display:flex; align-items:center;"></div>
             </td>
             <td style="border-right:1px solid gray; padding:0; position:relative;">
-                <div style="padding:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; width:100%; box-sizing:border-box; color:#666;"></div>
+                <div style="padding:4px 6px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; width:100%; box-sizing:border-box; color:#666;"></div>
             </td>
             <td style="padding:0; position:relative;">
-                <div style="padding:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; width:100%; box-sizing:border-box;"></div>
+                <div style="padding:4px 6px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; width:100%; box-sizing:border-box;"></div>
             </td>
         `;
 
@@ -797,11 +837,10 @@ export default function RegistryEditor(root) {
 
             const displayName = (keyStr === "" || keyStr === "(Default)") ? "(既定)" : keyStr;
 
-            // 編集モード（enterEditMode）で内部のdivが消去されていた場合は再生成する
             const cellStyles = [
-                "padding:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; width:100%; box-sizing:border-box;",
-                "padding:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; width:100%; box-sizing:border-box; color:#666;",
-                "padding:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; width:100%; box-sizing:border-box;"
+                "padding:4px 6px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; width:100%; box-sizing:border-box; display:flex; align-items:center;",
+                "padding:4px 6px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; width:100%; box-sizing:border-box; color:#666;",
+                "padding:4px 6px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; width:100%; box-sizing:border-box;"
             ];
             const cellTexts = [displayName, typeStr, displayVal.substring(0, 120)];
 
@@ -813,7 +852,11 @@ export default function RegistryEditor(root) {
                     innerDiv.style.cssText = cellStyles[idx];
                     td.appendChild(innerDiv);
                 }
-                innerDiv.textContent = cellTexts[idx];
+                if (idx === 0) {
+                    innerDiv.innerHTML = `${getRegIcon(typeStr)} <span style="vertical-align:middle;">${escapeHTML(displayName)}</span>`;
+                } else {
+                    innerDiv.textContent = cellTexts[idx];
+                }
             });
         }
 
@@ -937,7 +980,7 @@ export default function RegistryEditor(root) {
 
     async function loadSubTree(storeName, currentPathArr, parentUl) {
         parentUl.innerHTML = '<li style="color:#666; padding-left:10px;">Loading...</li>';
-        const reqId = ++treeRequestId; // ⭐ 追加：一意のリクエストIDを生成
+        const reqId = ++treeRequestId;
 
         const subFolders = new Set();
         const db = await getDB();
@@ -950,7 +993,6 @@ export default function RegistryEditor(root) {
                     const handleMessage = (e) => {
                         if (e.data.action === 'getSubTree' && e.data.storeName === storeName && e.data.requestId === reqId) {
                             workerInstance.removeEventListener('message', handleMessage);
-                            console.log("[MainThread] getSubTree response received:", e.data); // ⭐ 追加
                             resolve(e.data);
                         }
                     };
@@ -977,7 +1019,7 @@ export default function RegistryEditor(root) {
                     req.onerror = () => resolve([]);
                 });
 
-                // ⭐ 修正: filesストア（HKEY_CLASSES_ROOT）はパス区切りが "/" なので、ストアに応じて切り替える
+                // filesストア（HKEY_CLASSES_ROOT）はパス区切りが "/" なので、ストアに応じて切り替える
                 const delimiter = storeName === "files" ? "/" : ".";
                 const prefix = currentPathArr.join(delimiter);
 
@@ -1023,7 +1065,7 @@ export default function RegistryEditor(root) {
             li.style.cssText = "cursor:pointer; padding:1px 0; white-space:nowrap; outline:none; display:inline-block; min-width:100%;";
 
             const nextPathArr = [...currentPathArr, folderName];
-            li.innerHTML = `<span class="toggle" style="display:inline-block; width:12px; text-align:center;">▶</span> ${getIcon(folderName, { type: "folder" })} ${folderName}`;
+            li.innerHTML = `<span class="toggle" style="display:inline-block; width:12px; text-align:center; vertical-align:middle;">▶</span> <img class="nexser-custom-icon" src="./icons/folder_empty.png" style="width:16px; height:16px; margin-right:5px; vertical-align:middle; display:inline-block;" /> <span style="vertical-align:middle;">${escapeHTML(folderName)}</span>`;
 
             const subUl = document.createElement("ul");
             subUl.style.cssText = "list-style:none; padding-left:15px; display:none; margin:0;";
@@ -1055,10 +1097,9 @@ export default function RegistryEditor(root) {
 
     async function buildTree() {
         treeEl.innerHTML = "";
-        const db = await getDB();
 
         const computerLi = document.createElement("li");
-        computerLi.innerHTML = `<span class="toggle">▼</span> ${getIcon("Computer", { type: "folder" })} コンピューター`;
+        computerLi.innerHTML = `<span class="toggle" style="vertical-align:middle;">▼</span> <img class="nexser-custom-icon" src="./icons/pc.png" style="width:16px; height:16px; margin-right:5px; vertical-align:middle; display:inline-block;" /> <span style="vertical-align:middle;">コンピューター</span>`;
         const rootUl = document.createElement("ul");
         rootUl.style.cssText = "list-style:none; padding-left:15px; display:block; margin:0;";
 
@@ -1067,7 +1108,7 @@ export default function RegistryEditor(root) {
             storeLi.tabIndex = 0;
             storeLi.style.cssText = "cursor:pointer; padding:2px 0; white-space:nowrap; outline:none; display:inline-block; min-width:100%;";
 
-            storeLi.innerHTML = `<span class="toggle" style="display:inline-block; width:12px; text-align:center;">▶</span> ${getIcon(hkeyName, { type: "folder" })} ${hkeyName}`;
+            storeLi.innerHTML = `<span class="toggle" style="display:inline-block; width:12px; text-align:center; vertical-align:middle;">▶</span> <img class="nexser-custom-icon" src="./icons/reg_key.png" style="width:16px; height:16px; margin-right:5px; vertical-align:middle; display:inline-block;" /> <span style="vertical-align:middle;">${escapeHTML(hkeyName)}</span>`;
 
             const ul = document.createElement("ul");
             ul.style.cssText = "list-style:none; padding-left:15px; display:none; margin:0;";

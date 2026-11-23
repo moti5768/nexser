@@ -1,5 +1,5 @@
 // file-associations.js
-import { resolveFS } from "./fs-utils.js";
+import { resolveFS, isSystemMetaKey } from "./fs-utils.js";
 
 // 現在開いているファイルのパスを保持するSet
 export const openedFilePaths = new Set();
@@ -56,19 +56,55 @@ export const FILE_ASSOCIATIONS = {
 };
 
 /**
+ * システム共通アイコンパス定義
+ */
+export const SYSTEM_ICONS = {
+    folderEmpty: "./icons/folder_empty.png",
+    folderFull: "./icons/folder_full.png",
+    folderOpen: "./icons/folder_open.png",
+    trashEmpty: "./icons/trash_empty.png",
+    trashFull: "./icons/trash_full.png",
+    pc: "./icons/pc.png",
+    shortcut: "./icons/shortcut.png",
+    fileDefault: "./icons/file_default.png",
+    appDefault: "./icons/settings.png"
+};
+
+/**
  * 拡張子ごとのデフォルトアイコンマップ (O(1)検索用)
  */
 const DEFAULT_EXTENSION_ICONS = {
-    ".txt": "📄", ".md": "📄",
-    ".js": "📜", ".ts": "📜", ".json": "📜", ".css": "📜", ".scss": "📜", ".vue": "📜", ".html": "📜", ".htm": "📜",
-    ".url": "🌐",
-    ".png": "🖼️", ".jpg": "🖼️", ".jpeg": "🖼️", ".gif": "🖼️", ".webp": "🖼️",
-    ".bmp": "🎨",
-    ".mp4": "📽️", ".webm": "📽️", ".ogg": "📽️", ".mov": "📽️", ".mkv": "📽️",
-    ".mp3": "🎵", ".wav": "🎵", ".m4a": "🎵", ".flac": "🎵", ".aac": "🎵",
-    ".pdf": "📕",
-    ".nxs": "📊", ".csv": "📊",
-    ".cfg": "🛠️"
+    ".txt": "./icons/file_txt.png",
+    ".md": "./icons/file_md.png",
+    ".js": "./icons/file_js.png",
+    ".ts": "./icons/file_ts.png",
+    ".json": "./icons/file_json.png",
+    ".css": "./icons/file_css.png",
+    ".scss": "./icons/file_css.png",
+    ".vue": "./icons/file_vue.png",
+    ".html": "./icons/file_html.png",
+    ".htm": "./icons/file_html.png",
+    ".url": "./icons/file_url.png",
+    ".png": "./icons/file_image.png",
+    ".jpg": "./icons/file_image.png",
+    ".jpeg": "./icons/file_image.png",
+    ".gif": "./icons/file_image.png",
+    ".webp": "./icons/file_image.png",
+    ".bmp": "./icons/file_bmp.png",
+    ".mp4": "./icons/file_video.png",
+    ".webm": "./icons/file_video.png",
+    ".ogg": "./icons/file_video.png",
+    ".mov": "./icons/file_video.png",
+    ".mkv": "./icons/file_video.png",
+    ".mp3": "./icons/file_audio.png",
+    ".wav": "./icons/file_audio.png",
+    ".m4a": "./icons/file_audio.png",
+    ".flac": "./icons/file_audio.png",
+    ".aac": "./icons/file_audio.png",
+    ".pdf": "./icons/file_pdf.png",
+    ".nxs": "./icons/file_spreadsheet.png",
+    ".csv": "./icons/file_spreadsheet.png",
+    ".cfg": "./icons/file_cfg.png"
 };
 
 // 外部アプリ・ユーザーによる動的登録レジストリ
@@ -76,26 +112,45 @@ const customAssociations = new Map();   // ext -> appPath
 const customExtensionIcons = new Map(); // ext -> icon
 
 /**
- * アプリ名・パスに含まれるキーワードによるアイコン判定
+ * アプリ名・パスに含まれるキーワードによるアイコン判定（全組み込みアプリ対応）
  */
 const APP_KEYWORDS = [
-    { key: "browser", icon: "🌐" },
-    { key: "explorer", icon: "🔍" },
-    { key: "paint", icon: "🎨" },
-    { key: "texteditor", icon: "📝" },
-    { key: "notepad", icon: "📝" },
-    { key: "code", icon: "💻" },
-    { key: "image", icon: "🖼️" },
-    { key: "pdf", icon: "📕" },
-    { key: "audio", icon: "🎵" },
-    { key: "sound", icon: "🎵" },
-    { key: "video", icon: "🎬" },
-    { key: "calc", icon: "🧮" },
-    { key: "settings", icon: "⚙️" },
-    { key: "terminal", icon: "📟" },
-    { key: "taskmanager", icon: "📊" },
-    { key: "spreadsheet", icon: "📊" },
-    { key: "clock", icon: "🕒" }
+    { key: "taskbarproperties", icon: "./icons/taskbarproperties.png" },
+    { key: "taskbar", icon: "./icons/taskbarproperties.png" },
+    { key: "systemproperties", icon: "./icons/systemproperties.png" },
+    { key: "taskmanager", icon: "./icons/taskmanager.png" },
+    { key: "task manager", icon: "./icons/taskmanager.png" },
+    { key: "registryeditor", icon: "./icons/registryeditor.png" },
+    { key: "networkmonitor", icon: "./icons/network_monitor.png" },
+    { key: "network_monitor", icon: "./icons/network_monitor.png" },
+    { key: "eventlog", icon: "./icons/eventlog.png" },
+    { key: "startmenu", icon: "./icons/startmenu.png" },
+    { key: "toolbar", icon: "./icons/toolbar.png" },
+    { key: "minesweeper", icon: "./icons/minesweeper.png" },
+    { key: "tetris", icon: "./icons/tetris.png" },
+    { key: "browser", icon: "./icons/browser.png" },
+    { key: "explorer", icon: "./icons/explorer.png" },
+    { key: "paint", icon: "./icons/paint.png" },
+    { key: "texteditor", icon: "./icons/texteditor.png" },
+    { key: "notepad", icon: "./icons/texteditor.png" },
+    { key: "codeeditor", icon: "./icons/codeeditor.png" },
+    { key: "code", icon: "./icons/codeeditor.png" },
+    { key: "imageviewer", icon: "./icons/imageviewer.png" },
+    { key: "image", icon: "./icons/imageviewer.png" },
+    { key: "pdfviewer", icon: "./icons/pdfviewer.png" },
+    { key: "pdf", icon: "./icons/pdfviewer.png" },
+    { key: "audioplayer", icon: "./icons/audioplayer.png" },
+    { key: "audio", icon: "./icons/audioplayer.png" },
+    { key: "soundsplayer", icon: "./icons/soundplayer.png" },
+    { key: "soundplayer", icon: "./icons/soundplayer.png" },
+    { key: "sound", icon: "./icons/soundplayer.png" },
+    { key: "videoplayer", icon: "./icons/videoplayer.png" },
+    { key: "video", icon: "./icons/videoplayer.png" },
+    { key: "calc", icon: "./icons/calc.png" },
+    { key: "settings", icon: "./icons/settings.png" },
+    { key: "terminal", icon: "./icons/terminal.png" },
+    { key: "spreadsheet", icon: "./icons/spreadsheet.png" },
+    { key: "clock", icon: "./icons/clock.png" }
 ];
 
 const LOCAL_IMAGE_PATH_REGEX = /^(\.\/|\/)?[a-zA-Z0-9_\-./]+\.(png|jpe?g|gif|webp|svg|ico)(\?[a-zA-Z0-9_=&.-]+)?$/i;
@@ -154,11 +209,11 @@ function getSafeFallbackEmoji(fallback, defaultEmoji = "📄") {
  * テンプレートHTML内でアイコンを安全に描画するためのHTML文字列を返す
  * 画像読み込み失敗時は fallback 絵文字へ自動切替
  */
-export function renderIconHTML(icon, size = "1em", fallback = "⚙️") {
+export function renderIconHTML(icon, size = "1em", fallback = "📄") {
     const safeFallback = getSafeFallbackEmoji(fallback, "📄");
     const safe = sanitizeIcon(icon) || safeFallback;
     if (isImageIcon(safe)) {
-        return `<img class="nexser-custom-icon" src="${safe}" alt="" draggable="false" onerror="this.replaceWith(document.createTextNode('${safeFallback}'))" style="width:${size}; height:${size}; object-fit:contain; display:inline-block; vertical-align:middle; pointer-events:none; user-select:none;">`;
+        return `<img class="nexser-custom-icon" src="${safe}" alt="" draggable="false" onerror="this.replaceWith(document.createTextNode('${safeFallback}'))" style="width:${size}; height:${size}; object-fit:contain; display:block; flex-shrink:0; pointer-events:none; user-select:none;">`;
     }
     return safe;
 }
@@ -166,12 +221,13 @@ export function renderIconHTML(icon, size = "1em", fallback = "⚙️") {
 /**
  * 任意のDOM要素へアイコン（絵文字または画像）を差分更新で適用する
  */
-export function applyIconToElement(el, icon, size = "1em", fallback = "⚙️") {
+export function applyIconToElement(el, icon, size = "1em", fallback = "📄") {
     if (!el) return;
     const safeFallback = getSafeFallbackEmoji(fallback, "📄");
     const safe = sanitizeIcon(icon) || safeFallback;
-    if (el.dataset.iconValue === safe) return;
-    el.dataset.iconValue = safe;
+    const cacheKey = `${safe}|${size}`;
+    if (el.dataset.iconValue === cacheKey) return;
+    el.dataset.iconValue = cacheKey;
 
     if (isImageIcon(safe)) {
         el.textContent = "";
@@ -184,14 +240,14 @@ export function applyIconToElement(el, icon, size = "1em", fallback = "⚙️") 
             width: size,
             height: size,
             objectFit: "contain",
-            display: "inline-block",
-            verticalAlign: "middle",
+            display: "block",
+            flexShrink: "0",
             pointerEvents: "none",
             userSelect: "none"
         });
         img.onerror = () => {
             if (img.parentNode === el) {
-                el.dataset.iconValue = safeFallback;
+                el.dataset.iconValue = `${safeFallback}|${size}`;
                 el.textContent = safeFallback;
             }
         };
@@ -316,11 +372,24 @@ export function resolveAppByPath(path) {
     return customAssociations.get(ext) || FILE_ASSOCIATIONS[ext] || null;
 }
 
+function hasFolderChildren(folderNode) {
+    if (!folderNode || typeof folderNode !== "object") return false;
+    return Object.keys(folderNode).some(k => !isSystemMetaKey(k));
+}
+
+function getTrashIcon(trashNode = null) {
+    const targetTrash = trashNode || resolveFS("C:/Trash");
+    return hasFolderChildren(targetTrash) ? SYSTEM_ICONS.trashFull : SYSTEM_ICONS.trashEmpty;
+}
+
 /**
  * ファイルやアプリのアイコンを判定する関数
  */
-export function getIcon(name, node, fullPath = "", currentPath = "") {
-    const lowerName = name.toLowerCase();
+export function getIcon(name, node, fullPath = "", currentPath = "", depth = 0) {
+    const safeName = typeof name === "string" ? name : "";
+    const lowerName = safeName.toLowerCase();
+    const normFull = typeof fullPath === "string" ? fullPath.replace(/\\/g, "/").replace(/\/+$/, "").toLowerCase() : "";
+    const normCurrent = typeof currentPath === "string" ? currentPath.replace(/\\/g, "/").replace(/\/+$/, "").toLowerCase() : "";
 
     // 0. ノード個別のカスタムアイコン（node.icon）が指定されていれば最優先
     if (node && typeof node.icon === "string") {
@@ -328,52 +397,54 @@ export function getIcon(name, node, fullPath = "", currentPath = "") {
         if (customNodeIcon) return customNodeIcon;
     }
 
-    // 1. 特殊・基本フォルダ名
-    if (lowerName === "trash") return "🗑️";
+    // 1. 特殊システム項目（ゴミ箱・PC / マイコンピュータ）
+    if (lowerName === "trash" || normFull === "c:/trash") {
+        return getTrashIcon(node && node.type === "folder" ? node : null);
+    }
+    if (lowerName === "pc" || lowerName === "my computer" || lowerName === "c:" || normFull === "c:") {
+        return SYSTEM_ICONS.pc;
+    }
 
-    // リンク（ショートカット）の場合の判定
+    // 2. リンク（ショートカット）の場合：リンク先の実体ノードを再帰解決してアイコン継承
     if (node && node.type === "link" && node.target) {
-        const targetLower = node.target.toLowerCase();
-        if (targetLower.includes("trash")) {
-            return "🗑️"; // ゴミ箱へのショートカット
+        const targetLower = node.target.replace(/\\/g, "/").replace(/\/+$/, "").toLowerCase();
+        if (targetLower === "c:/trash" || targetLower.endsWith("/trash")) {
+            return getTrashIcon();
         }
-        // リンク先にカスタムアイコンが定義されていれば自動継承（デスクトップ・スタートメニュー対応）
-        try {
-            const targetNode = resolveFS(node.target);
-            if (targetNode && typeof targetNode.icon === "string") {
-                const targetIcon = sanitizeIcon(targetNode.icon);
-                if (targetIcon) return targetIcon;
-            }
-        } catch (_) { }
-        return "🔗"; // 一般的なショートカット
+        if (depth < 5) {
+            try {
+                const targetNode = resolveFS(node.target);
+                if (targetNode) {
+                    const targetName = node.target.replace(/\/+$/, "").split("/").pop() || safeName;
+                    return getIcon(targetName, targetNode, node.target, currentPath, depth + 1);
+                }
+            } catch (_) { }
+        }
+        return SYSTEM_ICONS.shortcut;
     }
 
-    // Windows風フォルダのアイコン判定
+    // 3. フォルダのアイコン判定（開いている状態 / 中身あり / 空）
     if (node && node.type === "folder") {
-        if (fullPath && fullPath === currentPath) {
-            return "📂";
+        if (normFull && normCurrent && normFull === normCurrent) {
+            return SYSTEM_ICONS.folderOpen;
         }
-        const hasChildren = Object.keys(node).some(k =>
-            k !== "type" && k !== "system" && k !== "originalPath" && k !== "lastModified" && k !== "hidden" && k !== "icon"
-        );
-        if (hasChildren) {
-            return "🗂️"; // 中身があるフォルダ
-        }
-        return "📁";
+        return hasFolderChildren(node) ? SYSTEM_ICONS.folderFull : SYSTEM_ICONS.folderEmpty;
     }
 
-    if (node && node.type === "link") return "🔗";
+    if (node && node.type === "link") {
+        return SYSTEM_ICONS.shortcut;
+    }
 
-    // 2. アプリケーションの判定
+    // 4. アプリケーションの判定
     if (node && node.type === "app") {
         const entryPath = (node.entry || "").toLowerCase();
         const matched = APP_KEYWORDS.find(
             item => lowerName.includes(item.key) || entryPath.includes(item.key)
         );
-        return matched ? matched.icon : "⚙️";
+        return matched ? matched.icon : SYSTEM_ICONS.appDefault;
     }
 
-    // 3. 拡張子による判定（カスタム拡張子アイコン → 標準アイコン → デフォルト）
-    const ext = getExtension(name);
-    return customExtensionIcons.get(ext) || DEFAULT_EXTENSION_ICONS[ext] || "📄";
+    // 5. 拡張子による判定（カスタム拡張子アイコン → 標準アイコン → デフォルトファイル）
+    const ext = getExtension(safeName);
+    return customExtensionIcons.get(ext) || DEFAULT_EXTENSION_ICONS[ext] || SYSTEM_ICONS.fileDefault;
 }
