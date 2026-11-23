@@ -29,6 +29,7 @@ import {
 import { dbGet, dbSet, setStorageHalted } from "./fs-db.js";
 import { unlockFilesByPid, setFSReadOnly, forceSave, isFileLocked } from "./fs.js";
 import { setKernelWindowCreator, createWindow as createRawWindow } from "./window.js";
+import { setupRibbon } from "./ribbon.js";
 
 const LOG_STORAGE_KEY = "nexser_system_logs_v1";
 
@@ -1509,10 +1510,12 @@ async function launchApp(item, path, options) {
         timeouts: new Set(),
         intervals: new Set(),
         listeners: [],
+        windowUnsubscribers: new Set(),
         blobUrls: new Set(),
         styles: new Set(),
         compiledModules: new Map()
     };
+    const ownedWindows = new Set();
 
     const isProcessActive = () => !resources.disposed && !isSystemDead && !window.nexser?.isLoggingOff && isGuiActive;
 
@@ -1540,9 +1543,35 @@ async function launchApp(item, path, options) {
         return clean;
     };
 
+    // ★ サンドボックス用：指定されたウィンドウ対象が自プロセス所有であることを検証
+    const resolveAndAssertOwnedParentWindow = (target) => {
+        if (!target) return null;
+        let resolvedWin = null;
+        if (target instanceof HTMLElement) {
+            resolvedWin = target.classList.contains("window")
+                ? target
+                : (target._mdiParent instanceof HTMLElement ? target._mdiParent : target.closest(".window"));
+        } else if (typeof target === "string" || typeof target === "number") {
+            const idStr = String(target);
+            resolvedWin = document.querySelector(`.window[data-window-id="${idStr}"]`)
+                || document.querySelector(`.window[data-window-id="win_${idStr}"]`);
+        }
+        if (!resolvedWin) return null;
+        if (isPackageApp && !ownedWindows.has(resolvedWin) && resolvedWin.dataset?.processKey !== key) {
+            throw new Error("[Security] 他プロセスのウィンドウに対してMDI/リボン操作は実行できません。");
+        }
+        return resolvedWin;
+    };
+
     const rawWindowAPI = getWindowAPI();
     const safeWindowAPI = rawWindowAPI ? Object.freeze({
-        createWindow: (...args) => isProcessActive() ? rawWindowAPI.createWindow?.(...args) : null,
+        createWindow: (...args) => {
+            if (!isProcessActive()) return null;
+            const createdContent = rawWindowAPI.createWindow?.(...args);
+            const createdWin = createdContent?.closest?.(".window");
+            if (createdWin) ownedWindows.add(createdWin);
+            return createdContent;
+        },
         destroyWindow: (...args) => rawWindowAPI.destroyWindow?.(...args),
         alertWindow: (...args) => isProcessActive() ? rawWindowAPI.alertWindow?.(...args) : null,
         confirmWindow: (...args) => isProcessActive() ? rawWindowAPI.confirmWindow?.(...args) : null,
@@ -1551,6 +1580,97 @@ async function launchApp(item, path, options) {
         showModalWindow: (...args) => isProcessActive() ? rawWindowAPI.showModalWindow?.(...args) : null,
         updateWindowTitle: (...args) => isProcessActive() ? rawWindowAPI.updateWindowTitle?.(...args) : null,
         bringToFront: (...args) => isProcessActive() ? rawWindowAPI.bringToFront?.(...args) : null,
+        setWindowControls: (target, controls) => {
+            if (!isProcessActive()) return null;
+            resolveAndAssertOwnedParentWindow(target);
+            return rawWindowAPI.setWindowControls?.(target, controls);
+        },
+        getWindowControls: (target) => {
+            if (!isProcessActive()) return null;
+            resolveAndAssertOwnedParentWindow(target);
+            return rawWindowAPI.getWindowControls?.(target);
+        },
+        // ★ MDI (Multiple Document Interface) 安全ラッパーAPI
+        enableMDI: (parentTarget, mdiOpts = {}) => {
+            if (!isProcessActive()) return null;
+            const ownerWin = resolveAndAssertOwnedParentWindow(parentTarget);
+            if (!ownerWin) return null;
+            return rawWindowAPI.enableMDI?.(ownerWin, mdiOpts);
+        },
+        getMDIController: (parentTarget) => {
+            if (!isProcessActive()) return null;
+            const ownerWin = resolveAndAssertOwnedParentWindow(parentTarget);
+            if (!ownerWin) return null;
+            return rawWindowAPI.getMDIController?.(ownerWin);
+        },
+        createMDIChild: (parentTarget, title, childOpts = {}) => {
+            if (!isProcessActive()) return null;
+            const ownerWin = resolveAndAssertOwnedParentWindow(parentTarget);
+            if (!ownerWin) return null;
+            return rawWindowAPI.createMDIChild?.(ownerWin, title, childOpts);
+        },
+        getMDIChildren: (parentTarget) => {
+            if (!isProcessActive()) return [];
+            const ownerWin = resolveAndAssertOwnedParentWindow(parentTarget);
+            if (!ownerWin) return [];
+            return rawWindowAPI.getMDIChildren?.(ownerWin) || [];
+        },
+        cascadeMDIChildren: (parentTarget) => {
+            if (!isProcessActive()) return false;
+            const ownerWin = resolveAndAssertOwnedParentWindow(parentTarget);
+            if (!ownerWin) return false;
+            return rawWindowAPI.cascadeMDIChildren?.(ownerWin) ?? false;
+        },
+        tileMDIChildrenHorizontal: (parentTarget) => {
+            if (!isProcessActive()) return false;
+            const ownerWin = resolveAndAssertOwnedParentWindow(parentTarget);
+            if (!ownerWin) return false;
+            return rawWindowAPI.tileMDIChildrenHorizontal?.(ownerWin) ?? false;
+        },
+        tileMDIChildrenVertical: (parentTarget) => {
+            if (!isProcessActive()) return false;
+            const ownerWin = resolveAndAssertOwnedParentWindow(parentTarget);
+            if (!ownerWin) return false;
+            return rawWindowAPI.tileMDIChildrenVertical?.(ownerWin) ?? false;
+        },
+        arrangeMDIIcons: (parentTarget) => {
+            if (!isProcessActive()) return false;
+            const ownerWin = resolveAndAssertOwnedParentWindow(parentTarget);
+            if (!ownerWin) return false;
+            return rawWindowAPI.arrangeMDIIcons?.(ownerWin) ?? false;
+        },
+        // ★ 親ウィンドウのリボンメニューを安全に構築・更新（MDI右上ボタンはribbon.js側で自動保護）
+        setRibbonMenus: (parentTarget, menus = [], getCurrentPath = null, renderCallback = null) => {
+            if (!isProcessActive()) return false;
+            const ownerWin = resolveAndAssertOwnedParentWindow(parentTarget);
+            if (!ownerWin || !ownerWin._ribbon) return false;
+            setupRibbon(
+                ownerWin,
+                typeof getCurrentPath === "function" ? getCurrentPath : (() => null),
+                typeof renderCallback === "function" ? renderCallback : null,
+                Array.isArray(menus) ? menus : []
+            );
+            return true;
+        },
+        // ★ window.js のイベント（mdiChildCreated / mdiChildActivated / mdiChildDestroyed 等）をプロセス終了時自動解除付きで購読
+        onWindowEvent: (eventName, callback) => {
+            if (!isProcessActive() || typeof callback !== "function" || typeof rawWindowAPI.on !== "function") {
+                return () => { };
+            }
+            const wrapped = (detail) => {
+                if (!isProcessActive()) return;
+                callback(detail);
+            };
+            const unsub = rawWindowAPI.on(eventName, wrapped);
+            if (typeof unsub === "function") {
+                resources.windowUnsubscribers.add(unsub);
+                return () => {
+                    resources.windowUnsubscribers.delete(unsub);
+                    try { unsub(); } catch (_) { }
+                };
+            }
+            return () => { };
+        },
         setPreviewEnabled: (...args) => {
             if (!isProcessActive()) return;
             assertPermission("window:preview");
@@ -1923,8 +2043,15 @@ async function launchApp(item, path, options) {
     // ==========================================
     // 3. ウィンドウ生成とシステムコールの割り当て
     // ==========================================
+    const resolvedMdiOption = options.mdi !== undefined
+        ? options.mdi
+        : (item.mdi !== undefined
+            ? item.mdi
+            : (pkgManifest?.mdi !== undefined ? pkgManifest.mdi : mergedWindowOptions.mdi));
+
     const content = getWindowAPI()?.createWindow(displayName, {
         ...mergedWindowOptions,
+        mdi: resolvedMdiOption,
         node: options.originalNode || item,
         frameless: isFrameless,
         hideRibbon: isFrameless,
@@ -1936,6 +2063,7 @@ async function launchApp(item, path, options) {
         resources.styles.forEach(el => { try { el.remove(); } catch (_) { } });
         throw new Error("Window creation failed");
     }
+    ownedWindows.add(win);
 
     let appHandle = null;
 
@@ -2119,13 +2247,16 @@ export function killProcess(key) {
     }
 
     try {
-        // 1. プロセスが保持していたタイマー・イベントリスナー・Blob URL・CSSを強制回収
+        // 1. プロセスが保持していたタイマー・イベントリスナー・MDI購読・Blob URL・CSSを強制回収
         if (resources) {
             try {
                 resources.timeouts?.forEach(id => clearTimeout(id));
                 resources.intervals?.forEach(id => clearInterval(id));
                 resources.listeners?.forEach(({ type, listener, opts }) => {
                     try { window.removeEventListener(type, listener, opts); } catch (_) { }
+                });
+                resources.windowUnsubscribers?.forEach(unsub => {
+                    try { unsub(); } catch (_) { }
                 });
                 resources.blobUrls?.forEach(url => {
                     try { URL.revokeObjectURL(url); } catch (_) { }
@@ -2136,6 +2267,7 @@ export function killProcess(key) {
                 resources.timeouts?.clear();
                 resources.intervals?.clear();
                 resources.listeners.length = 0;
+                resources.windowUnsubscribers?.clear();
                 resources.blobUrls?.clear();
                 resources.styles?.clear();
                 resources.compiledModules?.clear();
@@ -2164,8 +2296,13 @@ export function killProcess(key) {
             }
         }
 
-        // 4. ウィンドウ・タスクバーボタン・DOMリソースを確実に破棄
+        // 4. ウィンドウ・MDI子ウィンドウ・タスクバーボタン・DOMリソースを確実に破棄
         if (win) {
+            if (win._mdiController && typeof win._mdiController.closeAll === "function") {
+                try { win._mdiController.closeAll(true); } catch (_) { }
+                win._mdiController = null;
+            }
+
             if (win._cleanup) {
                 const cleanup = win._cleanup;
                 win._cleanup = null;
@@ -2245,6 +2382,10 @@ export function resetUI() {
                     killProcess(key);
                 } else {
                     try {
+                        if (w._mdiController && typeof w._mdiController.closeAll === "function") {
+                            w._mdiController.closeAll(true);
+                            w._mdiController = null;
+                        }
                         if (w._observer) {
                             w._observer.disconnect();
                             w._observer = null;
@@ -2795,12 +2936,16 @@ if (typeof window !== "undefined") {
                     proc.resources.listeners?.forEach(({ type, listener, opts }) => {
                         try { window.removeEventListener(type, listener, opts); } catch (_) { }
                     });
+                    proc.resources.windowUnsubscribers?.forEach(unsub => {
+                        try { unsub(); } catch (_) { }
+                    });
                     proc.resources.blobUrls?.forEach(url => {
                         try { URL.revokeObjectURL(url); } catch (_) { }
                     });
                     proc.resources.timeouts?.clear();
                     proc.resources.intervals?.clear();
                     proc.resources.listeners.length = 0;
+                    proc.resources.windowUnsubscribers?.clear();
                     proc.resources.blobUrls?.clear();
                 }
                 unlockFilesByPid(String(proc.pid));

@@ -670,7 +670,7 @@ body {
     opacity: 0.5;
 }
 
-.window .content {
+.window>.content {
     flex: 1;
     /* タイトルバーを除いた残りを占有 */
     overflow: auto;
@@ -681,7 +681,7 @@ body {
     border-color: black #eee #eee black;
 }
 
-.modal-dialog .content {
+.modal-dialog>.content {
     background: #C3C7CB;
 }
 
@@ -690,7 +690,7 @@ body {
     box-shadow: none;
 }
 
-.window.maximized .resize-handle {
+.window.maximized>.resize-handle {
     pointer-events: none;
     /* マウス判定を無効化 */
     cursor: default !important;
@@ -737,7 +737,8 @@ select {
     padding: 8px;
 }
 
-.window .title-bar {
+.window>.title-bar,
+.mdi-child-window>.title-bar {
     touch-action: none;
     display: flex;
     align-items: center;
@@ -748,15 +749,16 @@ select {
     position: relative;
 }
 
-.window .title-bar .window-controls {
+.window>.title-bar .window-controls,
+.mdi-child-window>.title-bar .window-controls {
     display: flex;
     margin-left: auto;
     /* ← 右寄せ */
     position: static;
 }
 
-
-.window .title-bar .window-controls button {
+.window>.title-bar .window-controls button,
+.mdi-child-window>.title-bar .window-controls button {
     color: white;
     width: 18px;
     height: 18px;
@@ -816,13 +818,15 @@ select {
     background-color: black;
 }
 
-.pressed.min-btn::before {
+.pressed.min-btn::before,
+.pressed.min-btn::after {
     margin-top: 1.3px;
     margin-left: 1.3px;
 }
 
 /* 最大化ボタン □（最大化中は対象外） */
-.window:not(.maximized) .max-btn {
+.window:not(.maximized)>.title-bar .max-btn,
+.mdi-child-window:not(.mdi-maximized)>.title-bar .max-btn {
     position: relative;
     text-align: center;
     font-size: 11px;
@@ -830,7 +834,8 @@ select {
     text-shadow: 0.3px 0.3px 0, 0.3px -0.3px 0, -0.3px 0.3px 0, -0.3px -0.3px 0;
 }
 
-.window:not(.maximized) .max-btn::before {
+.window:not(.maximized)>.title-bar .max-btn::before,
+.mdi-child-window:not(.mdi-maximized)>.title-bar .max-btn::before {
     content: "";
     position: absolute;
     left: 1.5px;
@@ -840,38 +845,56 @@ select {
     box-shadow: black 0 3px inset, black 0 0 0 1px inset;
 }
 
-.window:not(.maximized) .pressed.max-btn::before {
+.window:not(.maximized)>.title-bar .pressed.max-btn::before,
+.mdi-child-window:not(.mdi-maximized)>.title-bar .pressed.max-btn::before {
     margin-top: 1.3px;
     margin-left: 1.3px;
 }
 
-.window.maximized .max-btn {
+.window.maximized>.title-bar .max-btn,
+.mdi-child-window.mdi-maximized>.title-bar .max-btn,
+.mdi-child-window.mdi-minimized>.title-bar .min-btn,
+.mdi-merged-restore {
     position: relative;
     text-align: center;
     font-size: 11px;
     box-sizing: border-box;
 }
 
-.window.maximized .max-btn::before,
-.window.maximized .max-btn::after {
+.window.maximized>.title-bar .max-btn::before,
+.window.maximized>.title-bar .max-btn::after,
+.mdi-child-window.mdi-maximized>.title-bar .max-btn::before,
+.mdi-child-window.mdi-maximized>.title-bar .max-btn::after,
+.mdi-child-window.mdi-minimized>.title-bar .min-btn::before,
+.mdi-child-window.mdi-minimized>.title-bar .min-btn::after,
+.mdi-merged-restore::before,
+.mdi-merged-restore::after {
     content: "";
     position: absolute;
     height: 8px;
     width: 8px;
+    background-color: transparent;
     box-shadow: black 0 3px inset, black 0 0 0 1px inset;
 }
 
-.window.maximized .max-btn::before {
+.window.maximized>.title-bar .max-btn::before,
+.mdi-child-window.mdi-maximized>.title-bar .max-btn::before,
+.mdi-child-window.mdi-minimized>.title-bar .min-btn::before,
+.mdi-merged-restore::before {
     left: 5px;
     top: 2px;
 }
 
-.window.maximized .max-btn::after {
+.window.maximized>.title-bar .max-btn::after,
+.mdi-child-window.mdi-maximized>.title-bar .max-btn::after,
+.mdi-child-window.mdi-minimized>.title-bar .min-btn::after,
+.mdi-merged-restore::after {
     left: 2px;
     top: 7px;
 }
 
-.window.maximized .resize_icon::after {
+.window.maximized>.window-statusbar.resize_icon::after,
+.mdi-child-window.mdi-maximized>.window-statusbar.resize_icon::after {
     display: none;
 }
 
@@ -918,7 +941,9 @@ select {
 }
 
 .pressed.max-btn::before,
-.pressed.max-btn::after {
+.pressed.max-btn::after,
+.pressed.mdi-merged-restore::before,
+.pressed.mdi-merged-restore::after {
     margin-top: 1.3px;
     margin-left: 1.3px;
 }
@@ -1197,6 +1222,218 @@ progress::-moz-progress-bar {
 }
 
 /* 非アクティブなウィンドウ内のiframeはマウスクリックを無視し、親要素(window)に拾わせる */
-.window.inactive-window iframe {
+.window.inactive-window iframe,
+.mdi-child-window.inactive-window iframe {
     pointer-events: none;
+}
+
+/* ==================================================
+   Windows 95 MDI (Multiple Document Interface)
+================================================== */
+
+/* MDI親ウィンドウのコンテンツホスト */
+.window.mdi-frame>.content.mdi-host-content {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding: 0;
+    background: #808080;
+}
+
+/* MDI親リボン自体の右上配置安定化 */
+.window.mdi-frame>.window-ribbon {
+    position: relative;
+    display: flex;
+    align-items: center;
+    padding: 0 2px;
+    box-sizing: border-box;
+}
+
+/* MDIクライアント領域（子ウィンドウが配置される濃いグレー空間） */
+.mdi-client {
+    position: relative;
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 0;
+    width: 100%;
+    height: 100%;
+    background: #808080;
+    overflow: auto;
+    box-sizing: border-box;
+    isolation: isolate;
+    border: 1.5px solid;
+    border-color: #404040 #fff #fff #404040;
+}
+
+/* 最大化中の子ウィンドウがあるときはクライアント領域自体のスクロールバーを隠す */
+.mdi-client.mdi-has-maximized {
+    overflow: hidden;
+}
+
+/* MDI子ウィンドウ本体 */
+.mdi-child-window {
+    touch-action: none;
+    position: absolute;
+    background: #C3C7CB;
+    border: 2.5px solid #C3C7CB;
+    box-shadow:
+        0 2px 0 #000,
+        2px 0 0 #000,
+        0 -2px 0 #fff,
+        -2px 0 0 #fff,
+        2px 2px 0 #000,
+        -2px 2px 0 #000,
+        2px -2px 0 #fff,
+        -2px -2px 0 #fff;
+    display: flex;
+    flex-direction: column;
+    min-width: 160px;
+    min-height: 90px;
+    overflow: visible;
+    box-sizing: border-box;
+}
+
+.mdi-child-window>.title-bar {
+    height: 22px;
+    font-size: 12px;
+    padding: 0 3px;
+}
+
+.mdi-child-window>.title-bar .window-controls button {
+    width: 18px;
+    height: 18px;
+}
+
+/* MDI子ウィンドウ内部コンテンツ */
+.mdi-child-window>.mdi-child-content {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+    padding: 0;
+    background: #fff;
+    border: 1.5px solid;
+    border-color: #404040 #fff #fff #404040;
+    box-sizing: border-box;
+}
+
+/* MDI子ウィンドウ：最大化状態（外枠と子タイトルバーを消去しクライアント全面へ展開） */
+.mdi-child-window.mdi-maximized {
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-width: 0;
+    min-height: 0;
+    border: none;
+    box-shadow: none;
+}
+
+.mdi-child-window.mdi-maximized>.title-bar,
+.mdi-child-window.mdi-maximized>.resize-handle {
+    display: none !important;
+    pointer-events: none !important;
+}
+
+.mdi-child-window.mdi-maximized>.mdi-child-content {
+    border: none;
+}
+
+/* MDI子ウィンドウ：Win95式 最小化アイコンバー状態 */
+.mdi-child-window.mdi-minimized {
+    width: 164px !important;
+    height: 26px !important;
+    min-width: 164px;
+    min-height: 26px;
+    overflow: hidden;
+}
+
+.mdi-child-window.mdi-minimized>.mdi-child-content,
+.mdi-child-window.mdi-minimized>.window-statusbar,
+.mdi-child-window.mdi-minimized>.resize-handle {
+    display: none !important;
+    pointer-events: none !important;
+}
+
+.mdi-child-window.mdi-minimized>.title-bar {
+    height: 100%;
+    cursor: default;
+}
+
+/* MDI子最大化時：親リボン非表示時に自動出現する専用メニューバー */
+.mdi-merged-bar {
+    display: none;
+    align-items: center;
+    height: 24px;
+    padding: 0 2px;
+    background: #C3C7CB;
+    border-bottom: 1px solid #808080;
+    box-sizing: border-box;
+    flex-shrink: 0;
+    user-select: none;
+}
+
+.mdi-merged-bar.active {
+    display: flex;
+}
+
+/* MDI子最大化時：リボンの右上へ固定表示される子ウィンドウ操作ボタン群 */
+.mdi-merged-controls {
+    display: none;
+    align-items: flex-start;
+    align-self: flex-start;
+    margin-left: auto;
+    padding: 2px 2px 0 6px;
+    gap: 1px;
+    flex-shrink: 0;
+}
+
+.mdi-merged-controls.active {
+    display: flex;
+}
+
+.mdi-merged-controls button {
+    width: 18px;
+    height: 18px;
+    margin: 0 1px;
+    padding: 0;
+    position: relative;
+    flex-shrink: 0;
+}
+
+/* MDI子最大化時：リボン左端に統合される子ウィンドウアイコン（システムメニュー） */
+.mdi-merged-icon {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    margin: 0 4px 0 2px;
+    font-size: 13px;
+    cursor: pointer;
+    flex-shrink: 0;
+    user-select: none;
+}
+
+.mdi-merged-icon.active {
+    display: inline-flex;
+}
+
+/* MDI子ウィンドウ用ドラッグ・リサイズプレビュー枠（クライアント内に自動クリップ） */
+.mdi-preview-box {
+    position: absolute;
+    border: 2px solid #fff;
+    background: transparent;
+    pointer-events: none;
+    z-index: 9990;
+    mix-blend-mode: difference;
+    box-sizing: border-box;
+}
+
+/* リボンメニュー内のアクティブ子ウィンドウ表示用チェックマーク */
+.ribbon-check {
+    display: inline-block;
+    width: 14px;
+    flex-shrink: 0;
+    font-weight: bold;
+    text-align: center;
 }

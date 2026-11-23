@@ -55,7 +55,7 @@ function installGlobalMouseHandler() {
         }
     });
 
-    // ★ 追加: iframe（クロスオリジン含む）クリック時の手前表示対応
+    // ★ 追加: iframe（クロスオリジン含む）クリック時の手前表示対応（MDI子ウィンドウ対応）
     window.addEventListener("blur", () => {
         // フォーカスの切り替わりが完了するまでイベントループを1つ回す
         setTimeout(() => {
@@ -63,6 +63,11 @@ function installGlobalMouseHandler() {
 
             // 現在フォーカスされているのが iframe 要素だった場合
             if (active && active.tagName === "IFRAME") {
+                const mdiChild = active.closest(".mdi-child-window");
+                if (mdiChild && typeof mdiChild._mdiFocus === "function") {
+                    mdiChild._mdiFocus();
+                    return;
+                }
                 const win = active.closest(".window");
                 // その iframe が属するウィンドウがあれば、最前面に移動させる
                 if (win && !win._modal) {
@@ -87,12 +92,21 @@ export function resetAllTitleBars() {
         : (inactiveThemeColor || DEFAULT_COLOR);
 
     document.querySelectorAll(".window").forEach(win => {
-        const tb = win.querySelector(".title-bar");
+        const tb = win.querySelector(":scope > .title-bar");
         if (tb) tb.style.background = inactiveBg;
         win.classList.add("inactive-window");
+        if (win._mdiController) {
+            win._mdiController.syncTitleBarStates(false);
+        }
+    });
+    document.querySelectorAll(".mdi-child-window").forEach(child => {
+        const tb = child.querySelector(":scope > .title-bar");
+        if (tb) tb.style.background = inactiveBg;
+        child.classList.add("inactive-window");
     });
     taskbarButtons.forEach(btn => btn.classList.remove("selected"));
 }
+
 export function scheduleRefreshTopWindow() {
     if (refreshQueued) return;
     refreshQueued = true;
@@ -118,6 +132,7 @@ export function createWindow(title, options = {}) {
     w.className = "window";
     w.dataset.windowId = windowId;
     w.dataset.title = title;
+    w.dataset.baseTitle = title;
     w._modal = Boolean(options._modal);
     w.style.position = "absolute";
 
@@ -524,6 +539,12 @@ ${!options.hideStatus ? `
     const destroy = () => {
         if (!controlState.close) {
             return;
+        }
+
+        // ★ MDI親ウィンドウの場合、破棄前に全子ウィンドウのクローズ可否確認とクリーンアップを実行
+        if (w._mdiController) {
+            const canCloseAll = w._mdiController._handleParentClosing();
+            if (!canCloseAll) return;
         }
 
         // 1. 共通の後始末（イベントリスナー全解除、サウンド、オーバーレイ削除など）
@@ -1270,6 +1291,11 @@ ${!options.hideStatus ? `
         );
     }
 
+    // ★ options.mdi が指定された場合は生成と同時にMDI親フレームとして初期化
+    if (options.mdi && !isFrameless && !options._modal) {
+        enableMDI(w, typeof options.mdi === "object" ? options.mdi : {});
+    }
+
     scheduleRefreshTopWindow();
 
     if (!options._modal && !options.silent) {
@@ -1975,19 +2001,24 @@ export function refreshTopWindow(forcedTopWindow = null) {
 
     // タイトルバーの背景色とinactive状態を更新
     allWindows.forEach(win => {
-        const tb = win.querySelector(".title-bar");
-        if (!tb) return;
+        const tb = win.querySelector(":scope > .title-bar");
+        const isTop = Boolean(topWindow && win === topWindow);
 
-        const isTop = (topWindow && win === topWindow);
-
-        // ★ アクティブ時と同様に、非アクティブ時もグラデーション（または非アクティブ用カラー）を適用する
-        tb.style.background = isTop
-            ? (themeColor2 ? `linear-gradient(90deg, ${themeColor || DEFAULT_COLOR}, ${themeColor2})` : (themeColor || DEFAULT_COLOR))
-            : (inactiveThemeColor2
-                ? `linear-gradient(90deg, ${inactiveThemeColor || DEFAULT_COLOR}, ${inactiveThemeColor2})`
-                : (inactiveThemeColor || DEFAULT_COLOR));
+        if (tb) {
+            // ★ アクティブ時と同様に、非アクティブ時もグラデーション（または非アクティブ用カラー）を適用する
+            tb.style.background = isTop
+                ? (themeColor2 ? `linear-gradient(90deg, ${themeColor || DEFAULT_COLOR}, ${themeColor2})` : (themeColor || DEFAULT_COLOR))
+                : (inactiveThemeColor2
+                    ? `linear-gradient(90deg, ${inactiveThemeColor || DEFAULT_COLOR}, ${inactiveThemeColor2})`
+                    : (inactiveThemeColor || DEFAULT_COLOR));
+        }
 
         win.classList.toggle("inactive-window", !isTop);
+
+        // ★ MDI親ウィンドウの場合、配下の子ウィンドウのタイトルバー色もWin95仕様で同期
+        if (win._mdiController) {
+            win._mdiController.syncTitleBarStates(isTop);
+        }
     });
 
     // タスクバーボタンの選択状態を同期
@@ -2008,22 +2039,51 @@ export function updateWindowTitle(win, baseTitle, isDirty, newNode = null) {
     if (!win) return;
 
     const titleText = isDirty ? `${baseTitle} *` : baseTitle;
-    win.dataset.title = titleText;
+
+    // ★ MDI子ウィンドウの場合は子タイトルを更新し、最大化中なら親タイトル結合へも即時反映
+    if (win.classList.contains("mdi-child-window")) {
+        win.dataset.title = titleText;
+        const titleEl = win.querySelector(":scope > .title-bar .title-text");
+        if (titleEl) {
+            titleEl.textContent = titleText;
+        }
+        if (newNode && typeof win._applyRealIcon === "function") {
+            win._applyRealIcon(baseTitle, newNode);
+        }
+        if (win._mdiParent?._mdiController) {
+            win._mdiParent._mdiController.syncParentTitle();
+        }
+        return;
+    }
+
+    // 親ウィンドウのベースタイトルを保持
+    win.dataset.baseTitle = titleText;
+
+    // MDI最大化中の子があれば「親タイトル - [子タイトル]」形式で合成
+    let displayTitle = titleText;
+    if (win._mdiController) {
+        const maxChild = win._mdiController.getMaximizedChild();
+        if (maxChild) {
+            displayTitle = `${titleText} - [${maxChild.dataset.title || ""}]`;
+        }
+    }
+
+    win.dataset.title = displayTitle;
 
     // 1. ウィンドウ本体のタイトルバーを更新
-    const titleEl = win.querySelector(".title-text");
+    const titleEl = win.querySelector(":scope > .title-bar .title-text");
     if (titleEl) {
-        titleEl.textContent = titleText;
+        titleEl.textContent = displayTitle;
     }
 
     // 2. タスクバーのボタン（表示テキスト・ツールチップ・データ属性）を更新
     const btn = taskbarButtons.find(b => b._window === win) || win._taskbarBtn;
     if (btn) {
-        btn.dataset.tooltip = titleText;
-        btn.dataset.title = titleText;
+        btn.dataset.tooltip = displayTitle;
+        btn.dataset.title = displayTitle;
         const textEl = btn.querySelector(".taskbar-text");
         if (textEl) {
-            textEl.textContent = titleText;
+            textEl.textContent = displayTitle;
         }
     }
 
@@ -2035,11 +2095,15 @@ export function updateWindowTitle(win, baseTitle, isDirty, newNode = null) {
     updateAllTaskbarButtonModes();
 }
 
-export function getWindows() {
-    return Array.from(document.querySelectorAll(".window")).map((w) => ({
+export function getWindows(includeMDIChildren = false) {
+    const selector = includeMDIChildren ? ".window, .mdi-child-window" : ".window";
+    return Array.from(document.querySelectorAll(selector)).map((w) => ({
         id: w.dataset.windowId, // ★ 一意のIDを使う
         title: w.dataset.title || "Untitled",
         minimized: w.dataset.minimized === "true",
+        maximized: w.classList.contains("maximized") || w.classList.contains("mdi-maximized"),
+        isMDIChild: w.classList.contains("mdi-child-window"),
+        parentId: w.dataset.mdiParentId || null,
         zIndex: Number(w.style.zIndex || 0),
         el: w
     }));
@@ -2102,20 +2166,31 @@ export function removeAllTaskbarButtons() {
 
 export function focusWindowById(id) {
     if (typeof id !== "string" && typeof id !== "number") return false;
-    const list = getWindows();
-    const win = list.find(w => w.id === String(id)); // ★ IDで正しく検索
+    const list = getWindows(true);
+    const win = list.find(w => w.id === String(id)); // ★ IDで正しく検索（MDI子含む）
     if (!win || !win.el) return false;
+    if (win.isMDIChild && typeof win.el._mdiFocus === "function") {
+        win.el._mdiFocus();
+        return true;
+    }
     win.el.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
     return true;
 }
 
 export async function minimizeWindowById(id) {
-    const list = getWindows();
-    const win = list.find(w => w.id === id); // ★ IDで正しく検索
+    const list = getWindows(true);
+    const win = list.find(w => w.id === String(id)); // ★ IDで正しく検索（MDI子含む）
     if (!win) return false;
 
     const w = win.el;
     if (w._controlState && !w._controlState.minimize) return false;
+
+    // ★ MDI子ウィンドウの場合はWin95式アイコンバー化を実行
+    if (win.isMDIChild && typeof w._mdiMinimize === "function") {
+        w._mdiMinimize();
+        return true;
+    }
+
     // ★ 修正1: すでに最小化中、またはアニメーション中であれば処理を中断
     if (w.dataset.minimized === "true" || w._animating) return true;
     w._animating = true; // ★ フラグを立てる
@@ -2132,7 +2207,7 @@ export async function minimizeWindowById(id) {
         return true;
     }
 
-    const titleBar = w.querySelector(".title-bar");
+    const titleBar = w.querySelector(":scope > .title-bar");
     const titleText = titleBar?.querySelector(".title-text");
     if (!titleText) {
         w._animating = false; // ★ 途中で抜ける場合もフラグを戻す
@@ -2163,19 +2238,24 @@ export async function minimizeWindowById(id) {
 }
 
 export function maximizeWindowById(id) {
-    const list = getWindows();
-    const win = list.find(w => w.id === id); // ★ IDで正しく検索
+    const list = getWindows(true);
+    const win = list.find(w => w.id === String(id)); // ★ IDで正しく検索（MDI子含む）
     if (!win) return false;
     if (win.el._controlState && !win.el._controlState.maximize) return false;
 
-    const btn = win.el.querySelector(".max-btn");
+    if (win.isMDIChild && typeof win.el._mdiToggleMaximize === "function") {
+        win.el._mdiToggleMaximize();
+        return true;
+    }
+
+    const btn = win.el.querySelector(":scope > .title-bar .max-btn");
     if (btn) btn.click();
     return true;
 }
 
 export function closeWindowById(id) {
-    // ★ ID一致で確実に特定する
-    const target = document.querySelector(`.window[data-window-id="${id}"]`);
+    // ★ ID一致で確実に特定する（MDI子ウィンドウも含む）
+    const target = document.querySelector(`.window[data-window-id="${id}"], .mdi-child-window[data-window-id="${id}"]`);
     if (!target) throw new Error(`Invalid window id: ${id}`);
 
     if (target._controlState && !target._controlState.close) return false;
@@ -2339,12 +2419,17 @@ export function destroyWindow(win) {
 function resolveTargetWindowElement(target) {
     if (!target) return null;
     if (target instanceof HTMLElement) {
+        if (target.classList.contains("mdi-child-window")) return target;
+        if (target._mdiChild instanceof HTMLElement) return target._mdiChild;
+        const nearestMdiChild = target.closest(".mdi-child-window");
+        if (nearestMdiChild) return nearestMdiChild;
         return target.classList.contains("window") ? target : target.closest(".window");
     }
     if (typeof target === "string" || typeof target === "number") {
         const idStr = String(target);
-        return document.querySelector(`.window[data-window-id="${idStr}"]`)
-            || document.querySelector(`.window[data-window-id="win_${idStr}"]`);
+        return document.querySelector(`.window[data-window-id="${idStr}"], .mdi-child-window[data-window-id="${idStr}"]`)
+            || document.querySelector(`.window[data-window-id="win_${idStr}"]`)
+            || document.querySelector(`.mdi-child-window[data-window-id="mdi_${idStr}"]`);
     }
     return null;
 }
@@ -2398,6 +2483,1636 @@ export function toggleModalBackgroundClickable(target, forceState = undefined) {
     if (!win || typeof win._setBackgroundClickable !== "function") return null;
     const nextValue = forceState !== undefined ? Boolean(forceState) : !win._allowBackgroundClick;
     return win._setBackgroundClickable(nextValue);
+}
+
+/* ==================================================
+   Windows 95 MDI (Multiple Document Interface) Engine
+================================================== */
+
+function resolveMDIParentWindow(target) {
+    if (!target) return null;
+    if (target instanceof HTMLElement) {
+        if (target.classList.contains("window")) return target;
+        if (target._mdiParent instanceof HTMLElement) return target._mdiParent;
+        return target.closest(".window");
+    }
+    if (typeof target === "string" || typeof target === "number") {
+        const idStr = String(target);
+        return document.querySelector(`.window[data-window-id="${idStr}"]`)
+            || document.querySelector(`.window[data-window-id="win_${idStr}"]`);
+    }
+    return null;
+}
+
+/**
+ * 既存の親ウィンドウを Windows 95 準拠の MDI フレームウィンドウ化する
+ * @param {HTMLElement|string} parentTarget - 親の .window / .content / windowId
+ * @param {Object} options - { clientContainer, backgroundColor, disableClientContextMenu, disableShortcuts }
+ */
+export function enableMDI(parentTarget, options = {}) {
+    const parentWin = resolveMDIParentWindow(parentTarget);
+    if (!parentWin) {
+        throw new Error("enableMDI: 有効な親ウィンドウが見つかりません。");
+    }
+    if (parentWin._mdiController) {
+        return parentWin._mdiController;
+    }
+
+    const parentContent = parentWin.querySelector(":scope > .content");
+    if (!parentContent) {
+        throw new Error("enableMDI: 親ウィンドウに .content が存在しません。");
+    }
+
+    const parentAbortSignal = parentWin._abortController?.signal;
+    parentWin.classList.add("mdi-frame");
+    parentContent.classList.add("mdi-host-content");
+
+    // 1. MDIクライアント領域の構築
+    let clientEl = options.clientContainer instanceof HTMLElement
+        ? options.clientContainer
+        : parentContent.querySelector(":scope > .mdi-client");
+
+    if (!clientEl) {
+        clientEl = document.createElement("div");
+        clientEl.className = "mdi-client";
+        parentContent.appendChild(clientEl);
+    } else {
+        clientEl.classList.add("mdi-client");
+    }
+    if (options.backgroundColor) {
+        clientEl.style.background = options.backgroundColor;
+    }
+
+    // 2. 子ウィンドウ最大化時にリボン右上へ表示する結合コントロール（最小化・元に戻す・閉じる）と左端アイコン
+    const parentRibbon = parentWin.querySelector(":scope > .window-ribbon");
+    let mergedBar = null;
+    let controlsHost = parentRibbon;
+
+    if (!controlsHost) {
+        mergedBar = document.createElement("div");
+        mergedBar.className = "mdi-merged-bar";
+        const parentTitleBar = parentWin.querySelector(":scope > .title-bar");
+        if (parentTitleBar && parentTitleBar.nextSibling) {
+            parentWin.insertBefore(mergedBar, parentTitleBar.nextSibling);
+        } else {
+            parentWin.insertBefore(mergedBar, parentContent);
+        }
+        controlsHost = mergedBar;
+    }
+
+    const mergedIcon = document.createElement("span");
+    mergedIcon.className = "mdi-merged-icon";
+    mergedIcon.title = "子ウィンドウ メニュー";
+    controlsHost.insertBefore(mergedIcon, controlsHost.firstChild);
+
+    const mergedControls = document.createElement("div");
+    mergedControls.className = "mdi-merged-controls";
+    mergedControls.innerHTML = `
+        <button class="min-btn mdi-merged-min" data-tooltip="子ウィンドウを最小化"></button>
+        <button class="mdi-merged-restore" data-tooltip="子ウィンドウを元のサイズに戻す"></button>
+        <button class="close-btn mdi-merged-close" data-tooltip="子ウィンドウを閉じる"></button>
+    `;
+    controlsHost.appendChild(mergedControls);
+
+    const mergedMinBtn = mergedControls.querySelector(".mdi-merged-min");
+    const mergedRestoreBtn = mergedControls.querySelector(".mdi-merged-restore");
+    const mergedCloseBtn = mergedControls.querySelector(".mdi-merged-close");
+
+    // 3. MDI内部状態
+    const children = [];
+    let activeChild = null;
+    let isMaximizedMode = false;
+    let childZCounter = 0;
+    let childCascadeCount = 0;
+    const CHILD_CASCADE_STEP = 24;
+    const MIN_ICON_W = 164;
+    const MIN_ICON_H = 26;
+    const MIN_ICON_GAP = 4;
+
+    const getActiveBg = () => (themeColor2
+        ? `linear-gradient(90deg, ${themeColor || DEFAULT_COLOR}, ${themeColor2})`
+        : (themeColor || DEFAULT_COLOR));
+
+    const getInactiveBg = () => (inactiveThemeColor2
+        ? `linear-gradient(90deg, ${inactiveThemeColor || DEFAULT_COLOR}, ${inactiveThemeColor2})`
+        : (inactiveThemeColor || DEFAULT_COLOR));
+
+    const getMaximizedChild = () => {
+        if (!isMaximizedMode) return null;
+        if (activeChild && activeChild.isConnected && activeChild.classList.contains("mdi-maximized")) {
+            return activeChild;
+        }
+        return children.find(c => c.isConnected && c.classList.contains("mdi-maximized")) || null;
+    };
+
+    const syncMergedControlsState = () => {
+        const maxChild = getMaximizedChild();
+        const showMerged = Boolean(maxChild);
+
+        clientEl.classList.toggle("mdi-has-maximized", showMerged);
+        mergedControls.classList.toggle("active", showMerged);
+        mergedIcon.classList.toggle("active", showMerged);
+        if (mergedBar) {
+            mergedBar.classList.toggle("active", showMerged);
+        }
+
+        if (maxChild) {
+            applyIconToElement(mergedIcon, maxChild._currentIcon || "📄");
+            const cs = maxChild._controlState || { minimize: true, maximize: true, close: true };
+            mergedMinBtn.classList.toggle("pointer_none", !cs.minimize);
+            mergedRestoreBtn.classList.toggle("pointer_none", !cs.maximize);
+            mergedCloseBtn.classList.toggle("pointer_none", !cs.close);
+        }
+    };
+
+    const syncParentTitle = () => {
+        if (!parentWin.isConnected) return;
+        const baseTitle = parentWin.dataset.baseTitle || parentWin.dataset.title || "";
+        const maxChild = getMaximizedChild();
+        const nextTitle = maxChild
+            ? `${baseTitle} - [${maxChild.dataset.title || ""}]`
+            : baseTitle;
+
+        parentWin.dataset.title = nextTitle;
+        const parentTitleEl = parentWin.querySelector(":scope > .title-bar .title-text");
+        if (parentTitleEl) {
+            parentTitleEl.textContent = nextTitle;
+        }
+
+        const btn = taskbarButtons.find(b => b._window === parentWin) || parentWin._taskbarBtn;
+        if (btn) {
+            btn.dataset.tooltip = nextTitle;
+            btn.dataset.title = nextTitle;
+            const textEl = btn.querySelector(".taskbar-text");
+            if (textEl) textEl.textContent = nextTitle;
+        }
+        syncMergedControlsState();
+    };
+
+    const syncTitleBarStates = (isParentActive) => {
+        const activeBg = getActiveBg();
+        const inactiveBg = getInactiveBg();
+
+        children.forEach(child => {
+            if (!child.isConnected) return;
+            const tb = child.querySelector(":scope > .title-bar");
+            const isChildTop = Boolean(isParentActive && activeChild === child);
+            if (tb) {
+                tb.style.background = isChildTop ? activeBg : inactiveBg;
+            }
+            child.classList.toggle("inactive-window", !isChildTop);
+        });
+    };
+
+    const normalizeChildZIndices = () => {
+        const sorted = children
+            .filter(c => c.isConnected)
+            .sort((a, b) => (parseInt(a.style.zIndex, 10) || 0) - (parseInt(b.style.zIndex, 10) || 0));
+        sorted.forEach((c, idx) => {
+            c.style.zIndex = String(idx + 1);
+        });
+        childZCounter = sorted.length;
+    };
+
+    const bringChildToFront = (child, { activateParent = true, respectMaximizedMode = true } = {}) => {
+        if (!child || !child.isConnected) return;
+
+        if (childZCounter >= 1000) {
+            normalizeChildZIndices();
+        }
+        child.style.zIndex = String(++childZCounter);
+
+        const prevActive = activeChild;
+        activeChild = child;
+
+        // ★ Win95 MDI仕様：最大化モード中に別の非最小化子ウィンドウをアクティブ化した場合、新しい子へ最大化を引き継ぐ
+        if (respectMaximizedMode && isMaximizedMode && child.dataset.minimized !== "true") {
+            children.forEach(c => {
+                if (c !== child && c.classList.contains("mdi-maximized")) {
+                    c.classList.remove("mdi-maximized");
+                    if (c.dataset.prevLeft) c.style.left = c.dataset.prevLeft;
+                    if (c.dataset.prevTop) c.style.top = c.dataset.prevTop;
+                    if (c.dataset.prevWidth) c.style.width = c.dataset.prevWidth;
+                    if (c.dataset.prevHeight) c.style.height = c.dataset.prevHeight;
+                }
+            });
+            if (!child.classList.contains("mdi-maximized")) {
+                if (!child.dataset.prevLeft) child.dataset.prevLeft = child.style.left || "0px";
+                if (!child.dataset.prevTop) child.dataset.prevTop = child.style.top || "0px";
+                if (!child.dataset.prevWidth) child.dataset.prevWidth = child.style.width || "400px";
+                if (!child.dataset.prevHeight) child.dataset.prevHeight = child.style.height || "260px";
+                child.classList.add("mdi-maximized");
+            }
+        }
+
+        syncParentTitle();
+
+        if (activateParent) {
+            bringToFront(parentWin);
+        } else {
+            const isParentActive = !parentWin.classList.contains("inactive-window");
+            syncTitleBarStates(isParentActive);
+        }
+
+        if (prevActive !== child) {
+            emit("mdiChildActivated", {
+                parentId: parentWin.dataset.windowId,
+                windowId: child.dataset.windowId,
+                title: child.dataset.title,
+                element: child
+            });
+        }
+    };
+
+    // 最小化アイコンバーの空きスロット座標（左下から右へ、折り返して上へ）を算出
+    const findMinimizedSlotPosition = (excludeChild = null) => {
+        const clientW = Math.max(MIN_ICON_W + 8, clientEl.clientWidth);
+        const clientH = Math.max(MIN_ICON_H + 8, clientEl.clientHeight);
+        const colsPerRow = Math.max(1, Math.floor((clientW - MIN_ICON_GAP) / (MIN_ICON_W + MIN_ICON_GAP)));
+
+        const occupied = children
+            .filter(c => c !== excludeChild && c.isConnected && c.dataset.minimized === "true")
+            .map(c => ({
+                left: parseFloat(c.style.left) || 0,
+                top: parseFloat(c.style.top) || 0
+            }));
+
+        for (let slot = 0; slot < 200; slot++) {
+            const row = Math.floor(slot / colsPerRow);
+            const col = slot % colsPerRow;
+            const candLeft = MIN_ICON_GAP + col * (MIN_ICON_W + MIN_ICON_GAP);
+            const candTop = Math.max(MIN_ICON_GAP, clientH - (row + 1) * (MIN_ICON_H + MIN_ICON_GAP));
+
+            const collides = occupied.some(pos =>
+                Math.abs(pos.left - candLeft) < (MIN_ICON_W - 12) &&
+                Math.abs(pos.top - candTop) < (MIN_ICON_H - 6)
+            );
+            if (!collides) {
+                return { left: candLeft, top: candTop };
+            }
+        }
+        return { left: MIN_ICON_GAP, top: Math.max(MIN_ICON_GAP, clientH - MIN_ICON_H - MIN_ICON_GAP) };
+    };
+
+    // リボン位置（最大化アニメーションの到達点・復元時の開始点）を算出
+    const getMaximizeAnchorRect = () => {
+        if (parentRibbon && parentRibbon.isConnected) {
+            const r = parentRibbon.getBoundingClientRect();
+            if (r.width > 0 && r.height > 0) {
+                return { left: r.left, top: r.top, width: Math.max(120, r.width), height: r.height };
+            }
+        }
+        if (mergedBar && mergedBar.isConnected) {
+            const r = mergedBar.getBoundingClientRect();
+            if (r.width > 0 && r.height > 0) {
+                return { left: r.left, top: r.top, width: Math.max(120, r.width), height: r.height };
+            }
+        }
+        const parentTitleBar = parentWin.querySelector(":scope > .title-bar");
+        if (parentTitleBar && parentTitleBar.isConnected) {
+            const tbRect = parentTitleBar.getBoundingClientRect();
+            return {
+                left: tbRect.left,
+                top: tbRect.bottom,
+                width: Math.max(120, tbRect.width),
+                height: tbRect.height
+            };
+        }
+        const clientRect = clientEl.getBoundingClientRect();
+        return {
+            left: clientRect.left,
+            top: clientRect.top,
+            width: Math.max(120, clientRect.width),
+            height: 22
+        };
+    };
+
+    // ★ stopPropagation を行わず ui.js（document.body の mousedown）へ伝播させて .pressed 効果・ツールチップ消去を有効化
+    mergedControls.addEventListener("mousedown", () => {
+        bringToFront(parentWin);
+    }, { signal: parentAbortSignal });
+
+    mergedIcon.addEventListener("mousedown", () => {
+        bringToFront(parentWin);
+    }, { signal: parentAbortSignal });
+
+    // 結合3連ボタンのイベント
+    mergedMinBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const maxChild = getMaximizedChild();
+        if (maxChild && typeof maxChild._mdiMinimize === "function") {
+            maxChild._mdiMinimize();
+        }
+    }, { signal: parentAbortSignal });
+
+    mergedRestoreBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const maxChild = getMaximizedChild();
+        if (maxChild && typeof maxChild._mdiRestoreFromMaximize === "function") {
+            maxChild._mdiRestoreFromMaximize();
+        }
+    }, { signal: parentAbortSignal });
+
+    mergedCloseBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const maxChild = getMaximizedChild();
+        if (maxChild && typeof maxChild._destroy === "function") {
+            maxChild._destroy();
+        }
+    }, { signal: parentAbortSignal });
+
+    // 最大化時の子アイコン（システムメニュー相当）のダブルクリックで閉じる / 右クリックでメニュー
+    mergedIcon.addEventListener("dblclick", (e) => {
+        e.stopPropagation();
+        const maxChild = getMaximizedChild();
+        if (maxChild && typeof maxChild._destroy === "function") {
+            maxChild._destroy();
+        }
+    }, { signal: parentAbortSignal });
+
+    attachContextMenu(mergedIcon, () => {
+        const maxChild = getMaximizedChild();
+        if (!maxChild) return [];
+        const cs = maxChild._controlState || { minimize: true, maximize: true, close: true };
+        return [
+            {
+                label: "元のサイズに戻す",
+                action: () => maxChild._mdiRestoreFromMaximize?.(),
+                disabled: !cs.maximize
+            },
+            {
+                label: "最小化",
+                action: () => maxChild._mdiMinimize?.(),
+                disabled: !cs.minimize
+            },
+            {
+                label: "閉じる (Ctrl+F4)",
+                action: () => maxChild._destroy?.(),
+                disabled: !cs.close
+            }
+        ];
+    });
+
+    // 整列機能群
+    const exitMaximizedModeForArrange = () => {
+        if (!isMaximizedMode) return;
+        isMaximizedMode = false;
+        children.forEach(c => {
+            if (c.classList.contains("mdi-maximized")) {
+                c.classList.remove("mdi-maximized");
+            }
+        });
+        syncParentTitle();
+    };
+
+    const getRestorableChildren = () =>
+        children.filter(c => c.isConnected && c.dataset.minimized !== "true");
+
+    const getMinimizedChildren = () =>
+        children.filter(c => c.isConnected && c.dataset.minimized === "true");
+
+    const arrangeIcons = () => {
+        const mins = getMinimizedChildren();
+        if (mins.length === 0) return;
+
+        const clientW = Math.max(MIN_ICON_W + 8, clientEl.clientWidth);
+        const clientH = Math.max(MIN_ICON_H + 8, clientEl.clientHeight);
+        const colsPerRow = Math.max(1, Math.floor((clientW - MIN_ICON_GAP) / (MIN_ICON_W + MIN_ICON_GAP)));
+
+        mins.forEach((child, idx) => {
+            const row = Math.floor(idx / colsPerRow);
+            const col = idx % colsPerRow;
+            const left = MIN_ICON_GAP + col * (MIN_ICON_W + MIN_ICON_GAP);
+            const top = Math.max(MIN_ICON_GAP, clientH - (row + 1) * (MIN_ICON_H + MIN_ICON_GAP));
+            child.style.left = `${left}px`;
+            child.style.top = `${top}px`;
+            child.dataset.userMovedIcon = "false";
+        });
+    };
+
+    const cascade = () => {
+        exitMaximizedModeForArrange();
+        const list = getRestorableChildren();
+        if (list.length === 0) return;
+
+        const hasMin = getMinimizedChildren().length > 0;
+        const availW = Math.max(220, clientEl.clientWidth);
+        const availH = Math.max(150, clientEl.clientHeight - (hasMin ? (MIN_ICON_H + MIN_ICON_GAP * 2) : 0));
+
+        const targetW = Math.max(200, Math.round(availW * 0.72));
+        const targetH = Math.max(140, Math.round(availH * 0.72));
+        const maxSteps = Math.max(1, Math.floor(Math.min(availW - targetW, availH - targetH) / CHILD_CASCADE_STEP) + 1);
+
+        list.forEach((child, idx) => {
+            const step = idx % maxSteps;
+            const left = step * CHILD_CASCADE_STEP;
+            const top = step * CHILD_CASCADE_STEP;
+            child.style.left = `${left}px`;
+            child.style.top = `${top}px`;
+            child.style.width = `${targetW}px`;
+            child.style.height = `${targetH}px`;
+            child.dataset.prevLeft = child.style.left;
+            child.dataset.prevTop = child.style.top;
+            child.dataset.prevWidth = child.style.width;
+            child.dataset.prevHeight = child.style.height;
+            bringChildToFront(child, { activateParent: false, respectMaximizedMode: false });
+        });
+
+        clientEl.scrollLeft = 0;
+        clientEl.scrollTop = 0;
+        if (hasMin) arrangeIcons();
+        bringToFront(parentWin);
+    };
+
+    const tileHorizontal = () => {
+        exitMaximizedModeForArrange();
+        const list = getRestorableChildren();
+        if (list.length === 0) return;
+
+        const hasMin = getMinimizedChildren().length > 0;
+        const availW = Math.max(160, clientEl.clientWidth);
+        const availH = Math.max(100, clientEl.clientHeight - (hasMin ? (MIN_ICON_H + MIN_ICON_GAP * 2) : 0));
+        const eachH = Math.max(90, Math.floor(availH / list.length));
+
+        list.forEach((child, idx) => {
+            const top = idx * eachH;
+            const height = (idx === list.length - 1) ? Math.max(90, availH - top) : eachH;
+            child.style.left = "0px";
+            child.style.top = `${top}px`;
+            child.style.width = `${availW}px`;
+            child.style.height = `${height}px`;
+            child.dataset.prevLeft = child.style.left;
+            child.dataset.prevTop = child.style.top;
+            child.dataset.prevWidth = child.style.width;
+            child.dataset.prevHeight = child.style.height;
+        });
+
+        clientEl.scrollLeft = 0;
+        clientEl.scrollTop = 0;
+        if (hasMin) arrangeIcons();
+        bringToFront(parentWin);
+    };
+
+    const tileVertical = () => {
+        exitMaximizedModeForArrange();
+        const list = getRestorableChildren();
+        if (list.length === 0) return;
+
+        const hasMin = getMinimizedChildren().length > 0;
+        const availW = Math.max(160, clientEl.clientWidth);
+        const availH = Math.max(100, clientEl.clientHeight - (hasMin ? (MIN_ICON_H + MIN_ICON_GAP * 2) : 0));
+        const eachW = Math.max(160, Math.floor(availW / list.length));
+
+        list.forEach((child, idx) => {
+            const left = idx * eachW;
+            const width = (idx === list.length - 1) ? Math.max(160, availW - left) : eachW;
+            child.style.left = `${left}px`;
+            child.style.top = "0px";
+            child.style.width = `${width}px`;
+            child.style.height = `${availH}px`;
+            child.dataset.prevLeft = child.style.left;
+            child.dataset.prevTop = child.style.top;
+            child.dataset.prevWidth = child.style.width;
+            child.dataset.prevHeight = child.style.height;
+        });
+
+        clientEl.scrollLeft = 0;
+        clientEl.scrollTop = 0;
+        if (hasMin) arrangeIcons();
+        bringToFront(parentWin);
+    };
+
+    const cycleChild = (delta = 1) => {
+        const alive = children.filter(c => c.isConnected);
+        if (alive.length <= 1) return activeChild;
+        const currentIndex = alive.indexOf(activeChild);
+        const nextIndex = (currentIndex === -1)
+            ? 0
+            : (currentIndex + delta + alive.length) % alive.length;
+        const nextChild = alive[nextIndex];
+        if (nextChild.dataset.minimized === "true") {
+            nextChild._mdiRestoreFromMinimize?.();
+        } else {
+            bringChildToFront(nextChild, { activateParent: true, respectMaximizedMode: true });
+        }
+        return nextChild;
+    };
+
+    const closeAll = (force = false) => {
+        const snapshot = [...children];
+        let allClosed = true;
+        for (const child of snapshot) {
+            if (!child.isConnected) continue;
+            const closed = child._destroy ? child._destroy(force) : (child.remove(), true);
+            if (!closed) {
+                allClosed = false;
+            }
+        }
+        return allClosed;
+    };
+
+    // 親クライアント領域の右クリックメニュー
+    if (!options.disableClientContextMenu) {
+        attachContextMenu(clientEl, (e) => {
+            if (e && e.target && e.target.closest(".mdi-child-window")) return null;
+            const hasChildren = children.some(c => c.isConnected);
+            const hasRestorable = getRestorableChildren().length > 0;
+            const hasMinimized = getMinimizedChildren().length > 0;
+
+            return [
+                { label: "重ねて表示", action: () => cascade(), disabled: !hasRestorable },
+                { label: "上下に並べて表示", action: () => tileHorizontal(), disabled: !hasRestorable },
+                { label: "左右に並べて表示", action: () => tileVertical(), disabled: !hasRestorable },
+                { label: "アイコンの整列", action: () => arrangeIcons(), disabled: !hasMinimized },
+                { label: "すべてのウィンドウを閉じる", action: () => closeAll(false), disabled: !hasChildren }
+            ];
+        });
+    }
+
+    // Win95 MDI 標準ショートカット（Ctrl+F6 / Ctrl+Tab / Ctrl+F4）
+    if (!options.disableShortcuts) {
+        parentWin.addEventListener("keydown", (e) => {
+            if (!e.ctrlKey || e.altKey || e.metaKey) return;
+            if (e.key === "F6" || e.key === "Tab") {
+                if (children.length > 0) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    cycleChild(e.shiftKey ? -1 : 1);
+                }
+            } else if (e.key === "F4") {
+                if (activeChild && activeChild.isConnected) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    activeChild._destroy?.(false);
+                }
+            }
+        }, { signal: parentAbortSignal });
+    }
+
+    // 親クライアント領域のサイズ変更時に、手動移動していない最小化アイコンを下端へ自動追随
+    if (typeof ResizeObserver === "function") {
+        const ro = new ResizeObserver(() => {
+            const autoIcons = getMinimizedChildren().filter(c => c.dataset.userMovedIcon !== "true");
+            if (autoIcons.length > 0) {
+                arrangeIcons();
+            }
+        });
+        ro.observe(clientEl);
+        parentAbortSignal?.addEventListener("abort", () => ro.disconnect(), { once: true });
+    }
+
+    // =========================================
+    // 子ウィンドウ生成関数
+    // =========================================
+    const createChild = (childTitle, childOptions = {}) => {
+        const childAbort = new AbortController();
+        const childSignal = childAbort.signal;
+        const childId = `mdi_${++windowIdCounter}`;
+
+        const c = document.createElement("div");
+        c.className = "mdi-child-window";
+        c.dataset.windowId = childId;
+        c.dataset.mdiChild = "true";
+        c.dataset.mdiParentId = parentWin.dataset.windowId;
+        c.dataset.title = childTitle;
+        c.dataset.minimized = "false";
+        c._mdiParent = parentWin;
+        c._abortController = childAbort;
+
+        // 初期サイズ・カスケード位置の計算
+        const clientW = Math.max(320, clientEl.clientWidth || 600);
+        const clientH = Math.max(200, clientEl.clientHeight || 360);
+        const defaultW = Math.min(460, Math.max(240, Math.round(clientW * 0.72)));
+        const defaultH = Math.min(300, Math.max(160, Math.round(clientH * 0.72)));
+
+        const maxCascade = Math.max(24, Math.min(clientW - 180, clientH - 120, 220));
+        if (childCascadeCount * CHILD_CASCADE_STEP > maxCascade) {
+            childCascadeCount = 0;
+        }
+        const offset = childCascadeCount++ * CHILD_CASCADE_STEP;
+
+        c.style.left = childOptions.left || `${offset}px`;
+        c.style.top = childOptions.top || `${offset}px`;
+        c.style.width = childOptions.width || `${defaultW}px`;
+        c.style.height = childOptions.height || `${defaultH}px`;
+
+        const initialIcon = "📄";
+        const finalIcon = childOptions.icon || getIcon(childTitle, childOptions.node || { type: "file" });
+
+        c.innerHTML = `
+<div class="title-bar" style="display: flex; align-items: center; padding: 0 4px;">
+    <span class="window-icon" style="margin-right: 5px; font-size: 13px;"></span>
+    <span class="title-text" style="flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></span>
+    <div class="window-controls" style="display: flex; flex-shrink: 0;">
+        <button class="min-btn" data-tooltip="最小化"></button>
+        <button class="max-btn" data-tooltip="最大化 / 元のサイズに戻す"></button>
+        <button class="close-btn" data-tooltip="閉じる"></button>
+    </div>
+</div>
+<div class="mdi-child-content"></div>
+${childOptions.showStatus ? `<div class="window-statusbar resize_icon">Ready</div>` : ""}
+`;
+
+        const childTitleBar = c.querySelector(":scope > .title-bar");
+        const childIconEl = childTitleBar.querySelector(".window-icon");
+        const childTitleTextEl = childTitleBar.querySelector(".title-text");
+        const childContent = c.querySelector(":scope > .mdi-child-content");
+        const childStatusBar = c.querySelector(":scope > .window-statusbar");
+        const minBtn = childTitleBar.querySelector(".min-btn");
+        const maxBtn = childTitleBar.querySelector(".max-btn");
+        const closeBtn = childTitleBar.querySelector(".close-btn");
+
+        c._currentIcon = finalIcon;
+        c._mdiContent = childContent;
+        c._statusBar = childStatusBar;
+        childContent._mdiChild = c;
+        childContent._mdiParent = parentWin;
+        childContent._mdiController = controller;
+
+        if (childIconEl) applyIconToElement(childIconEl, finalIcon || initialIcon);
+        if (childTitleTextEl) childTitleTextEl.textContent = childTitle;
+
+        c._applyRealIcon = (newTitle = null, newNode = null) => {
+            if (!c.isConnected) return;
+            const resolvedIcon = (newTitle || newNode)
+                ? getIcon(newTitle || c.dataset.title || childTitle, newNode || childOptions.node || { type: "file" })
+                : finalIcon;
+            c._currentIcon = resolvedIcon;
+            if (childIconEl) applyIconToElement(childIconEl, resolvedIcon);
+            if (getMaximizedChild() === c) {
+                applyIconToElement(mergedIcon, resolvedIcon);
+            }
+        };
+
+        // 操作有効/無効状態
+        const controlState = {
+            minimize: childOptions.disableMinimize !== undefined
+                ? !childOptions.disableMinimize
+                : (childOptions.minimizable !== undefined ? Boolean(childOptions.minimizable) : !childOptions.disableControls),
+            maximize: childOptions.disableMaximize !== undefined
+                ? !childOptions.disableMaximize
+                : (childOptions.maximizable !== undefined ? Boolean(childOptions.maximizable) : !childOptions.disableControls),
+            close: childOptions.disableClose !== undefined
+                ? !childOptions.disableClose
+                : (childOptions.closable !== undefined ? Boolean(childOptions.closable) : true),
+            resize: childOptions.disableResize !== undefined
+                ? !childOptions.disableResize
+                : (childOptions.resizable !== undefined ? Boolean(childOptions.resizable) : true)
+        };
+        c._controlState = controlState;
+        c._resizeHandles = [];
+
+        const applyControlStates = () => {
+            if (minBtn) {
+                minBtn.classList.toggle("pointer_none", !controlState.minimize);
+                minBtn.setAttribute("aria-disabled", String(!controlState.minimize));
+            }
+            if (maxBtn) {
+                maxBtn.classList.toggle("pointer_none", !controlState.maximize);
+                maxBtn.setAttribute("aria-disabled", String(!controlState.maximize));
+            }
+            if (closeBtn) {
+                closeBtn.classList.toggle("pointer_none", !controlState.close);
+                closeBtn.setAttribute("aria-disabled", String(!controlState.close));
+            }
+            c._resizeHandles.forEach(h => {
+                h.style.display = controlState.resize ? "" : "none";
+                h.style.pointerEvents = controlState.resize ? "auto" : "none";
+            });
+            if (childStatusBar) {
+                childStatusBar.classList.toggle("resize_icon", Boolean(controlState.resize));
+            }
+            if (getMaximizedChild() === c) {
+                syncMergedControlsState();
+            }
+        };
+
+        c._setControls = (next = {}) => {
+            if (typeof next.all === "boolean") {
+                controlState.minimize = next.all;
+                controlState.maximize = next.all;
+                controlState.close = next.all;
+                controlState.resize = next.all;
+            }
+            if (next.minimize !== undefined) controlState.minimize = Boolean(next.minimize);
+            if (next.maximize !== undefined) controlState.maximize = Boolean(next.maximize);
+            if (next.close !== undefined) controlState.close = Boolean(next.close);
+            if (next.resize !== undefined) controlState.resize = Boolean(next.resize);
+            applyControlStates();
+            return { ...controlState };
+        };
+        c._getControls = () => ({ ...controlState });
+
+        // サイズ保存キー（任意で saveSize: true を指定した子ウィンドウのみDB保存）
+        const sizeKey = childOptions.saveSize
+            ? (childOptions.sizeKey || `mdi::${parentWin.dataset.baseTitle || "MDI"}::${childTitle}`)
+            : null;
+
+        if (sizeKey) {
+            const cached = windowSizeCache.get(sizeKey);
+            if (cached) {
+                if (cached.w) c.style.width = `${Math.max(160, cached.w)}px`;
+                if (cached.h) c.style.height = `${Math.max(90, cached.h)}px`;
+                if (cached.x !== undefined) c.style.left = `${Math.max(0, cached.x)}px`;
+                if (cached.y !== undefined) c.style.top = `${Math.max(0, cached.y)}px`;
+            } else {
+                loadWindowSize(sizeKey).then(size => {
+                    if (!size || !c.isConnected || c.classList.contains("mdi-maximized") || c.dataset.minimized === "true") return;
+                    windowSizeCache.set(sizeKey, size);
+                    if (size.w) c.style.width = `${Math.max(160, size.w)}px`;
+                    if (size.h) c.style.height = `${Math.max(90, size.h)}px`;
+                    if (size.x !== undefined) c.style.left = `${Math.max(0, size.x)}px`;
+                    if (size.y !== undefined) c.style.top = `${Math.max(0, size.y)}px`;
+                }).catch(() => { });
+            }
+        }
+
+        // クライアント内ローカル座標プレビュー枠生成
+        let childPreview = null;
+        const createChildPreview = () => {
+            if (!ENABLE_WINDOW_PREVIEW) return;
+            if (childPreview) childPreview.remove();
+            childPreview = document.createElement("div");
+            childPreview.className = "mdi-preview-box";
+            childPreview.style.left = `${parseFloat(c.style.left) || 0}px`;
+            childPreview.style.top = `${parseFloat(c.style.top) || 0}px`;
+            childPreview.style.width = `${c.offsetWidth}px`;
+            childPreview.style.height = `${c.offsetHeight}px`;
+            clientEl.appendChild(childPreview);
+        };
+
+        // 状態記憶ヘルパー
+        const saveNormalBounds = () => {
+            if (c.classList.contains("mdi-maximized") || c.dataset.minimized === "true") return;
+            c.dataset.prevLeft = c.style.left || `${c.offsetLeft}px`;
+            c.dataset.prevTop = c.style.top || `${c.offsetTop}px`;
+            c.dataset.prevWidth = c.style.width || `${c.offsetWidth}px`;
+            c.dataset.prevHeight = c.style.height || `${c.offsetHeight}px`;
+        };
+
+        const restoreNormalBounds = () => {
+            if (c.dataset.prevLeft) c.style.left = c.dataset.prevLeft;
+            if (c.dataset.prevTop) c.style.top = c.dataset.prevTop;
+            if (c.dataset.prevWidth) c.style.width = c.dataset.prevWidth;
+            if (c.dataset.prevHeight) c.style.height = c.dataset.prevHeight;
+        };
+
+        // --- 最大化 / 最大化からの復元 ---
+        const maximizeChild = (skipAnimation = false) => {
+            if (!controlState.maximize) return;
+            if (c._animating) return;
+
+            const wasMinimized = c.dataset.minimized === "true";
+            if (!wasMinimized) {
+                saveNormalBounds();
+            }
+
+            const finalizeMaximize = () => {
+                c.dataset.minimized = "false";
+                c.classList.remove("mdi-minimized");
+                if (minBtn) minBtn.dataset.tooltip = "最小化";
+
+                isMaximizedMode = true;
+                children.forEach(other => {
+                    if (other !== c && other.classList.contains("mdi-maximized")) {
+                        other.classList.remove("mdi-maximized");
+                        if (other.dataset.prevLeft) other.style.left = other.dataset.prevLeft;
+                        if (other.dataset.prevTop) other.style.top = other.dataset.prevTop;
+                        if (other.dataset.prevWidth) other.style.width = other.dataset.prevWidth;
+                        if (other.dataset.prevHeight) other.style.height = other.dataset.prevHeight;
+                    }
+                });
+                c.classList.add("mdi-maximized");
+                clientEl.scrollLeft = 0;
+                clientEl.scrollTop = 0;
+                bringChildToFront(c, { activateParent: true, respectMaximizedMode: false });
+                c._animating = false;
+            };
+
+            if (!skipAnimation && !childOptions.silent) {
+                playSystemEventSound("maximize");
+            }
+
+            if (skipAnimation || !ENABLE_WINDOW_ANIMATION || !childTitleBar || !childTitleTextEl) {
+                finalizeMaximize();
+                return;
+            }
+
+            c._animating = true;
+            const anchorRect = getMaximizeAnchorRect();
+            const clone = createTitleClone(parentWin, childTitleBar, childTitleTextEl);
+            animateTitleClone(
+                clone,
+                {
+                    left: anchorRect.left,
+                    top: anchorRect.top,
+                    width: anchorRect.width
+                },
+                undefined,
+                () => {
+                    clone.remove();
+                    finalizeMaximize();
+                }
+            );
+        };
+
+        const restoreFromMaximize = (skipAnimation = false) => {
+            if (!c.classList.contains("mdi-maximized")) return;
+            if (c._animating) return;
+
+            const finalizeRestore = () => {
+                isMaximizedMode = false;
+                c.classList.remove("mdi-maximized");
+                restoreNormalBounds();
+                bringChildToFront(c, { activateParent: true, respectMaximizedMode: false });
+                c._animating = false;
+            };
+
+            if (!skipAnimation && !childOptions.silent) {
+                playSystemEventSound("restore");
+            }
+
+            if (skipAnimation || !ENABLE_WINDOW_ANIMATION || !childTitleBar || !childTitleTextEl) {
+                finalizeRestore();
+                return;
+            }
+
+            c._animating = true;
+            const anchorRect = getMaximizeAnchorRect();
+            const clientRect = clientEl.getBoundingClientRect();
+            const targetLeft = clientRect.left + clientEl.clientLeft + (parseFloat(c.dataset.prevLeft) || 0) - clientEl.scrollLeft;
+            const targetTop = clientRect.top + clientEl.clientTop + (parseFloat(c.dataset.prevTop) || 0) - clientEl.scrollTop;
+            const targetWidth = parseFloat(c.dataset.prevWidth) || 320;
+
+            const clone = createTitleClone(parentWin, parentWin.querySelector(":scope > .title-bar") || childTitleBar, childTitleTextEl);
+            const clonedText = clone.querySelector(".title-text");
+            if (clonedText) clonedText.textContent = c.dataset.title || "";
+            const clonedIcon = clone.querySelector(".window-icon");
+            if (clonedIcon) applyIconToElement(clonedIcon, c._currentIcon || "📄");
+            Object.assign(clone.style, {
+                left: `${anchorRect.left}px`,
+                top: `${anchorRect.top}px`,
+                width: `${anchorRect.width}px`
+            });
+
+            animateTitleClone(
+                clone,
+                { left: targetLeft, top: targetTop, width: targetWidth },
+                undefined,
+                () => {
+                    clone.remove();
+                    finalizeRestore();
+                }
+            );
+        };
+
+        // --- 最小化（Win95アイコンバー化） / 最小化からの復元 ---
+        const minimizeChild = (skipAnimation = false) => {
+            if (!controlState.minimize) return;
+            if (c.dataset.minimized === "true" || c._animating) return;
+
+            const wasMaximized = c.classList.contains("mdi-maximized");
+            if (!wasMaximized) {
+                saveNormalBounds();
+            }
+
+            const slot = findMinimizedSlotPosition(c);
+
+            const finalizeMinimize = () => {
+                if (wasMaximized) {
+                    c.classList.remove("mdi-maximized");
+                }
+                c.classList.add("mdi-minimized");
+                c.dataset.minimized = "true";
+                c.dataset.userMovedIcon = "false";
+                c.style.left = `${slot.left}px`;
+                c.style.top = `${slot.top}px`;
+                if (minBtn) minBtn.dataset.tooltip = "元のサイズに戻す";
+
+                // 他に最大化可能な非最小化子があれば切り替え、なければ最大化モードを解除
+                const otherRestorable = getRestorableChildren()
+                    .filter(other => other !== c)
+                    .sort((a, b) => (parseInt(b.style.zIndex, 10) || 0) - (parseInt(a.style.zIndex, 10) || 0));
+
+                if (otherRestorable.length > 0) {
+                    bringChildToFront(otherRestorable[0], {
+                        activateParent: false,
+                        respectMaximizedMode: wasMaximized
+                    });
+                } else {
+                    isMaximizedMode = false;
+                    syncParentTitle();
+                    syncTitleBarStates(!parentWin.classList.contains("inactive-window"));
+                }
+                c._animating = false;
+            };
+
+            if (!skipAnimation && !childOptions.silent) {
+                playSystemEventSound("minimize");
+            }
+
+            if (skipAnimation || !ENABLE_WINDOW_ANIMATION || !childTitleBar || !childTitleTextEl) {
+                finalizeMinimize();
+                return;
+            }
+
+            c._animating = true;
+            const anchorRect = getMaximizeAnchorRect();
+            const clientRect = clientEl.getBoundingClientRect();
+            const targetLeft = clientRect.left + clientEl.clientLeft + slot.left - clientEl.scrollLeft;
+            const targetTop = clientRect.top + clientEl.clientTop + slot.top - clientEl.scrollTop;
+
+            const sourceBar = wasMaximized ? (parentWin.querySelector(":scope > .title-bar") || childTitleBar) : childTitleBar;
+            const clone = createTitleClone(parentWin, sourceBar, childTitleTextEl);
+            if (wasMaximized) {
+                const clonedText = clone.querySelector(".title-text");
+                if (clonedText) clonedText.textContent = c.dataset.title || "";
+                const clonedIcon = clone.querySelector(".window-icon");
+                if (clonedIcon) applyIconToElement(clonedIcon, c._currentIcon || "📄");
+                Object.assign(clone.style, {
+                    left: `${anchorRect.left}px`,
+                    top: `${anchorRect.top}px`,
+                    width: `${anchorRect.width}px`
+                });
+            }
+
+            animateTitleClone(
+                clone,
+                { left: targetLeft, top: targetTop, width: MIN_ICON_W },
+                undefined,
+                () => {
+                    clone.remove();
+                    finalizeMinimize();
+                }
+            );
+        };
+
+        const restoreFromMinimize = (skipAnimation = false) => {
+            if (c.dataset.minimized !== "true" || c._animating) return;
+
+            if (isMaximizedMode && controlState.maximize) {
+                maximizeChild(skipAnimation);
+                return;
+            }
+
+            const finalizeRestore = () => {
+                c.classList.remove("mdi-minimized");
+                c.dataset.minimized = "false";
+                if (minBtn) minBtn.dataset.tooltip = "最小化";
+                restoreNormalBounds();
+                bringChildToFront(c, { activateParent: true, respectMaximizedMode: false });
+                c._animating = false;
+            };
+
+            if (!skipAnimation && !childOptions.silent) {
+                playSystemEventSound("restore");
+            }
+
+            if (skipAnimation || !ENABLE_WINDOW_ANIMATION || !childTitleBar || !childTitleTextEl) {
+                finalizeRestore();
+                return;
+            }
+
+            c._animating = true;
+            const clientRect = clientEl.getBoundingClientRect();
+            const targetLeft = clientRect.left + clientEl.clientLeft + (parseFloat(c.dataset.prevLeft) || 0) - clientEl.scrollLeft;
+            const targetTop = clientRect.top + clientEl.clientTop + (parseFloat(c.dataset.prevTop) || 0) - clientEl.scrollTop;
+            const targetWidth = parseFloat(c.dataset.prevWidth) || 320;
+
+            const clone = createTitleClone(parentWin, childTitleBar, childTitleTextEl);
+            animateTitleClone(
+                clone,
+                { left: targetLeft, top: targetTop, width: targetWidth },
+                undefined,
+                () => {
+                    clone.remove();
+                    finalizeRestore();
+                }
+            );
+        };
+
+        const toggleMaximize = () => {
+            if (!controlState.maximize) return;
+            if (c.classList.contains("mdi-maximized")) {
+                restoreFromMaximize(false);
+            } else {
+                maximizeChild(false);
+            }
+        };
+
+        // --- 子ウィンドウ破棄 ---
+        const destroyChild = (force = false) => {
+            if (!force && !controlState.close) return false;
+            if (!force && typeof childOptions.onBeforeClose === "function") {
+                const allow = childOptions.onBeforeClose(c, childContent);
+                if (allow === false) return false;
+            }
+
+            const wasMaximized = c.classList.contains("mdi-maximized");
+            const wasActive = (activeChild === c);
+
+            childAbort.abort();
+            if (childPreview) {
+                childPreview.remove();
+                childPreview = null;
+            }
+
+            if (!childOptions.silent && !force) {
+                playSystemEventSound("close");
+            }
+
+            const idx = children.indexOf(c);
+            if (idx !== -1) children.splice(idx, 1);
+
+            if (c.isConnected) c.remove();
+
+            if (typeof childOptions.onClose === "function") {
+                try { childOptions.onClose(childId); } catch (err) { console.error(err); }
+            }
+
+            emit("mdiChildDestroyed", {
+                parentId: parentWin.dataset.windowId,
+                windowId: childId,
+                title: c.dataset.title,
+                element: c
+            });
+
+            if (wasActive || wasMaximized) {
+                activeChild = null;
+                const remaining = children
+                    .filter(item => item.isConnected)
+                    .sort((a, b) => (parseInt(b.style.zIndex, 10) || 0) - (parseInt(a.style.zIndex, 10) || 0));
+
+                const nextNonMin = remaining.find(item => item.dataset.minimized !== "true");
+                if (nextNonMin) {
+                    bringChildToFront(nextNonMin, {
+                        activateParent: false,
+                        respectMaximizedMode: isMaximizedMode
+                    });
+                } else if (remaining.length > 0) {
+                    isMaximizedMode = false;
+                    bringChildToFront(remaining[0], {
+                        activateParent: false,
+                        respectMaximizedMode: false
+                    });
+                } else {
+                    isMaximizedMode = false;
+                    syncParentTitle();
+                    syncTitleBarStates(!parentWin.classList.contains("inactive-window"));
+                }
+            }
+            return true;
+        };
+
+        // 子要素への操作フック登録
+        c._mdiFocus = () => {
+            if (c.dataset.minimized === "true") {
+                bringChildToFront(c, { activateParent: true, respectMaximizedMode: false });
+            } else {
+                bringChildToFront(c, { activateParent: true, respectMaximizedMode: true });
+            }
+        };
+        c._mdiMinimize = () => minimizeChild(false);
+        c._mdiRestoreFromMinimize = () => restoreFromMinimize(false);
+        c._mdiMaximize = () => maximizeChild(false);
+        c._mdiRestoreFromMaximize = () => restoreFromMaximize(false);
+        c._mdiToggleMaximize = toggleMaximize;
+        c._destroy = destroyChild;
+
+        // フォーカスハンドラ
+        c.addEventListener("mousedown", () => {
+            c._mdiFocus();
+        }, { signal: childSignal });
+
+        // タイトルバーボタンのイベント
+        minBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            if (c.dataset.minimized === "true") {
+                restoreFromMinimize(false);
+            } else {
+                minimizeChild(false);
+            }
+        }, { signal: childSignal });
+
+        maxBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            toggleMaximize();
+        }, { signal: childSignal });
+
+        closeBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            destroyChild(false);
+        }, { signal: childSignal });
+
+        // 子タイトルバー右クリックメニュー
+        if (!childOptions.disableContextMenu) {
+            attachContextMenu(childTitleBar, () => {
+                const isMin = c.dataset.minimized === "true";
+                const isMax = c.classList.contains("mdi-maximized");
+                return [
+                    {
+                        label: "元のサイズに戻す",
+                        action: () => {
+                            if (isMin) restoreFromMinimize(false);
+                            else if (isMax) restoreFromMaximize(false);
+                        },
+                        disabled: (!isMin && !isMax) || (isMax && !controlState.maximize)
+                    },
+                    {
+                        label: "最小化",
+                        action: () => minimizeChild(false),
+                        disabled: isMin || !controlState.minimize
+                    },
+                    {
+                        label: "最大化",
+                        action: () => maximizeChild(false),
+                        disabled: isMax || !controlState.maximize
+                    },
+                    {
+                        label: "閉じる (Ctrl+F4)",
+                        action: () => destroyChild(false),
+                        disabled: !controlState.close
+                    }
+                ];
+            });
+        }
+
+        // --- 子ウィンドウのドラッグ移動（スクロール領域＋最小化アイコンバー移動両対応） ---
+        let dragging = false;
+        let dragStarted = false;
+        let didMove = false;
+        let downX = 0;
+        let downY = 0;
+        let startLeft = 0;
+        let startTop = 0;
+        let lastTap = 0;
+        let dragRafId = null;
+        let latestClientX = 0;
+        let latestClientY = 0;
+        const DRAG_THRESHOLD = 3;
+
+        childTitleBar.addEventListener("pointerdown", (e) => {
+            if (e.pointerType === "mouse" && e.button !== 0) return;
+
+            const now = Date.now();
+            if (now - lastTap < 300) {
+                if (e.target.closest(".window-controls")) return;
+                e.stopPropagation();
+                if (c.dataset.minimized === "true") {
+                    restoreFromMinimize(false);
+                } else if (controlState.maximize) {
+                    toggleMaximize();
+                }
+                lastTap = 0;
+                return;
+            }
+            lastTap = now;
+
+            if (e.target.closest(".window-controls") || e.target.closest(".resize-handle")) return;
+            if (c.classList.contains("mdi-maximized")) return;
+
+            e.stopPropagation();
+            c._mdiFocus();
+
+            dragging = true;
+            dragStarted = false;
+            didMove = false;
+            downX = e.clientX;
+            downY = e.clientY;
+            startLeft = parseFloat(c.style.left) || 0;
+            startTop = parseFloat(c.style.top) || 0;
+
+            const dragShield = document.createElement("div");
+            Object.assign(dragShield.style, {
+                position: "fixed",
+                top: 0,
+                left: 0,
+                width: "100vw",
+                height: "100vh",
+                zIndex: 9998,
+                background: "transparent"
+            });
+            document.body.appendChild(dragShield);
+            document.body.style.userSelect = "none";
+
+            const onPointerMove = (moveEv) => {
+                if (!dragging) return;
+                latestClientX = moveEv.clientX;
+                latestClientY = moveEv.clientY;
+                if (dragRafId) return;
+
+                dragRafId = requestAnimationFrame(() => {
+                    dragRafId = null;
+                    if (!dragging) return;
+
+                    const dx = latestClientX - downX;
+                    const dy = latestClientY - downY;
+
+                    if (!dragStarted && (Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD)) {
+                        dragStarted = true;
+                        createChildPreview();
+                    }
+                    if (!dragStarted) return;
+
+                    let newLeft = startLeft + dx;
+                    let newTop = startTop + dy;
+
+                    // クライアント領域の左・上端より奥へ消えるのを防止
+                    if (newLeft < 0) newLeft = 0;
+                    if (newTop < 0) newTop = 0;
+
+                    if (childPreview) {
+                        childPreview.style.left = `${newLeft}px`;
+                        childPreview.style.top = `${newTop}px`;
+                    } else {
+                        c.style.left = `${newLeft}px`;
+                        c.style.top = `${newTop}px`;
+                    }
+                    didMove = true;
+                });
+            };
+
+            const endDrag = async () => {
+                document.removeEventListener("pointermove", onPointerMove);
+                window.removeEventListener("blur", endDrag);
+
+                if (dragRafId) {
+                    cancelAnimationFrame(dragRafId);
+                    dragRafId = null;
+                }
+                if (!dragging) return;
+
+                document.body.style.userSelect = "";
+                if (childPreview) {
+                    if (childPreview.parentElement) {
+                        c.style.left = childPreview.style.left;
+                        c.style.top = childPreview.style.top;
+                    }
+                    childPreview.remove();
+                    childPreview = null;
+                }
+                dragShield.remove();
+                dragging = false;
+                dragStarted = false;
+
+                if (didMove) {
+                    if (c.dataset.minimized === "true") {
+                        c.dataset.userMovedIcon = "true";
+                    } else {
+                        saveNormalBounds();
+                        if (sizeKey) {
+                            const data = {
+                                w: c.offsetWidth,
+                                h: c.offsetHeight,
+                                x: Math.round(parseFloat(c.style.left) || 0),
+                                y: Math.round(parseFloat(c.style.top) || 0)
+                            };
+                            windowSizeCache.set(sizeKey, data);
+                            await saveWindowSize(sizeKey, data);
+                        }
+                    }
+                }
+                didMove = false;
+            };
+
+            document.addEventListener("pointermove", onPointerMove);
+            document.addEventListener("pointerup", endDrag, { capture: true, once: true });
+            document.addEventListener("pointercancel", endDrag, { capture: true, once: true });
+            window.addEventListener("blur", endDrag, { once: true });
+        }, { signal: childSignal });
+
+        // --- 子ウィンドウの8方向リサイズ ---
+        const minW = childOptions.minWidth || 160;
+        const minH = childOptions.minHeight || 90;
+        const directions = ["top", "bottom", "left", "right", "topLeft", "topRight", "bottomLeft", "bottomRight"];
+        const handles = {};
+
+        directions.forEach(dir => {
+            const h = document.createElement("div");
+            h.className = "resize-handle " + dir;
+            h.style.position = "absolute";
+            h.style.background = "transparent";
+            c.appendChild(h);
+            handles[dir] = h;
+        });
+        c._resizeHandles = Object.values(handles);
+
+        Object.assign(handles.top.style, { top: "-5px", left: "0", right: "0", height: "9px", cursor: "ns-resize" });
+        Object.assign(handles.bottom.style, { bottom: "-5px", left: "0", right: "0", height: "9px", cursor: "ns-resize" });
+        Object.assign(handles.left.style, { left: "-5px", top: "0", bottom: "0", width: "9px", cursor: "ew-resize" });
+        Object.assign(handles.right.style, { right: "-5px", top: "0", bottom: "0", width: "9px", cursor: "ew-resize" });
+        Object.assign(handles.topLeft.style, { left: "-5px", top: "-5px", width: "12px", height: "12px", cursor: "nwse-resize" });
+        Object.assign(handles.topRight.style, { right: "-5px", top: "-5px", width: "12px", height: "12px", cursor: "nesw-resize" });
+        Object.assign(handles.bottomLeft.style, { left: "-5px", bottom: "-5px", width: "12px", height: "12px", cursor: "nesw-resize" });
+        Object.assign(handles.bottomRight.style, { right: "-5px", bottom: "-5px", width: "16px", height: "16px", cursor: "nwse-resize" });
+
+        applyControlStates();
+
+        let resizing = false;
+        let currentHandle = null;
+        let resizeStartX = 0;
+        let resizeStartY = 0;
+        let startBox = null;
+        let resizeRafId = null;
+        let latestResizeX = 0;
+        let latestResizeY = 0;
+
+        const startChildResize = (e, handle) => {
+            if (!controlState.resize || c.classList.contains("mdi-maximized") || c.dataset.minimized === "true") return;
+            if (e.pointerType === "mouse" && e.button !== 0) return;
+
+            e.stopPropagation();
+            c._mdiFocus();
+
+            resizing = true;
+            currentHandle = handle;
+            resizeStartX = e.clientX;
+            resizeStartY = e.clientY;
+            startBox = {
+                left: parseFloat(c.style.left) || 0,
+                top: parseFloat(c.style.top) || 0,
+                width: c.offsetWidth,
+                height: c.offsetHeight
+            };
+
+            createChildPreview();
+            document.body.style.userSelect = "none";
+
+            const cursors = {
+                top: "ns-resize", bottom: "ns-resize",
+                left: "ew-resize", right: "ew-resize",
+                topLeft: "nwse-resize", bottomRight: "nwse-resize",
+                topRight: "nesw-resize", bottomLeft: "nesw-resize"
+            };
+            const cursorName = cursors[handle] || "default";
+            document.body.style.cursor = cursorName;
+
+            const resizeShield = document.createElement("div");
+            Object.assign(resizeShield.style, {
+                position: "fixed",
+                top: 0,
+                left: 0,
+                width: "100vw",
+                height: "100vh",
+                zIndex: 9998,
+                background: "transparent",
+                cursor: cursorName
+            });
+            document.body.appendChild(resizeShield);
+
+            const onResizeMove = (moveEv) => {
+                if (!resizing) return;
+                latestResizeX = moveEv.clientX;
+                latestResizeY = moveEv.clientY;
+                if (resizeRafId) return;
+
+                resizeRafId = requestAnimationFrame(() => {
+                    resizeRafId = null;
+                    if (!resizing) return;
+
+                    const dx = latestResizeX - resizeStartX;
+                    const dy = latestResizeY - resizeStartY;
+
+                    let newLeft = startBox.left;
+                    let newTop = startBox.top;
+                    let newWidth = startBox.width;
+                    let newHeight = startBox.height;
+
+                    switch (currentHandle) {
+                        case "topLeft":
+                            newWidth = Math.max(minW, startBox.width - dx);
+                            newHeight = Math.max(minH, startBox.height - dy);
+                            newLeft = startBox.left + (startBox.width - newWidth);
+                            newTop = startBox.top + (startBox.height - newHeight);
+                            break;
+                        case "topRight":
+                            newWidth = Math.max(minW, startBox.width + dx);
+                            newHeight = Math.max(minH, startBox.height - dy);
+                            newTop = startBox.top + (startBox.height - newHeight);
+                            break;
+                        case "bottomLeft":
+                            newWidth = Math.max(minW, startBox.width - dx);
+                            newHeight = Math.max(minH, startBox.height + dy);
+                            newLeft = startBox.left + (startBox.width - newWidth);
+                            break;
+                        case "bottomRight":
+                            newWidth = Math.max(minW, startBox.width + dx);
+                            newHeight = Math.max(minH, startBox.height + dy);
+                            break;
+                        case "top":
+                            newHeight = Math.max(minH, startBox.height - dy);
+                            newTop = startBox.top + (startBox.height - newHeight);
+                            break;
+                        case "bottom":
+                            newHeight = Math.max(minH, startBox.height + dy);
+                            break;
+                        case "left":
+                            newWidth = Math.max(minW, startBox.width - dx);
+                            newLeft = startBox.left + (startBox.width - newWidth);
+                            break;
+                        case "right":
+                            newWidth = Math.max(minW, startBox.width + dx);
+                            break;
+                    }
+
+                    // 左端・上端クランプ時にサイズも連動補正
+                    if (newLeft < 0) {
+                        newWidth = Math.max(minW, newWidth + newLeft);
+                        newLeft = 0;
+                    }
+                    if (newTop < 0) {
+                        newHeight = Math.max(minH, newHeight + newTop);
+                        newTop = 0;
+                    }
+
+                    const target = childPreview || c;
+                    target.style.left = `${newLeft}px`;
+                    target.style.top = `${newTop}px`;
+                    target.style.width = `${newWidth}px`;
+                    target.style.height = `${newHeight}px`;
+                });
+            };
+
+            const endResize = async () => {
+                document.removeEventListener("pointermove", onResizeMove);
+                document.removeEventListener("pointerup", endResize, { capture: true });
+                document.removeEventListener("pointercancel", endResize, { capture: true });
+                window.removeEventListener("blur", endResize);
+
+                if (resizeRafId) {
+                    cancelAnimationFrame(resizeRafId);
+                    resizeRafId = null;
+                }
+                if (!resizing) return;
+
+                document.body.style.userSelect = "";
+                document.body.style.cursor = "";
+                if (childPreview) {
+                    if (childPreview.parentElement) {
+                        c.style.left = childPreview.style.left;
+                        c.style.top = childPreview.style.top;
+                        c.style.width = childPreview.style.width;
+                        c.style.height = childPreview.style.height;
+                    }
+                    childPreview.remove();
+                    childPreview = null;
+                }
+                resizeShield.remove();
+                resizing = false;
+                currentHandle = null;
+
+                saveNormalBounds();
+                if (!childOptions.silent) {
+                    playSystemEventSound("resize");
+                }
+                if (sizeKey) {
+                    const data = {
+                        w: c.offsetWidth,
+                        h: c.offsetHeight,
+                        x: Math.round(parseFloat(c.style.left) || 0),
+                        y: Math.round(parseFloat(c.style.top) || 0)
+                    };
+                    windowSizeCache.set(sizeKey, data);
+                    await saveWindowSize(sizeKey, data);
+                }
+            };
+
+            document.addEventListener("pointermove", onResizeMove);
+            document.addEventListener("pointerup", endResize, { capture: true, once: true });
+            document.addEventListener("pointercancel", endResize, { capture: true, once: true });
+            window.addEventListener("blur", endResize, { once: true });
+        };
+
+        directions.forEach(dir => {
+            handles[dir].addEventListener("pointerdown", (e) => {
+                if (e.pointerType === "mouse" && e.button !== 0) return;
+                startChildResize(e, dir);
+            }, { signal: childSignal });
+        });
+
+        // DOMへ追加して管理配列へ登録
+        clientEl.appendChild(c);
+        children.push(c);
+        saveNormalBounds();
+
+        // 初期状態が最大化指定、または既に最大化モード中なら自動最大化（Win95仕様）
+        if ((childOptions.maximized || isMaximizedMode) && controlState.maximize) {
+            maximizeChild(true);
+        } else if (childOptions.minimized && controlState.minimize) {
+            minimizeChild(true);
+        } else {
+            bringChildToFront(c, { activateParent: true, respectMaximizedMode: false });
+        }
+
+        if (!childOptions.silent) {
+            playSystemEventSound("open");
+        }
+
+        emit("mdiChildCreated", {
+            parentId: parentWin.dataset.windowId,
+            windowId: childId,
+            title: childTitle,
+            element: c,
+            options: childOptions
+        });
+
+        return childContent;
+    };
+
+    const controller = {
+        parentWindow: parentWin,
+        clientElement: clientEl,
+        createChild,
+        getChildren: () => children.filter(c => c.isConnected).map(c => ({
+            id: c.dataset.windowId,
+            title: c.dataset.title || "Untitled",
+            minimized: c.dataset.minimized === "true",
+            maximized: c.classList.contains("mdi-maximized"),
+            zIndex: Number(c.style.zIndex || 0),
+            el: c,
+            content: c._mdiContent
+        })),
+        getActiveChild: () => (activeChild && activeChild.isConnected ? activeChild : null),
+        getMaximizedChild,
+        activateChild: (target) => {
+            const el = resolveTargetWindowElement(target);
+            if (el && children.includes(el)) {
+                if (el.dataset.minimized === "true") {
+                    el._mdiRestoreFromMinimize?.();
+                } else {
+                    bringChildToFront(el, { activateParent: true, respectMaximizedMode: true });
+                }
+                return true;
+            }
+            return false;
+        },
+        nextChild: () => cycleChild(1),
+        prevChild: () => cycleChild(-1),
+        cascade,
+        tileHorizontal,
+        tileVertical,
+        arrangeIcons,
+        closeAll,
+        syncParentTitle,
+        syncTitleBarStates,
+        _handleParentClosing: () => {
+            // 親ウィンドウを閉じる前に各子の onBeforeClose を確認し、すべて許可された場合のみ解放
+            for (const child of [...children]) {
+                if (!child.isConnected) continue;
+                const closed = child._destroy ? child._destroy(false) : (child.remove(), true);
+                if (!closed) return false;
+            }
+            return true;
+        }
+    };
+
+    parentWin._mdiController = controller;
+    parentContent._mdiController = controller;
+
+    return controller;
+}
+
+export function getMDIController(parentTarget) {
+    const parentWin = resolveMDIParentWindow(parentTarget);
+    return parentWin?._mdiController || null;
+}
+
+export function createMDIChild(parentTarget, title, options = {}) {
+    const controller = getMDIController(parentTarget) || enableMDI(parentTarget);
+    return controller.createChild(title, options);
+}
+
+export function getMDIChildren(parentTarget) {
+    const controller = getMDIController(parentTarget);
+    return controller ? controller.getChildren() : [];
+}
+
+export function cascadeMDIChildren(parentTarget) {
+    const controller = getMDIController(parentTarget);
+    if (!controller) return false;
+    controller.cascade();
+    return true;
+}
+
+export function tileMDIChildrenHorizontal(parentTarget) {
+    const controller = getMDIController(parentTarget);
+    if (!controller) return false;
+    controller.tileHorizontal();
+    return true;
+}
+
+export function tileMDIChildrenVertical(parentTarget) {
+    const controller = getMDIController(parentTarget);
+    if (!controller) return false;
+    controller.tileVertical();
+    return true;
+}
+
+export function arrangeMDIIcons(parentTarget) {
+    const controller = getMDIController(parentTarget);
+    if (!controller) return false;
+    controller.arrangeIcons();
+    return true;
 }
 
 /* =========================
@@ -2464,7 +4179,17 @@ export function initWindowAPI() {
         detachWindowResources: (win) => detachWindowResources(win),
         removeAllTaskbarButtons: () => removeAllTaskbarButtons(),
         updateWindowTitle: (win, title, isDirty, newNode) => updateWindowTitle(win, title, isDirty, newNode),
-        getWindows: () => getWindows().map(({ el, ...rest }) => rest),
+        getWindows: (includeMDIChildren = false) => getWindows(includeMDIChildren).map(({ el, ...rest }) => rest),
+
+        // Windows 95 準拠 MDI (Multiple Document Interface) API
+        enableMDI: (parentTarget, options) => enableMDI(parentTarget, options),
+        getMDIController: (parentTarget) => getMDIController(parentTarget),
+        createMDIChild: (parentTarget, title, options) => createMDIChild(parentTarget, title, options),
+        getMDIChildren: (parentTarget) => getMDIChildren(parentTarget).map(({ el, content, ...rest }) => rest),
+        cascadeMDIChildren: (parentTarget) => cascadeMDIChildren(parentTarget),
+        tileMDIChildrenHorizontal: (parentTarget) => tileMDIChildrenHorizontal(parentTarget),
+        tileMDIChildrenVertical: (parentTarget) => tileMDIChildrenVertical(parentTarget),
+        arrangeMDIIcons: (parentTarget) => arrangeMDIIcons(parentTarget),
 
         refreshTopWindow: (forcedTopWindow) => refreshTopWindow(forcedTopWindow),
         scheduleRefreshTopWindow: () => scheduleRefreshTopWindow(),
