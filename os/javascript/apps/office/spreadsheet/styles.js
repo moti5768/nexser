@@ -533,22 +533,34 @@ const SCOPED_CSS = `
     border-collapse: collapse;
     table-layout: fixed;
     background-color: #fff;
+    border: none !important;
 }
 
+.nexser-spreadsheet-app .ss-table thead,
+.nexser-spreadsheet-app .ss-table tbody,
 .nexser-spreadsheet-app .ss-table tr {
-    height: 30px;
+    border: none !important;
+}
+
+.nexser-spreadsheet-app .ss-table thead tr {
+    height: 22px;
+}
+
+.nexser-spreadsheet-app .ss-table tbody tr {
+    height: 25px;
 }
 
 .nexser-spreadsheet-app .ss-table th,
 .nexser-spreadsheet-app .ss-table td {
     height: inherit;
-    padding: 0 4px;
+    padding: 0 3px;
     text-align: left;
+    vertical-align: middle;
     white-space: pre;
     position: relative;
-    font-family: 'MS PGothic', 'MS Gothic', sans-serif;
-    font-size: 14px;
-    line-height: 1.3;
+    font-family: 'Yu Gothic', '游ゴシック', 'Meiryo', 'MS PGothic', sans-serif;
+    font-size: 11pt;
+    line-height: 1.25;
     letter-spacing: normal;
     font-kerning: auto;
     text-rendering: auto;
@@ -571,23 +583,56 @@ const SCOPED_CSS = `
     overflow: hidden;
     text-overflow: clip;
     cursor: cell;
-    border: 1px solid #d0d0d0;
+    border: none;
     color: #000;
     background-color: #fff;
     outline: none;
+    --ss-sel-t: 0 0 0 0 transparent;
+    --ss-sel-b: 0 0 0 0 transparent;
+    --ss-sel-l: 0 0 0 0 transparent;
+    --ss-sel-r: 0 0 0 0 transparent;
+    --ss-frz-r: 0 0 0 0 transparent;
+    --ss-frz-b: 0 0 0 0 transparent;
+    --ss-gl-r: inset -1px 0 0 #d4d4d4;
+    --ss-gl-b: inset 0 -1px 0 #d4d4d4;
+    box-shadow:
+        var(--ss-sel-t),
+        var(--ss-sel-b),
+        var(--ss-sel-l),
+        var(--ss-sel-r),
+        var(--ss-frz-r),
+        var(--ss-frz-b),
+        var(--ss-gl-r),
+        var(--ss-gl-b);
+}
+
+/* Excel準拠：塗りつぶし適用セル・明示罫線隣接辺ではグリッド線を非表示 */
+.nexser-spreadsheet-app .ss-table td.ss-has-fill {
+    --ss-gl-r: 0 0 0 0 transparent;
+    --ss-gl-b: 0 0 0 0 transparent;
+}
+/* 同色塗りつぶし隣接辺の border-collapse 行・列トラックおよびズーム時サブピクセル隙間を完全解消（明示罫線時はインラインが優先） */
+.nexser-spreadsheet-app .ss-table td.ss-has-fill.ss-fill-seam-b {
+    border-bottom: 1px solid var(--ss-fill-bg);
+}
+.nexser-spreadsheet-app .ss-table td.ss-has-fill.ss-fill-seam-r {
+    border-right: 1px solid var(--ss-fill-bg);
+}
+.nexser-spreadsheet-app .ss-table td.ss-no-gl-r {
+    --ss-gl-r: 0 0 0 0 transparent;
+}
+.nexser-spreadsheet-app .ss-table td.ss-no-gl-b {
+    --ss-gl-b: 0 0 0 0 transparent;
 }
 
 .nexser-spreadsheet-app .ss-table td.ss-text-overflow {
     overflow: visible;
-    z-index: 2;
 }
 
-.nexser-spreadsheet-app .ss-table td.ss-has-content:not(.ss-text-overflow) {
-    z-index: 3;
-}
-
-/* 左・中央・右揃えおよび縦書きのはみ出し描画（Excel準拠の方向展開＆隣接セル境界クリップ） */
+/* 左・中央・右揃えおよび縦書きのはみ出し描画（tdにz-indexを持たせず子ラッパー側で重なり制御） */
 .nexser-spreadsheet-app .ss-table td .ss-overflow-wrap {
+    position: relative;
+    z-index: 2;
     display: flex;
     width: 100%;
     pointer-events: none;
@@ -598,6 +643,7 @@ const SCOPED_CSS = `
         calc(-1 * var(--ov-left, 0px))
     );
 }
+
 .nexser-spreadsheet-app .ss-table td .ss-overflow-wrap.ss-ov-left {
     justify-content: flex-start;
 }
@@ -647,20 +693,34 @@ const SCOPED_CSS = `
     text-align: center;
 }
 
+/* ユーザー定義表示形式の色タグ（[赤]・[青]等）：インライン文字色や条件付き書式を汚染せず適用 */
+.nexser-spreadsheet-app .ss-table td.ss-has-numfmt-color {
+    color: var(--ss-numfmt-color);
+}
+
 .nexser-spreadsheet-app .ss-table td.ss-hyperlink {
     color: #0563c1;
     text-decoration: underline;
     cursor: pointer;
 }
 
+.nexser-spreadsheet-app .ss-table thead th,
+.nexser-spreadsheet-app .ss-table tbody th.row_number {
+    border: none !important;
+    --ss-th-r: inset -1px 0 0 #a8acb0;
+    --ss-th-b: inset 0 -1px 0 #a8acb0;
+    box-shadow: var(--ss-th-r), var(--ss-th-b);
+}
+
 .nexser-spreadsheet-app .ss-table thead th {
-    font-weight: bold;
+    font-weight: normal;
     position: sticky;
     top: 0;
     z-index: 13;
     text-align: center;
-    font-size: 13px;
-    background-color: #C3C7CB;
+    font-size: 11px;
+    color: #333;
+    background-color: #e6e6e6;
 }
 
 .nexser-spreadsheet-app .ss-table thead th.ss-corner {
@@ -668,16 +728,20 @@ const SCOPED_CSS = `
     z-index: 17;
     cursor: cell;
     text-align: center;
+    padding: 0;
+    font-size: 10px;
 }
 
 .nexser-spreadsheet-app .ss-table tbody th.row_number {
+    font-weight: normal;
     position: sticky;
     left: 0;
     z-index: 13;
-    text-align: right;
-    padding-right: 6px;
-    font-size: 13px;
-    background-color: #C3C7CB;
+    text-align: center;
+    padding: 0 3px;
+    font-size: 11px;
+    color: #333;
+    background-color: #e6e6e6;
     cursor: e-resize;
 }
 
@@ -689,12 +753,12 @@ const SCOPED_CSS = `
 .nexser-spreadsheet-app .ss-table thead th.col_number.header-selected {
     background-color: #d2e7db;
     color: #107c41;
-    box-shadow: inset 0 -2px 0 0 #107c41;
+    --ss-th-b: inset 0 -2px 0 0 #107c41;
 }
 .nexser-spreadsheet-app .ss-table tbody th.row_number.header-selected {
     background-color: #d2e7db;
     color: #107c41;
-    box-shadow: inset -2px 0 0 0 #107c41;
+    --ss-th-r: inset -2px 0 0 0 #107c41;
 }
 .nexser-spreadsheet-app .ss-table thead th.col_number.header-full-selected,
 .nexser-spreadsheet-app .ss-table tbody th.row_number.header-full-selected {
@@ -702,38 +766,18 @@ const SCOPED_CSS = `
     color: #ffffff;
 }
 
-/* 選択状態のオーバーレイ（罫線と干渉しないインセット描画） */
-.nexser-spreadsheet-app .ss-table td.selected {
-    z-index: 4;
-}
-
-.nexser-spreadsheet-app .ss-table td.selected::after {
+/* 選択状態のオーバーレイ（td自体にz-indexを付けずborder-collapse共有罫線との競合を防止） */
+.nexser-spreadsheet-app .ss-table td.selected:not(.active-cell)::after {
     content: "";
     position: absolute;
     inset: 0;
-    background-color: rgba(70, 130, 180, 0.18);
+    background-color: rgba(128, 128, 128, 0.16);
     pointer-events: none;
-    z-index: 3;
-}
-
-.nexser-spreadsheet-app .ss-table td.active-cell {
-    z-index: 5;
-}
-
-.nexser-spreadsheet-app .ss-table td.ss-text-overflow,
-.nexser-spreadsheet-app .ss-table td.ss-text-overflow.selected,
-.nexser-spreadsheet-app .ss-table td.ss-text-overflow.active-cell {
-    z-index: 6;
-}
-
-.nexser-spreadsheet-app .ss-table td.ss-has-content:not(.ss-text-overflow),
-.nexser-spreadsheet-app .ss-table td.ss-has-content:not(.ss-text-overflow).selected,
-.nexser-spreadsheet-app .ss-table td.ss-has-content:not(.ss-text-overflow).active-cell {
-    z-index: 7;
+    z-index: 1;
 }
 
 .nexser-spreadsheet-app .ss-table td.active-cell::after {
-    background-color: rgba(70, 130, 180, 0.06);
+    display: none;
 }
 
 /* Excel準拠：セルの右外側に独立配置するプルダウンボタン（<td>の子要素にしない） */
@@ -909,29 +953,31 @@ const SCOPED_CSS = `
     pointer-events: none;
 }
 
-/* 選択範囲の外周ボーダー（数式編集中の青枠・赤枠と同じ inset box-shadow 描画に統一） */
-.nexser-spreadsheet-app .ss-table td.sel-edge-top,
-.nexser-spreadsheet-app .ss-table td.sel-edge-bottom,
-.nexser-spreadsheet-app .ss-table td.sel-edge-left,
-.nexser-spreadsheet-app .ss-table td.sel-edge-right {
-    --sel-t: 0 0 0 0 transparent;
-    --sel-b: 0 0 0 0 transparent;
-    --sel-l: 0 0 0 0 transparent;
-    --sel-r: 0 0 0 0 transparent;
-    box-shadow: var(--sel-t), var(--sel-b), var(--sel-l), var(--sel-r);
+/* 連続選択範囲の外周ボーダー（セル罫線・背景色と独立したオーバーレイ層） */
+.nexser-spreadsheet-app .ss-selection-box {
+    position: absolute;
+    display: none;
+    pointer-events: none;
+    z-index: 6;
+    border: 2px solid #107c41;
+    box-sizing: border-box;
+}
+.nexser-spreadsheet-app .ss-selection-box.is-frozen {
+    z-index: 10;
 }
 
-.nexser-spreadsheet-app .ss-table td.sel-edge-top {
-    --sel-t: inset 0 2px 0 0 #005a9e;
+/* 非連続（Ctrl複数範囲）選択時のみセル側変数で各島の外周を描画（グリッド線・固定枠線と非競合） */
+.nexser-spreadsheet-app .ss-table.ss-sel-multi td.sel-edge-top {
+    --ss-sel-t: inset 0 2px 0 0 #107c41;
 }
-.nexser-spreadsheet-app .ss-table td.sel-edge-bottom {
-    --sel-b: inset 0 -2px 0 0 #005a9e;
+.nexser-spreadsheet-app .ss-table.ss-sel-multi td.sel-edge-bottom {
+    --ss-sel-b: inset 0 -2px 0 0 #107c41;
 }
-.nexser-spreadsheet-app .ss-table td.sel-edge-left {
-    --sel-l: inset 2px 0 0 0 #005a9e;
+.nexser-spreadsheet-app .ss-table.ss-sel-multi td.sel-edge-left {
+    --ss-sel-l: inset 2px 0 0 0 #107c41;
 }
-.nexser-spreadsheet-app .ss-table td.sel-edge-right {
-    --sel-r: inset -2px 0 0 0 #005a9e;
+.nexser-spreadsheet-app .ss-table.ss-sel-multi td.sel-edge-right {
+    --ss-sel-r: inset -2px 0 0 0 #107c41;
 }
 
 /* セル範囲移動時のドロップ先プレビュー枠（範囲全体を囲む1枚の外周枠） */
@@ -955,13 +1001,13 @@ const SCOPED_CSS = `
     position: absolute;
     z-index: 25;
     margin: 0;
-    padding: 4px;
-    border: 2px solid #005a9e;
+    padding: 2px 3px;
+    border: 2px solid #107c41;
     background: #fff;
     color: #000;
-    font-family: 'MS PGothic', 'MS Gothic', sans-serif;
-    font-size: 14px;
-    line-height: 1.3;
+    font-family: 'Yu Gothic', '游ゴシック', 'Meiryo', 'MS PGothic', sans-serif;
+    font-size: 11pt;
+    line-height: 1.25;
     resize: none;
     outline: none;
     overflow: auto;
@@ -999,7 +1045,7 @@ const SCOPED_CSS = `
     position: absolute;
     width: 8px;
     height: 8px;
-    background-color: steelblue;
+    background-color: #107c41;
     border: 1px solid #fff;
     bottom: 0;
     right: 0;
@@ -1007,11 +1053,85 @@ const SCOPED_CSS = `
     z-index: 7;
 }
 
-.nexser-spreadsheet-app td.fill-selected { background-color: rgba(0, 90, 158, 0.08); }
-.nexser-spreadsheet-app td.fill-edge-top { border-top: 3px dashed #005a9e !important; }
-.nexser-spreadsheet-app td.fill-edge-bottom { border-bottom: 3px dashed #005a9e !important; }
-.nexser-spreadsheet-app td.fill-edge-left { border-left: 3px dashed #005a9e !important; }
-.nexser-spreadsheet-app td.fill-edge-right { border-right: 3px dashed #005a9e !important; }
+.nexser-spreadsheet-app td.fill-selected { background-color: rgba(16, 124, 65, 0.08); }
+.nexser-spreadsheet-app td.fill-edge-top { border-top: 2px dashed #107c41 !important; }
+.nexser-spreadsheet-app td.fill-edge-bottom { border-bottom: 2px dashed #107c41 !important; }
+.nexser-spreadsheet-app td.fill-edge-left { border-left: 2px dashed #107c41 !important; }
+.nexser-spreadsheet-app td.fill-edge-right { border-right: 2px dashed #107c41 !important; }
+
+/* Excel準拠 オートフィルオプションボタン ＆ ポップアップメニュー */
+.nexser-spreadsheet-app .ss-autofill-opt-btn {
+    position: absolute;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    height: 22px;
+    padding: 0 5px;
+    background: #ffffff;
+    color: #107c41;
+    border: 1px solid #8a8a8a;
+    box-shadow: 1px 2px 5px rgba(0, 0, 0, 0.24);
+    cursor: pointer;
+    z-index: 26;
+    user-select: none;
+    font-size: 11px;
+    line-height: 1;
+}
+.nexser-spreadsheet-app .ss-autofill-opt-btn:hover,
+.nexser-spreadsheet-app .ss-autofill-opt-btn.open {
+    background: #e6f4ec;
+    border-color: #107c41;
+}
+.nexser-spreadsheet-app .ss-autofill-opt-btn .ss-afo-icon {
+    font-size: 13px;
+    font-weight: bold;
+}
+.nexser-spreadsheet-app .ss-autofill-opt-btn .ss-afo-caret {
+    font-size: 8px;
+    color: #333;
+}
+
+.ss-autofill-opt-menu {
+    position: fixed;
+    min-width: 176px;
+    padding: 3px 0;
+    background: #ffffff;
+    color: #000000;
+    border: 1px solid #707070;
+    box-shadow: 2px 3px 8px rgba(0, 0, 0, 0.28);
+    font-family: 'Yu Gothic', '游ゴシック', 'MS PGothic', sans-serif;
+    font-size: 12px;
+    z-index: 2147483647;
+    user-select: none;
+}
+.ss-autofill-opt-menu .ss-afo-item {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 4px 10px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.ss-autofill-opt-menu .ss-afo-item:hover {
+    background: #e6f4ec;
+    color: #0b5a2f;
+}
+.ss-autofill-opt-menu .ss-afo-item.active .ss-afo-radio {
+    color: #107c41;
+    font-weight: bold;
+}
+.ss-autofill-opt-menu .ss-afo-radio {
+    width: 12px;
+    text-align: center;
+    font-size: 11px;
+    color: #666;
+}
+.ss-autofill-opt-menu .ss-afo-sep {
+    height: 1px;
+    margin: 3px 6px;
+    background: #d0d0d0;
+}
 
 .nexser-spreadsheet-app .merge-highlight {
     outline: 3.5px dashed red !important;
@@ -1173,7 +1293,8 @@ const SCOPED_CSS = `
     overflow: visible;
     transform-origin: center center;
     color: #000;
-    font-size: 14px;
+    font-family: 'Yu Gothic', '游ゴシック', 'Meiryo', 'MS PGothic', sans-serif;
+    font-size: 11pt;
 }
 
 .nexser-spreadsheet-app .floating-textbox.obj-selected,
@@ -1455,21 +1576,6 @@ const SCOPED_CSS = `
     z-index: 9;
 }
 
-.nexser-spreadsheet-app .ss-table td.ss-frozen-row.active-cell,
-.nexser-spreadsheet-app .ss-table td.ss-frozen-col.active-cell {
-    z-index: 10;
-}
-
-.nexser-spreadsheet-app .ss-table td.ss-frozen-row.ss-text-overflow,
-.nexser-spreadsheet-app .ss-table td.ss-frozen-col.ss-text-overflow {
-    z-index: 11;
-}
-
-.nexser-spreadsheet-app .ss-table td.ss-frozen-row.ss-has-content:not(.ss-text-overflow),
-.nexser-spreadsheet-app .ss-table td.ss-frozen-col.ss-has-content:not(.ss-text-overflow) {
-    z-index: 12;
-}
-
 .nexser-spreadsheet-app .ss-table tbody th.row_number.ss-frozen-row {
     z-index: 14;
 }
@@ -1482,20 +1588,157 @@ const SCOPED_CSS = `
     z-index: 17;
 }
 
-.nexser-spreadsheet-app .ss-table .ss-freeze-edge-bottom {
-    box-shadow: inset 0 -2px 0 #404040;
+.nexser-spreadsheet-app .ss-table td.ss-freeze-edge-bottom {
+    --ss-frz-b: inset 0 -2px 0 #404040;
 }
 
-.nexser-spreadsheet-app .ss-table .ss-freeze-edge-right {
-    box-shadow: inset -2px 0 0 #404040;
+.nexser-spreadsheet-app .ss-table td.ss-freeze-edge-right {
+    --ss-frz-r: inset -2px 0 0 #404040;
 }
 
-/* スクロール領域外のテキストボックス・グラフ非表示 */
-.nexser-spreadsheet-app .floating-textbox.ss-obj-offscreen {
+.nexser-spreadsheet-app .ss-table th.ss-freeze-edge-bottom {
+    --ss-th-b: inset 0 -2px 0 #404040;
+}
+
+.nexser-spreadsheet-app .ss-table th.ss-freeze-edge-right {
+    --ss-th-r: inset -2px 0 0 #404040;
+}
+
+/* スクロール領域外のテキストボックス・グラフ・スライサー非表示 */
+.nexser-spreadsheet-app .floating-textbox.ss-obj-offscreen,
+.nexser-spreadsheet-app .floating-slicer.ss-obj-offscreen {
     visibility: hidden !important;
     pointer-events: none !important;
 }
 
+/* ===== Excel準拠 スライサー ===== */
+.nexser-spreadsheet-app .floating-slicer {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    min-width: 150px;
+    min-height: 120px;
+    background: #ffffff;
+    border: 1px solid var(--sl-border, #8ea9db);
+    box-shadow: 2px 3px 8px rgba(0, 0, 0, 0.22);
+    z-index: 12;
+    user-select: none;
+    outline: none;
+    overflow: hidden;
+    font-family: 'Yu Gothic', '游ゴシック', 'Meiryo', 'MS PGothic', sans-serif;
+}
+.nexser-spreadsheet-app .floating-slicer.obj-selected,
+.nexser-spreadsheet-app .floating-slicer:focus-within {
+    outline: 2px solid var(--sl-accent, #1f4e78);
+    z-index: 15;
+}
+.nexser-spreadsheet-app .ss-slicer-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4px;
+    padding: 4px 6px;
+    background: #f5f7fa;
+    border-bottom: 1px solid var(--sl-border, #8ea9db);
+    cursor: move;
+    flex-shrink: 0;
+}
+.nexser-spreadsheet-app .ss-slicer-title {
+    font-size: 12px;
+    font-weight: bold;
+    color: var(--sl-accent, #1f4e78);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.nexser-spreadsheet-app .ss-slicer-ctrls {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    flex-shrink: 0;
+}
+.nexser-spreadsheet-app .ss-slicer-ctrl {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    font-size: 11px;
+    line-height: 1;
+    background: transparent;
+    color: #333;
+    border: 1px solid transparent;
+    cursor: pointer;
+}
+.nexser-spreadsheet-app .ss-slicer-ctrl:hover {
+    background: #e2e8f0;
+    border-color: #94a3b8;
+}
+.nexser-spreadsheet-app .ss-slicer-ctrl.active {
+    background: var(--sl-active-bg, #4472c4);
+    color: var(--sl-active-fg, #ffffff);
+    border-color: var(--sl-accent, #1f4e78);
+}
+.nexser-spreadsheet-app .ss-slicer-ctrl.disabled {
+    opacity: 0.35;
+    pointer-events: none;
+}
+.nexser-spreadsheet-app .ss-slicer-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 5px;
+    display: grid;
+    grid-auto-rows: 26px;
+    gap: 4px;
+    align-content: start;
+    background: #ffffff;
+}
+.nexser-spreadsheet-app .ss-slicer-item {
+    display: flex;
+    align-items: center;
+    padding: 0 7px;
+    height: 26px;
+    font-size: 11px;
+    text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: pointer;
+    border: 1px solid var(--sl-border, #8ea9db);
+    background: #f3f4f6;
+    color: #444;
+    border-radius: 2px;
+}
+.nexser-spreadsheet-app .ss-slicer-item:hover {
+    filter: brightness(0.95);
+}
+.nexser-spreadsheet-app .ss-slicer-item.selected {
+    background: var(--sl-active-bg, #4472c4);
+    color: var(--sl-active-fg, #ffffff);
+    border-color: var(--sl-accent, #1f4e78);
+    font-weight: bold;
+}
+.nexser-spreadsheet-app .ss-slicer-item.no-data {
+    opacity: 0.45;
+    border-style: dashed;
+}
+.nexser-spreadsheet-app .ss-slicer-empty {
+    font-size: 11px;
+    color: #666;
+    text-align: center;
+    padding: 12px 4px;
+}
+.nexser-spreadsheet-app .ss-slicer-resizer {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    width: 12px;
+    height: 12px;
+    cursor: nwse-resize;
+    background: linear-gradient(135deg, transparent 50%, var(--sl-border, #8ea9db) 50%);
+}
 /* セル編集中テキスト選択ミニツールバー（Excel準拠） */
 .ss-inline-mini-toolbar {
     position: fixed;
@@ -1607,10 +1850,10 @@ const SCOPED_CSS = `
     display: none !important;
 }
 .nexser-spreadsheet-app .ss-table thead th.col_number.ss-has-hidden-next {
-    border-right: 3px double #107c41 !important;
+    --ss-th-r: inset -3px 0 0 #107c41;
 }
 .nexser-spreadsheet-app .ss-table tbody th.row_number.ss-has-hidden-next {
-    border-bottom: 3px double #107c41 !important;
+    --ss-th-b: inset 0 -3px 0 #107c41;
 }
 
 /* ===== メモ・コメント角マーク（条件付き書式アイコンと非競合の独立マーク） ===== */
@@ -1678,9 +1921,10 @@ const SCOPED_CSS = `
     line-height: 1.2;
 }
 
-/* ===== 表示タブ：枠線・見出し・数式バー表示切替 ===== */
+/* ===== 表示タブ：枠線・見出し・数式バー表示切替（明示罫線を残してグリッド線のみ非表示） ===== */
 .nexser-spreadsheet-app.ss-hide-gridlines .ss-table td {
-    border-color: transparent;
+    --ss-gl-r: 0 0 0 0 transparent;
+    --ss-gl-b: 0 0 0 0 transparent;
 }
 .nexser-spreadsheet-app.ss-hide-headers .ss-table thead,
 .nexser-spreadsheet-app.ss-hide-headers .ss-table tbody th.row_number {
@@ -1748,9 +1992,13 @@ const SCOPED_CSS = `
     .nexser-spreadsheet-app .row_number,
     .nexser-spreadsheet-app .ss-table thead,
     .nexser-spreadsheet-app .fill-handle,
+    .nexser-spreadsheet-app .ss-autofill-opt-btn,
+    .nexser-spreadsheet-app .ss-selection-box,
     .nexser-spreadsheet-app .ss-cell-dropdown-btn,
     .nexser-spreadsheet-app .ss-formula-ref-layer,
-    .nexser-spreadsheet-app .floating-textbox-delete {
+    .nexser-spreadsheet-app .floating-textbox-delete,
+    .nexser-spreadsheet-app .ss-slicer-ctrls,
+    .nexser-spreadsheet-app .ss-slicer-resizer {
         display: none !important;
     }
     .nexser-spreadsheet-app .selected::after,

@@ -8,6 +8,7 @@ import {
     dateToSerial,
     serialToDate,
     tryParseDateToSerial,
+    parseJapaneseDateInput,
     EXCEL_BLANK_CELL,
     unwrapBlank,
     isBlankVal,
@@ -29,13 +30,28 @@ import {
     FORMULA_FN_VALUES
 } from "./formula-functions.js";
 import {
+    DEFAULT_COL_WIDTH,
+    DEFAULT_ROW_HEIGHT,
+    DEFAULT_HEADER_HEIGHT,
+    DEFAULT_ROW_HEADER_WIDTH,
+    DEFAULT_FONT_FAMILY,
+    DEFAULT_FONT_SIZE_PT,
+    DEFAULT_FONT_SIZE_CSS,
+    cssFontSizeToPx,
+    cssFontSizeToPt,
     escapeHtml,
     getColumnName,
     columnLettersToIndex,
     getCellReference,
     getCellReferenceByCoord,
+    isDateNumFormat,
+    isTimeNumFormat,
+    parseTimeInput,
+    formatTimeFromSerial,
     isDateFormat,
     formatDate,
+    resolveDateFromRawValue,
+    resolveCustomPatternColor,
     preprocessAllNestedIFs,
     parseCellNumericLiteral,
     parseFormattedNumber,
@@ -79,6 +95,8 @@ import { createClipboardModule } from "./clipboard.js";
 import { createRangeMoveModule } from "./range-move.js";
 import { createFormulaEngineModule } from "./formula-engine.js";
 import { createFileIOModule } from "./file-io.js";
+import { createAutoFillModule } from "./autofill.js";
+import { createSlicerModule } from "./slicer.js";
 
 // =========================================================
 // メインアプリケーション エントリーポイント
@@ -173,7 +191,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
     });
     requestAnimationFrame(fitActiveRibbonPanel);
 
-    const INITIAL_ROWS = 80;
+    const INITIAL_ROWS = 100;
     const ROW_BATCH = 40;
     const INITIAL_COLUMNS = 40;
     const COLUMN_BATCH = 15;
@@ -321,9 +339,11 @@ export default async function initSpreadsheetApp(content, options = {}) {
             columns: [],
             zoom: 100,
             pageSize: "A4",
+            printOptions: { orientation: "portrait", fitToWidth: true, showGridlines: false },
             freezeRows: 0,
             freezeCols: 0,
             textboxes: [],
+            slicers: [],
             conditionalFormats: [],
             protected: false,
             activeCoord: { row: 1, col: 0 },
@@ -481,6 +501,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
 
     async function switchToSheet(targetIndex) {
         if (targetIndex < 0 || targetIndex >= sheets.length || targetIndex === activeSheetIndex) return;
+        hideAutoFillOptions();
         clearAuditArrows();
         invalidateDependencyGraph();
         captureCurrentSheetDOM({ flush: true });
@@ -816,7 +837,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
         let total = 0;
         for (const col of colgroup.children) {
             const w = parseInt(col.style.width, 10);
-            total += Number.isNaN(w) ? 120 : w;
+            total += Number.isNaN(w) ? DEFAULT_COL_WIDTH : w;
         }
         cachedTableWidth = total;
         table.style.width = `${total}px`;
@@ -861,8 +882,8 @@ export default async function initSpreadsheetApp(content, options = {}) {
             return;
         }
 
-        const theadHeight = theadRow.offsetHeight || 30;
-        const rowHeaderWidth = parseInt(colgroup.children[0]?.style.width, 10) || 54;
+        const theadHeight = theadRow.offsetHeight || DEFAULT_HEADER_HEIGHT;
+        const rowHeaderWidth = parseInt(colgroup.children[0]?.style.width, 10) || DEFAULT_ROW_HEADER_WIDTH;
 
         const rowTopOffsets = [];
         let accTop = theadHeight;
@@ -870,7 +891,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
             rowTopOffsets[r] = accTop;
             const tr = getRow(r);
             if (!tr || tr.style.display === "none") continue;
-            accTop += parseInt(tr.style.height, 10) || tr.offsetHeight || 30;
+            accTop += parseInt(tr.style.height, 10) || tr.offsetHeight || DEFAULT_ROW_HEIGHT;
         }
 
         const colLeftOffsets = [];
@@ -953,9 +974,9 @@ export default async function initSpreadsheetApp(content, options = {}) {
         const thEl = theadRow.children[colIndex + 1];
         if (thEl?.classList.contains("ss-col-hidden")) return 0;
         const colEl = colgroup.children[colIndex + 1];
-        if (!colEl) return 120;
+        if (!colEl) return DEFAULT_COL_WIDTH;
         const w = parseInt(colEl.style.width, 10);
-        return Number.isNaN(w) ? 120 : w;
+        return Number.isNaN(w) ? DEFAULT_COL_WIDTH : w;
     }
 
     const measureCtx = document.createElement("canvas").getContext("2d");
@@ -973,34 +994,35 @@ export default async function initSpreadsheetApp(content, options = {}) {
 
             const fStyle = cell.style.fontStyle || "normal";
             const fWeight = cell.style.fontWeight || "normal";
-            const fSize = cell.style.fontSize || "14px";
-            const fSizeNum = parseInt(fSize, 10) || 14;
-            const fFamily = cell.style.fontFamily || "'MS PGothic', 'MS Gothic', sans-serif";
+            const fSizeCss = cell.style.fontSize || DEFAULT_FONT_SIZE_CSS;
+            const fSizePx = cssFontSizeToPx(fSizeCss);
+            const fFamily = cell.style.fontFamily || DEFAULT_FONT_FAMILY;
             const isVertical = cell.style.writingMode === "vertical-rl" || cell.style.writingMode === "vertical-lr";
             const lines = text.split("\n");
 
             if (isVertical) {
-                const colW = lines.length * Math.ceil(fSizeNum * 1.35) + 18;
+                const colW = lines.length * Math.ceil(fSizePx * 1.35) + 14;
                 maxWidth = Math.max(maxWidth, colW);
                 continue;
             }
             if (measureCtx) {
-                measureCtx.font = `${fStyle} ${fWeight} ${fSize} ${fFamily}`;
+                measureCtx.font = `${fStyle} ${fWeight} ${fSizePx}px ${fFamily}`;
             }
+            const extraFilterPad = cell.querySelector(".ss-filter-arrow") ? 20 : 0;
             for (const line of lines) {
                 const textW = measureCtx
                     ? measureCtx.measureText(line).width
-                    : line.length * fSizeNum;
-                maxWidth = Math.max(maxWidth, Math.ceil(textW) + 18);
+                    : line.length * fSizePx;
+                maxWidth = Math.max(maxWidth, Math.ceil(textW) + 14 + extraFilterPad);
             }
         }
-        const finalWidth = hasContent ? Math.min(600, Math.max(40, maxWidth)) : 120;
+        const finalWidth = hasContent ? Math.min(600, Math.max(32, maxWidth)) : DEFAULT_COL_WIDTH;
         setColumnWidth(colIndex, finalWidth);
     }
 
     function autoFitRow(tr) {
         if (!tr) return;
-        let maxHeight = 30;
+        let maxHeight = DEFAULT_ROW_HEIGHT;
         for (let i = 1; i < tr.cells.length; i++) {
             const cell = tr.cells[i];
             if (!cell || cell.style.display === "none") continue;
@@ -1008,16 +1030,17 @@ export default async function initSpreadsheetApp(content, options = {}) {
 
             const fStyle = cell.style.fontStyle || "normal";
             const fWeight = cell.style.fontWeight || "normal";
-            const fSize = parseInt(cell.style.fontSize, 10) || 14;
-            const fFamily = cell.style.fontFamily || "'MS PGothic', 'MS Gothic', sans-serif";
-            const lineHeight = Math.ceil(fSize * 1.35);
+            const fSizeCss = cell.style.fontSize || DEFAULT_FONT_SIZE_CSS;
+            const fSizePx = cssFontSizeToPx(fSizeCss);
+            const fFamily = cell.style.fontFamily || DEFAULT_FONT_FAMILY;
+            const lineHeight = Math.ceil(fSizePx * 1.28);
             const text = cell.textContent || "";
             const lines = text.split("\n");
             const isVertical = cell.style.writingMode === "vertical-rl" || cell.style.writingMode === "vertical-lr";
 
             if (isVertical && text !== "") {
                 const maxChars = Math.max(1, ...lines.map(l => Array.from(l).length));
-                const vertH = maxChars * Math.ceil(fSize * 1.15) + 16;
+                const vertH = maxChars * Math.ceil(fSizePx * 1.15) + 12;
                 maxHeight = Math.max(maxHeight, Math.min(600, vertH));
                 continue;
             }
@@ -1025,18 +1048,18 @@ export default async function initSpreadsheetApp(content, options = {}) {
             let totalLines = lines.length;
             if (cell.style.whiteSpace === "pre-wrap" && text !== "") {
                 if (measureCtx) {
-                    measureCtx.font = `${fStyle} ${fWeight} ${fSize}px ${fFamily}`;
+                    measureCtx.font = `${fStyle} ${fWeight} ${fSizePx}px ${fFamily}`;
                 }
-                const colW = Math.max(24, getColumnWidth(i - 1) - 10);
+                const colW = Math.max(20, getColumnWidth(i - 1) - 8);
                 totalLines = 0;
                 for (const line of lines) {
-                    const lineW = measureCtx ? measureCtx.measureText(line).width : line.length * fSize;
+                    const lineW = measureCtx ? measureCtx.measureText(line).width : line.length * fSizePx;
                     totalLines += Math.max(1, Math.ceil(lineW / colW));
                 }
             }
-            maxHeight = Math.max(maxHeight, totalLines * lineHeight + 10);
+            maxHeight = Math.max(maxHeight, totalLines * lineHeight + 6);
         }
-        tr.style.height = maxHeight <= 30 ? "" : `${maxHeight}px`;
+        tr.style.height = maxHeight <= DEFAULT_ROW_HEIGHT ? "" : `${maxHeight}px`;
         if (freezeRows > 0) {
             applyFreezePanes();
         } else {
@@ -1164,13 +1187,13 @@ export default async function initSpreadsheetApp(content, options = {}) {
             if (!colEl || !thEl) return;
             if (!visible) {
                 if (!thEl.classList.contains("ss-col-hidden")) {
-                    colEl.dataset.prevWidth = colEl.style.width || "120px";
+                    colEl.dataset.prevWidth = colEl.style.width || `${DEFAULT_COL_WIDTH}px`;
                 }
                 colEl.style.width = "0px";
                 thEl.classList.add("ss-col-hidden");
                 for (const tr of tbody.rows) tr.cells[c + 1]?.classList.add("ss-col-hidden");
             } else {
-                colEl.style.width = colEl.dataset.prevWidth || "120px";
+                colEl.style.width = colEl.dataset.prevWidth || `${DEFAULT_COL_WIDTH}px`;
                 thEl.classList.remove("ss-col-hidden");
                 for (const tr of tbody.rows) tr.cells[c + 1]?.classList.remove("ss-col-hidden");
             }
@@ -1211,7 +1234,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
         const isCol = type === "col";
         const curVal = isCol
             ? getColumnWidth(targets[0])
-            : (getRow(targets[0])?.offsetHeight || 30);
+            : (getRow(targets[0])?.offsetHeight || DEFAULT_ROW_HEIGHT);
 
         const bodyHtml = `
             <div style="display:flex; flex-direction:column; gap:8px; font-size:12px;">
@@ -1289,7 +1312,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
             e.stopImmediatePropagation();
             e.preventDefault();
             const startY = e.clientY;
-            const startHeight = tr.offsetHeight || 30;
+            const startHeight = tr.offsetHeight || DEFAULT_ROW_HEIGHT;
             const selectedRows = getSelectedWholeRows();
             const targetRows = selectedRows.includes(rowNum) ? selectedRows : [rowNum];
             let moved = false;
@@ -1385,7 +1408,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
 
         for (let c = start; c < end; c++) {
             const colEl = document.createElement("col");
-            colEl.style.width = "120px";
+            colEl.style.width = `${DEFAULT_COL_WIDTH}px`;
             colFrag.appendChild(colEl);
 
             const th = document.createElement("th");
@@ -1411,14 +1434,14 @@ export default async function initSpreadsheetApp(content, options = {}) {
         currentColumns = end;
         cachedRowTemplate = null;
         if (cachedTableWidth > 0) {
-            cachedTableWidth += count * 120;
+            cachedTableWidth += count * DEFAULT_COL_WIDTH;
             table.style.width = `${cachedTableWidth}px`;
             spreadsheetContent.style.width = `${cachedTableWidth}px`;
         } else {
             syncTableWidth();
         }
         if (freezeRows > 0) {
-            const theadHeight = theadRow.offsetHeight || 30;
+            const theadHeight = theadRow.offsetHeight || DEFAULT_HEADER_HEIGHT;
             let accTop = theadHeight;
             for (let r = 1; r <= freezeRows; r++) {
                 const tr = getRow(r);
@@ -1431,14 +1454,14 @@ export default async function initSpreadsheetApp(content, options = {}) {
                     td.style.top = `${accTop}px`;
                     if (isBottomEdge) td.classList.add("ss-freeze-edge-bottom");
                 }
-                accTop += parseInt(tr.style.height, 10) || tr.offsetHeight || 30;
+                accTop += parseInt(tr.style.height, 10) || tr.offsetHeight || DEFAULT_ROW_HEIGHT;
             }
         }
     }
 
     function applyFreezeToRowsRange(startRowIndex) {
         if (freezeCols <= 0) return;
-        const rowHeaderWidth = parseInt(colgroup.children[0]?.style.width, 10) || 54;
+        const rowHeaderWidth = parseInt(colgroup.children[0]?.style.width, 10) || DEFAULT_ROW_HEADER_WIDTH;
         const colLeftOffsets = [];
         let accLeft = rowHeaderWidth;
         for (let c = 0; c < freezeCols; c++) {
@@ -1510,7 +1533,10 @@ export default async function initSpreadsheetApp(content, options = {}) {
         setCellFormattedValue: (cell, val) => setCellFormattedValue(cell, val),
         applyConditionalFormats: (dirtyCoords) => applyConditionalFormats(dirtyCoords),
         updateTextOverflowDisplay: (rows) => updateTextOverflowDisplay(rows),
-        updateAllFloatingCharts: (dirtyCoords) => updateAllFloatingCharts(dirtyCoords)
+        updateAllFloatingCharts: (dirtyCoords) => {
+            updateAllFloatingCharts(dirtyCoords);
+            refreshAllSlicers?.();
+        }
     });
 
     function syncCellHyperlinkVisual(cell) {
@@ -1533,6 +1559,17 @@ export default async function initSpreadsheetApp(content, options = {}) {
         }
     }
 
+    function syncNumFmtColorClass(cell, rawVal, fmt) {
+        const color = resolveCustomPatternColor(rawVal, fmt);
+        if (color) {
+            cell.style.setProperty("--ss-numfmt-color", color);
+            cell.classList.add("ss-has-numfmt-color");
+        } else {
+            cell.style.removeProperty("--ss-numfmt-color");
+            cell.classList.remove("ss-has-numfmt-color");
+        }
+    }
+
     function setCellFormattedValue(cell, rawVal) {
         const rawStr = typeof rawVal === "boolean"
             ? (rawVal ? "TRUE" : "FALSE")
@@ -1543,18 +1580,20 @@ export default async function initSpreadsheetApp(content, options = {}) {
             delete cell.dataset.dateValue;
             setCellTextPreservingControls(cell, "");
             cell.classList.remove("ss-auto-align-right", "ss-auto-align-center");
+            syncNumFmtColorClass(cell, "", "");
             syncCellHyperlinkVisual(cell);
             return;
         }
-        if (cell.dataset.quotePrefix === "1") {
+        if (cell.dataset.quotePrefix === "1" || (cell.dataset.numFormat === "text" && !cell.dataset.formula)) {
             cell.dataset.rawValue = rawStr;
             setCellTextPreservingControls(cell, rawStr);
             cell.classList.remove("ss-auto-align-right", "ss-auto-align-center");
+            syncNumFmtColorClass(cell, "", "");
             syncCellHyperlinkVisual(cell);
             return;
         }
         const fmt = cell.dataset.numFormat;
-        if (fmt && fmt !== "general" && !rawStr.startsWith("#")) {
+        if (fmt && fmt !== "general" && fmt !== "text" && !rawStr.startsWith("#")) {
             const parsed = parseFormattedNumber(rawStr);
             cell.dataset.rawValue = !isNaN(parsed) ? String(parsed) : rawStr;
         } else {
@@ -1563,9 +1602,11 @@ export default async function initSpreadsheetApp(content, options = {}) {
         if (showFormulasMode && cell.dataset.formula) {
             setCellTextPreservingControls(cell, cell.dataset.formula);
             cell.classList.remove("ss-auto-align-right", "ss-auto-align-center");
+            syncNumFmtColorClass(cell, "", "");
         } else {
             setCellTextPreservingControls(cell, formatDisplayByNumFmt(cell.dataset.rawValue, fmt, cell));
             updateCellAutoAlignment(cell, cell.dataset.rawValue);
+            syncNumFmtColorClass(cell, cell.dataset.rawValue, fmt);
         }
         syncCellHyperlinkVisual(cell);
     }
@@ -1748,6 +1789,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
         adjustFormula: (f, dr, dc) => adjustFormula(f, dr, dc),
         evaluateFormula,
         getSelectedRangeBounds: () => getSelectedRangeBounds(),
+        syncCellGridlinesForCells: (cells) => syncCellGridlinesForCells(cells),
         openAppModal,
         openSheetRangePicker,
         parseRangeReference: (s) => parseRangeReference(s),
@@ -1816,8 +1858,19 @@ export default async function initSpreadsheetApp(content, options = {}) {
 
         const select = appRoot.querySelector(".ss-font-size");
         if (select) {
-            const currentSize = target.style.fontSize || computed.fontSize;
-            for (const opt of select.options) opt.selected = opt.value === currentSize;
+            const curPt = Math.round(cssFontSizeToPt(target.dataset.origFontSize || target.style.fontSize || computed.fontSize, DEFAULT_FONT_SIZE_PT));
+            let matched = false;
+            for (const opt of select.options) {
+                const optPt = Math.round(cssFontSizeToPt(opt.value, DEFAULT_FONT_SIZE_PT));
+                const isMatch = optPt === curPt;
+                opt.selected = isMatch;
+                if (isMatch) matched = true;
+            }
+            if (!matched) {
+                for (const opt of select.options) {
+                    opt.selected = opt.value === DEFAULT_FONT_SIZE_CSS;
+                }
+            }
         }
 
         const isBold = target.style.fontWeight === "bold" || Number(computed.fontWeight) >= 600;
@@ -1828,12 +1881,10 @@ export default async function initSpreadsheetApp(content, options = {}) {
         appRoot.querySelector(".ss-toggle-strike")?.classList.toggle("selected", deco.includes("line-through"));
         appRoot.querySelector(".ss-toggle-textshadow")?.classList.toggle("selected", Boolean(target.style.textShadow && target.style.textShadow !== "none"));
 
-        const align = target.style.textAlign || (
-            target.classList.contains("ss-auto-align-right") ? "right" :
-                target.classList.contains("ss-auto-align-center") ? "center" : "left"
-        );
+        // Excel準拠：明示的に設定された水平配置のみリボンボタンを強調（標準配置の自動右寄せ等は未選択扱い）
+        const explicitAlign = target.style.textAlign || "";
         appRoot.querySelectorAll("[data-align]").forEach(btn => {
-            btn.classList.toggle("selected", btn.dataset.align === align);
+            btn.classList.toggle("selected", explicitAlign !== "" && btn.dataset.align === explicitAlign);
         });
 
         const valign = target.style.verticalAlign || "middle";
@@ -1881,8 +1932,9 @@ export default async function initSpreadsheetApp(content, options = {}) {
             const displayStr = (c.textContent ?? "").trim();
             if (displayStr !== "") nonEmptyCount++;
 
+            const isDateCell = c.dataset.valueType === "date" || isDateNumFormat(c.dataset.numFormat);
             const rawVal = (c.dataset.rawValue ?? c.textContent).trim().replace(/[¥￥,、\s]/g, "");
-            if (rawVal !== "" && !isNaN(Number(rawVal))) {
+            if (!isDateCell && rawVal !== "" && !isNaN(Number(rawVal))) {
                 const n = Number(rawVal);
                 numSum += n;
                 numCount++;
@@ -2077,6 +2129,22 @@ export default async function initSpreadsheetApp(content, options = {}) {
         debouncedSaveState: (delay) => debouncedSaveState(delay)
     });
 
+    function getCellEditableValue(cell) {
+        if (!cell) return "";
+        if (cell.dataset.formula) return cell.dataset.formula;
+        const quotePrefix = cell.dataset.quotePrefix === "1" ? "'" : "";
+        const raw = cell.dataset.rawValue !== undefined ? cell.dataset.rawValue : getCellPureText(cell);
+        if (!quotePrefix && isTimeNumFormat(cell.dataset.numFormat)) {
+            const n = parseFormattedNumber(raw);
+            if (!isNaN(n)) return formatTimeFromSerial(n, true);
+        }
+        if (!quotePrefix && (cell.dataset.valueType === "date" || isDateNumFormat(cell.dataset.numFormat))) {
+            const dt = resolveDateFromRawValue(raw);
+            if (dt) return formatDate(dt);
+        }
+        return quotePrefix + raw;
+    }
+
     function setActiveCell(cell, shouldFocus = true, { skipHeaderSync = false } = {}) {
         if (!cell) return;
         closeCellDropdownList();
@@ -2097,7 +2165,6 @@ export default async function initSpreadsheetApp(content, options = {}) {
             activeCell.focus({ preventScroll: true });
         }
         showDataValidationTooltip(activeCell);
-        const quotePrefix = activeCell.dataset.quotePrefix === "1" ? "'" : "";
         if (isCurrentSheetProtected() && activeCell.dataset.formulaHidden === "1" && activeCell.dataset.formula) {
             formulaBarInput.value = "";
         } else if (activeCell.dataset.formula) {
@@ -2105,9 +2172,9 @@ export default async function initSpreadsheetApp(content, options = {}) {
         } else if (activeCell.dataset.spillOrigin) {
             const [sr, sc] = activeCell.dataset.spillOrigin.split(",").map(Number);
             const originCell = peekCell(sr, sc);
-            formulaBarInput.value = originCell?.dataset.formula || (activeCell.dataset.rawValue ?? activeCell.textContent);
+            formulaBarInput.value = originCell?.dataset.formula || getCellEditableValue(activeCell);
         } else {
-            formulaBarInput.value = quotePrefix + (activeCell.dataset.rawValue ?? activeCell.textContent);
+            formulaBarInput.value = getCellEditableValue(activeCell);
         }
         delete formulaBarInput.dataset.manualHeight;
         autoResizeFormulaBar();
@@ -2118,7 +2185,242 @@ export default async function initSpreadsheetApp(content, options = {}) {
     }
 
     const SEL_EDGE_CLASSES = ["sel-edge-top", "sel-edge-bottom", "sel-edge-left", "sel-edge-right"];
+    const selectionBox = document.createElement("div");
+    selectionBox.className = "ss-selection-box";
+    spreadsheetContent.appendChild(selectionBox);
+    let selectionBoxBounds = null;
     let highlightedHeaderEls = [];
+
+    function hasCellBackgroundFill(td) {
+        if (!td || td.style.display === "none") return false;
+        const bg = td.style.backgroundColor;
+        return Boolean(bg && bg !== "transparent" && bg !== "rgba(0, 0, 0, 0)");
+    }
+
+    function hasCellExplicitBorder(td, sideProp) {
+        if (!td || td.style.display === "none") return false;
+        const val = td.style[sideProp];
+        return Boolean(val && val !== "none" && !val.startsWith("0px"));
+    }
+
+    function syncSingleCellGridlines(td) {
+        if (!td || td.tagName !== "TD" || !td.isConnected || td.style.display === "none") return;
+
+        const r0 = parseInt(td.dataset.row, 10);
+        const c0 = parseInt(td.dataset.col, 10);
+        const rs = parseInt(td.getAttribute("rowspan") || "1", 10);
+        const cs = parseInt(td.getAttribute("colspan") || "1", 10);
+
+        const hasFill = hasCellBackgroundFill(td);
+        td.classList.toggle("ss-has-fill", hasFill);
+
+        if (hasFill) {
+            const bg = td.style.backgroundColor;
+            td.style.setProperty("--ss-fill-bg", bg);
+            td.classList.remove("ss-no-gl-r", "ss-no-gl-b");
+
+            // 同色塗りつぶしが右に隣接し、双方に明示罫線がない場合のみシーム埋め
+            let seamRight = false;
+            if (!hasCellExplicitBorder(td, "borderRight") && c0 + cs < currentColumns) {
+                seamRight = true;
+                for (let rr = r0; rr < r0 + rs; rr++) {
+                    const rawRight = peekCell(rr, c0 + cs);
+                    const rightTd = rawRight && rawRight.style.display === "none"
+                        ? getVisibleCell(rr, c0 + cs)
+                        : rawRight;
+                    if (
+                        !rightTd ||
+                        rightTd.style.backgroundColor !== bg ||
+                        hasCellExplicitBorder(rightTd, "borderLeft")
+                    ) {
+                        seamRight = false;
+                        break;
+                    }
+                }
+            }
+
+            // 同色塗りつぶしが下に隣接し、双方に明示罫線がない場合のみシーム埋め
+            let seamBottom = false;
+            if (!hasCellExplicitBorder(td, "borderBottom") && r0 + rs <= tbody.rows.length) {
+                seamBottom = true;
+                for (let cc = c0; cc < c0 + cs; cc++) {
+                    const rawBelow = peekCell(r0 + rs, cc);
+                    const belowTd = rawBelow && rawBelow.style.display === "none"
+                        ? getVisibleCell(r0 + rs, cc)
+                        : rawBelow;
+                    if (
+                        !belowTd ||
+                        belowTd.style.backgroundColor !== bg ||
+                        hasCellExplicitBorder(belowTd, "borderTop")
+                    ) {
+                        seamBottom = false;
+                        break;
+                    }
+                }
+            }
+
+            td.classList.toggle("ss-fill-seam-r", seamRight);
+            td.classList.toggle("ss-fill-seam-b", seamBottom);
+            return;
+        }
+
+        td.classList.remove("ss-fill-seam-r", "ss-fill-seam-b");
+        td.style.removeProperty("--ss-fill-bg");
+
+        let hideRight = hasCellExplicitBorder(td, "borderRight");
+        if (!hideRight && c0 + cs < currentColumns) {
+            let allRightFilled = true;
+            for (let rr = r0; rr < r0 + rs; rr++) {
+                const rawRight = peekCell(rr, c0 + cs);
+                const rightTd = rawRight && rawRight.style.display === "none"
+                    ? getVisibleCell(rr, c0 + cs)
+                    : rawRight;
+                if (hasCellExplicitBorder(rightTd, "borderLeft")) {
+                    hideRight = true;
+                    break;
+                }
+                if (!hasCellBackgroundFill(rightTd)) {
+                    allRightFilled = false;
+                }
+            }
+            if (!hideRight && allRightFilled) hideRight = true;
+        }
+
+        let hideBottom = hasCellExplicitBorder(td, "borderBottom");
+        if (!hideBottom && r0 + rs <= tbody.rows.length) {
+            let allBelowFilled = true;
+            for (let cc = c0; cc < c0 + cs; cc++) {
+                const rawBelow = peekCell(r0 + rs, cc);
+                const belowTd = rawBelow && rawBelow.style.display === "none"
+                    ? getVisibleCell(r0 + rs, cc)
+                    : rawBelow;
+                if (hasCellExplicitBorder(belowTd, "borderTop")) {
+                    hideBottom = true;
+                    break;
+                }
+                if (!hasCellBackgroundFill(belowTd)) {
+                    allBelowFilled = false;
+                }
+            }
+            if (!hideBottom && allBelowFilled) hideBottom = true;
+        }
+
+        td.classList.toggle("ss-no-gl-r", hideRight);
+        td.classList.toggle("ss-no-gl-b", hideBottom);
+    }
+
+    function syncCellGridlinesForCells(cells) {
+        if (!cells) return;
+        const list = Array.isArray(cells) ? cells : Array.from(cells);
+        if (!list.length) return;
+
+        const toSync = new Set();
+        for (let i = 0; i < list.length; i++) {
+            const raw = list[i];
+            if (!raw || raw.tagName !== "TD" || !raw.isConnected) continue;
+            const r0 = parseInt(raw.dataset.row, 10);
+            const c0 = parseInt(raw.dataset.col, 10);
+            const td = raw.style.display === "none" ? getVisibleCell(r0, c0) : raw;
+            if (!td || td.style.display === "none") continue;
+
+            toSync.add(td);
+            const aR = parseInt(td.dataset.row, 10);
+            const aC = parseInt(td.dataset.col, 10);
+            const rs = parseInt(td.getAttribute("rowspan") || "1", 10);
+            const cs = parseInt(td.getAttribute("colspan") || "1", 10);
+
+            if (aC > 0) {
+                for (let rr = aR; rr < aR + rs; rr++) {
+                    const leftRaw = peekCell(rr, aC - 1);
+                    const leftTd = leftRaw && leftRaw.style.display === "none" ? getVisibleCell(rr, aC - 1) : leftRaw;
+                    if (leftTd && leftTd.style.display !== "none") toSync.add(leftTd);
+                }
+            }
+            if (aR > 1) {
+                for (let cc = aC; cc < aC + cs; cc++) {
+                    const topRaw = peekCell(aR - 1, cc);
+                    const topTd = topRaw && topRaw.style.display === "none" ? getVisibleCell(aR - 1, cc) : topRaw;
+                    if (topTd && topTd.style.display !== "none") toSync.add(topTd);
+                }
+            }
+        }
+        toSync.forEach(syncSingleCellGridlines);
+    }
+
+    function syncCellGridlinesForBounds(bounds) {
+        if (!bounds) return;
+        const minR = Math.max(1, bounds.minRow);
+        const maxR = Math.min(tbody.rows.length, bounds.maxRow);
+        const minC = Math.max(0, bounds.minCol);
+        const maxC = Math.min(currentColumns - 1, bounds.maxCol);
+        const cells = [];
+        for (let r = minR; r <= maxR; r++) {
+            for (let c = minC; c <= maxC; c++) {
+                const td = peekCell(r, c);
+                if (td && td.style.display !== "none") cells.push(td);
+            }
+        }
+        syncCellGridlinesForCells(cells);
+    }
+
+    function syncSelectionBoxPosition() {
+        if (!selectionBoxBounds) {
+            selectionBox.style.display = "none";
+            return;
+        }
+        const { minRow, maxRow, minCol, maxCol } = selectionBoxBounds;
+        const contentRect = spreadsheetContent.getBoundingClientRect();
+        if (contentRect.width === 0 || contentRect.height === 0) {
+            selectionBox.style.display = "none";
+            return;
+        }
+
+        let firstVisR = minRow;
+        while (firstVisR <= maxRow && getRow(firstVisR)?.style.display === "none") firstVisR++;
+        let lastVisR = maxRow;
+        while (lastVisR >= firstVisR && getRow(lastVisR)?.style.display === "none") lastVisR--;
+
+        let firstVisC = minCol;
+        while (firstVisC <= maxCol && theadRow.children[firstVisC + 1]?.classList.contains("ss-col-hidden")) firstVisC++;
+        let lastVisC = maxCol;
+        while (lastVisC >= firstVisC && theadRow.children[lastVisC + 1]?.classList.contains("ss-col-hidden")) lastVisC--;
+
+        if (firstVisR > lastVisR || firstVisC > lastVisC) {
+            selectionBox.style.display = "none";
+            return;
+        }
+
+        const tlCell = getVisibleCell(firstVisR, firstVisC);
+        const brCell = getVisibleCell(lastVisR, lastVisC);
+        if (!tlCell || !brCell) {
+            selectionBox.style.display = "none";
+            return;
+        }
+
+        const zoom = parseFloat(spreadsheetContent.style.zoom || "1") || 1;
+        const tlRect = tlCell.getBoundingClientRect();
+        const brRect = brCell.getBoundingClientRect();
+        const left = (tlRect.left - contentRect.left) / zoom;
+        const top = (tlRect.top - contentRect.top) / zoom;
+        const right = (brRect.right - contentRect.left) / zoom;
+        const bottom = (brRect.bottom - contentRect.top) / zoom;
+
+        if (right <= left || bottom <= top) {
+            selectionBox.style.display = "none";
+            return;
+        }
+
+        const isFrozenSelection =
+            (freezeRows > 0 && lastVisR <= freezeRows) ||
+            (freezeCols > 0 && lastVisC < freezeCols);
+
+        selectionBox.classList.toggle("is-frozen", isFrozenSelection);
+        selectionBox.style.left = `${left}px`;
+        selectionBox.style.top = `${top}px`;
+        selectionBox.style.width = `${Math.max(4, right - left)}px`;
+        selectionBox.style.height = `${Math.max(4, bottom - top)}px`;
+        selectionBox.style.display = "block";
+    }
 
     function clearHeaderSelectionHighlights() {
         for (let i = 0; i < highlightedHeaderEls.length; i++) {
@@ -2182,6 +2484,9 @@ export default async function initSpreadsheetApp(content, options = {}) {
             selectionEdgeEls[i].classList.remove(...SEL_EDGE_CLASSES);
         }
         selectionEdgeEls = [];
+        selectionBoxBounds = null;
+        selectionBox.style.display = "none";
+        table.classList.remove("ss-sel-multi");
     }
 
     function buildSelectedCoordsSet(selected) {
@@ -2225,6 +2530,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
 
         const isSingleRect = coveredCount === (maxR - minR + 1) * (maxC - minC + 1);
         if (isSingleRect) {
+            table.classList.remove("ss-sel-multi");
             for (let i = 0; i < selected.length; i++) {
                 const c = selected[i];
                 const r0 = +c.dataset.row;
@@ -2242,10 +2548,13 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 if (edgeR) c.classList.add("sel-edge-right");
                 selectionEdgeEls.push(c);
             }
+            selectionBoxBounds = { minRow: minR, maxRow: maxR, minCol: minC, maxCol: maxC };
+            syncSelectionBoxPosition();
             return;
         }
 
         // 非連続（Ctrl 複数範囲）選択時のみ隣接座標 Set で各範囲の4辺枠を描画
+        table.classList.add("ss-sel-multi");
         const covered = buildSelectedCoordsSet(selected);
         for (let i = 0; i < selected.length; i++) {
             const c = selected[i];
@@ -2474,48 +2783,39 @@ export default async function initSpreadsheetApp(content, options = {}) {
             top += el.offsetTop;
             el = el.offsetParent;
         }
-        const cellW = cell.offsetWidth || 120;
-        const cellH = cell.offsetHeight || 30;
+        const cellW = cell.offsetWidth || DEFAULT_COL_WIDTH;
+        const cellH = cell.offsetHeight || DEFAULT_ROW_HEIGHT;
         const computed = getComputedStyle(cell);
         const fStyle = cell.style.fontStyle || computed.fontStyle || "normal";
         const fWeight = cell.style.fontWeight || computed.fontWeight || "normal";
-        const fSize = cell.style.fontSize || computed.fontSize || "14px";
-        const fFamily = cell.style.fontFamily || computed.fontFamily || "'MS PGothic', 'MS Gothic', sans-serif";
-        const fSizeNum = parseFloat(fSize) || 14;
+        const fSize = cell.style.fontSize || DEFAULT_FONT_SIZE_CSS;
+        const fFamily = cell.style.fontFamily || computed.fontFamily || DEFAULT_FONT_FAMILY;
+        const fSizeNum = cssFontSizeToPx(fSize);
         const computedLH = parseFloat(computed.lineHeight);
-        const lineHeightPx = !Number.isNaN(computedLH) ? computedLH : Math.round(fSizeNum * 1.3);
+        const lineHeightPx = !Number.isNaN(computedLH) ? computedLH : Math.round(fSizeNum * 1.25);
         const valign = cell.style.verticalAlign || computed.verticalAlign || "middle";
         const writingMode = cell.style.writingMode || computed.writingMode || "horizontal-tb";
         const textOrientation = cell.style.textOrientation || computed.textOrientation || "mixed";
         const isVertical = writingMode === "vertical-rl" || writingMode === "vertical-lr";
 
         return {
-            cell, left, top, cellW, cellH, minH: Math.max(cellH, 28),
+            cell, left, top, cellW, cellH, minH: Math.max(cellH, DEFAULT_ROW_HEIGHT),
             computed, fStyle, fWeight, fSize, fSizeNum, fFamily, lineHeightPx, valign,
             writingMode, textOrientation, isVertical
         };
     }
 
     function resolveEditorAutoAlign(cell, rawInput) {
+        const trimmed = String(rawInput ?? "").trim();
+        // 数式(=始まり)の編集中は、セルの明示的な配置指定にかかわらず左揃え（Excel準拠）
+        if (trimmed.startsWith("=")) {
+            return "left";
+        }
+        // ユーザーが明示的に水平配置を設定しているセルのみ、その配置を維持（均等割り付けは編集時左揃え）
         if (cell.style.textAlign) {
             return cell.style.textAlign === "justify" ? "left" : cell.style.textAlign;
         }
-        const str = String(rawInput ?? "");
-        const trimmed = str.trim();
-        if (trimmed === "") {
-            if (cell.classList.contains("ss-auto-align-right")) return "right";
-            if (cell.classList.contains("ss-auto-align-center")) return "center";
-            return "left";
-        }
-        // 数式(=始まり)や文字列指定('始まり)は編集中も左揃え
-        if (trimmed.startsWith("=") || str.startsWith("'")) return "left";
-        const upper = trimmed.toUpperCase();
-        if (upper === "TRUE" || upper === "FALSE" || EXCEL_ERROR_RE.test(upper)) {
-            return "center";
-        }
-        if (!isNaN(parseFormattedNumber(trimmed)) || isDateFormat(trimmed)) {
-            return "right";
-        }
+        // 標準配置（未指定）のセルは、数値・日付・論理値の入力／再編集中も常に左揃え（確定後に自動配置へ切替）
         return "left";
     }
 
@@ -2572,8 +2872,8 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 ? "end"
                 : (vAlign === "middle" ? "center" : "start");
 
-            const theadHeight = theadRow.offsetHeight || 30;
-            const rowHeaderWidth = parseInt(colgroup.children[0]?.style.width, 10) || 54;
+            const theadHeight = theadRow.offsetHeight || DEFAULT_HEADER_HEIGHT;
+            const rowHeaderWidth = parseInt(colgroup.children[0]?.style.width, 10) || DEFAULT_ROW_HEADER_WIDTH;
             const tableRight = Math.max(table.offsetWidth, cachedTableWidth, m.left + m.cellW);
             const tableBottom = Math.max(table.offsetHeight, m.top + m.cellH);
             const charAdvance = Math.ceil(m.fSizeNum * 1.15);
@@ -2654,7 +2954,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
             return;
         }
         if (measureCtx) {
-            measureCtx.font = `${m.fStyle} ${m.fWeight} ${m.fSize} ${m.fFamily}`;
+            measureCtx.font = `${m.fStyle} ${m.fWeight} ${m.fSizeNum}px ${m.fFamily}`;
         }
         let maxTextWidth = 0;
         for (let i = 0; i < lines.length; i++) {
@@ -2662,7 +2962,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
             if (w > maxTextWidth) maxTextWidth = w;
         }
 
-        const rowHeaderWidth = parseInt(colgroup.children[0]?.style.width, 10) || 54;
+        const rowHeaderWidth = parseInt(colgroup.children[0]?.style.width, 10) || DEFAULT_ROW_HEADER_WIDTH;
         const tableRight = Math.max(table.offsetWidth, cachedTableWidth, m.left + m.cellW);
         let targetW = m.cellW;
         let targetLeft = m.left;
@@ -2995,10 +3295,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
     formulaBarInput.addEventListener("focus", () => {
         if (!isFormulaBarDirty) lastPointRefRange = null;
         if (!activeCell) return;
-        const quotePrefix = activeCell.dataset.quotePrefix === "1" ? "'" : "";
-        const initialVal = activeCell.dataset.formula
-            ? activeCell.dataset.formula
-            : quotePrefix + (activeCell.dataset.rawValue ?? activeCell.textContent);
+        const initialVal = getCellEditableValue(activeCell);
         if (!isFormulaBarDirty && formulaBarInput.value !== initialVal) {
             formulaBarInput.value = initialVal;
         }
@@ -3137,6 +3434,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
             showAlert("変更しようとしているセルは保護されたシート上にあります。\n編集するには「表示」または「ホーム → 書式」からシート保護を解除してください。", "シートの保護");
             return false;
         }
+        hideAutoFillOptions();
         closeCellDropdownList();
         hideCellDropdownButton();
         const alreadyEditingThis = isCellEditing(cell);
@@ -3145,14 +3443,16 @@ export default async function initSpreadsheetApp(content, options = {}) {
             cell.dataset.originalText = cell.dataset.rawValue ?? getCellPureText(cell);
             cell.dataset.originalQuotePrefix = cell.dataset.quotePrefix || "";
             cell.dataset.originalRichRuns = cell.dataset.richRuns || "";
-            const quotePrefix = cell.dataset.quotePrefix === "1" ? "'" : "";
+            cell.dataset.originalValueType = cell.dataset.valueType || "";
+            cell.dataset.originalDateValue = cell.dataset.dateValue || "";
+            cell.dataset.originalNumFormat = cell.dataset.numFormat || "";
             if (cell.dataset.formula) {
                 cell.dataset.originalFormula = cell.dataset.formula;
                 cellEditor.value = cell.dataset.formula;
                 editingRichRuns = null;
             } else {
                 delete cell.dataset.originalFormula;
-                cellEditor.value = quotePrefix + (cell.dataset.rawValue !== undefined ? cell.dataset.rawValue : getCellPureText(cell));
+                cellEditor.value = getCellEditableValue(cell);
                 if (cell.dataset.richRuns) {
                     try { editingRichRuns = JSON.parse(cell.dataset.richRuns); } catch { editingRichRuns = null; }
                 } else {
@@ -3319,7 +3619,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
         }
     }, { signal });
 
-    function commitCellValue(cell, rawValue, { deferRecalc = false } = {}) {
+    function commitCellValue(cell, rawValue, { deferRecalc = false, skipValidation = false } = {}) {
         if (!cell) return true;
         if (isCellLockedForEdit(cell)) {
             closeCellEditor();
@@ -3335,7 +3635,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
         const rawStr = String(rawValue ?? "");
         const trimmedStr = rawStr.trim();
         const newText = trimmedStr.startsWith("=") ? trimmedStr : rawStr;
-        if (!validateCellInputByRule(cell, newText)) {
+        if (!skipValidation && !validateCellInputByRule(cell, newText)) {
             revertSelectedCellsText();
             return false;
         }
@@ -3407,45 +3707,33 @@ export default async function initSpreadsheetApp(content, options = {}) {
             cell.dataset.formula = balancedFormula;
             delete cell.dataset.valueType;
             delete cell.dataset.dateValue;
-        } else if (isDateFormat(trimmedStr)) {
-            const parts = trimmedStr.split(/[\/\-]/);
-            let year, month, day;
-            if (parts.length === 2) {
-                year = new Date().getFullYear();
-                month = parseInt(parts[0], 10);
-                day = parseInt(parts[1], 10);
-            } else if (parts[0].length === 4) {
-                year = parseInt(parts[0], 10);
-                month = parseInt(parts[1], 10);
-                day = parseInt(parts[2], 10);
-            } else if (parts[2].length === 4) {
-                year = parseInt(parts[2], 10);
-                month = parseInt(parts[0], 10);
-                day = parseInt(parts[1], 10);
-            } else {
-                year = 2000 + parseInt(parts[0], 10);
-                month = parseInt(parts[1], 10);
-                day = parseInt(parts[2], 10);
+        } else if (cell.dataset.numFormat === "text") {
+            // 表示形式「文字列」のセルは日付・数値への自動変換を行わずそのまま保持（Excel準拠）
+            delete cell.dataset.formula;
+            delete cell.dataset.valueType;
+            delete cell.dataset.dateValue;
+            setCellFormattedValue(cell, newText);
+        } else if (parseJapaneseDateInput(trimmedStr, { allowShortMD: true })) {
+            const parsedDate = parseJapaneseDateInput(trimmedStr, { allowShortMD: true });
+            delete cell.dataset.formula;
+            delete cell.dataset.decimalPlaces;
+            cell.dataset.valueType = "date";
+            cell.dataset.dateValue = String(parsedDate.date.getTime());
+            // 既に日付・和暦書式が設定済みなら維持し、未設定（標準）のときだけ入力形式に応じた書式を自動設定
+            if (!isDateNumFormat(cell.dataset.numFormat)) {
+                cell.dataset.numFormat = parsedDate.autoNumFormat;
             }
-            const date = new Date(year, month - 1, day);
-            const isValidCalendarDate =
-                date &&
-                !isNaN(date.getTime()) &&
-                date.getFullYear() === year &&
-                date.getMonth() === month - 1 &&
-                date.getDate() === day;
-
-            if (isValidCalendarDate) {
-                delete cell.dataset.formula;
-                cell.dataset.valueType = "date";
-                cell.dataset.dateValue = String(date.getTime());
-                setCellFormattedValue(cell, formatDate(date));
-            } else {
-                delete cell.dataset.formula;
-                delete cell.dataset.valueType;
-                delete cell.dataset.dateValue;
-                setCellFormattedValue(cell, newText);
+            setCellFormattedValue(cell, String(parsedDate.serial));
+        } else if (parseTimeInput(trimmedStr)) {
+            const parsedTime = parseTimeInput(trimmedStr);
+            delete cell.dataset.formula;
+            delete cell.dataset.decimalPlaces;
+            delete cell.dataset.valueType;
+            delete cell.dataset.dateValue;
+            if (!isTimeNumFormat(cell.dataset.numFormat)) {
+                cell.dataset.numFormat = parsedTime.autoNumFormat;
             }
+            setCellFormattedValue(cell, String(parsedTime.serial));
         } else {
             delete cell.dataset.formula;
             delete cell.dataset.valueType;
@@ -3512,6 +3800,13 @@ export default async function initSpreadsheetApp(content, options = {}) {
             if (activeCell.dataset.originalRichRuns) activeCell.dataset.richRuns = activeCell.dataset.originalRichRuns;
             else delete activeCell.dataset.richRuns;
 
+            if (activeCell.dataset.originalValueType) activeCell.dataset.valueType = activeCell.dataset.originalValueType;
+            else delete activeCell.dataset.valueType;
+            if (activeCell.dataset.originalDateValue) activeCell.dataset.dateValue = activeCell.dataset.originalDateValue;
+            else delete activeCell.dataset.dateValue;
+            if (activeCell.dataset.originalNumFormat) activeCell.dataset.numFormat = activeCell.dataset.originalNumFormat;
+            else delete activeCell.dataset.numFormat;
+
             if (activeCell.dataset.originalFormula) {
                 activeCell.dataset.formula = activeCell.dataset.originalFormula;
                 setCellFormattedValue(activeCell, evaluateFormula(activeCell.dataset.originalFormula));
@@ -3519,8 +3814,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
             } else if (activeCell.dataset.originalText !== undefined) {
                 delete activeCell.dataset.formula;
                 setCellFormattedValue(activeCell, activeCell.dataset.originalText);
-                const qp = activeCell.dataset.quotePrefix === "1" ? "'" : "";
-                formulaBarInput.value = qp + (activeCell.dataset.rawValue ?? getCellPureText(activeCell));
+                formulaBarInput.value = getCellEditableValue(activeCell);
             }
             delete activeCell.dataset.editBy;
         }
@@ -3689,7 +3983,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 : `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
             activeCell.dataset.originalText = activeCell.dataset.rawValue ?? activeCell.textContent;
             commitCellValue(activeCell, val);
-            formulaBarInput.value = val;
+            formulaBarInput.value = getCellEditableValue(activeCell);
             updateSelectedCellsDisplay();
             return;
         }
@@ -3832,11 +4126,6 @@ export default async function initSpreadsheetApp(content, options = {}) {
         updateSelectedCellsDisplay(Array.from(nextSelectedSet));
     }
 
-    let isFillDragging = false;
-    let fillDragStartCell = null;
-    let currentFillRange = null;
-    let initialFillRange = null;
-
     function adjustFormula(formula, rowOffset, colOffset) {
         const protectedTokens = [];
         const maskToken = (m) => {
@@ -3865,591 +4154,53 @@ export default async function initSpreadsheetApp(content, options = {}) {
             .replace(/__ADJ_SH_(\d+)__!/g, (_, idx) => protectedTokens[Number(idx)])
             .replace(/__ADJ_TOK_(\d+)__/g, (_, idx) => protectedTokens[Number(idx)]);
 
-
         return "=" + adjustedBody;
     }
 
-    const JP_DAYS_SHORT = ["日", "月", "火", "水", "木", "金", "土"];
-    const JP_DAYS_LONG = ["日曜日", "月曜日", "火曜日", "水曜日", "木曜日", "金曜日", "土曜日"];
-    const EN_DAYS_SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-
-    function generateSeriesStep(seedValues, stepIndex, { forceSeries = false } = {}) {
-        const n = seedValues.length;
-        if (n === 0) return "";
-        const modIdx = ((stepIndex % n) + n) % n;
-        const base = seedValues[modIdx];
-        if (stepIndex >= 0 && stepIndex < n) return base;
-
-        const first = String(seedValues[0] ?? "").trim();
-        const last = String(seedValues[n - 1] ?? "").trim();
-
-        // 1. 数値：Excel準拠で1セルはコピー（Ctrlドラッグ時のみ+1）、2セル以上は等差数列
-        const nums = seedValues.map(v => parseFormattedNumber(v));
-        if (nums.every(v => !isNaN(v)) && seedValues.every(v => String(v).trim() !== "")) {
-            if (n === 1) {
-                return forceSeries ? String(nums[0] + stepIndex) : String(nums[0]);
-            }
-            const stepDiff = (nums[n - 1] - nums[0]) / (n - 1);
-            return String(nums[0] + stepDiff * stepIndex);
-        }
-
-        // 2. 日付の連続（YYYY/MM/DD・逆方向対応）
-        if (/^\d{4}\/\d{1,2}\/\d{1,2}$/.test(first)) {
-            const [y, m, d] = first.split("/").map(Number);
-            const dt = new Date(y, m - 1, d);
-            let dayStep = 1;
-            if (n >= 2 && /^\d{4}\/\d{1,2}\/\d{1,2}$/.test(last)) {
-                const [y2, m2, d2] = last.split("/").map(Number);
-                const dt2 = new Date(y2, m2 - 1, d2);
-                dayStep = Math.round((dt2 - dt) / 86400000 / (n - 1)) || 1;
-            }
-            dt.setDate(dt.getDate() + dayStep * stepIndex);
-            return formatDate(dt);
-        }
-
-        // 3. 曜日リスト（月→火→水 / 逆方向：月→日→土 にも対応）
-        for (const list of [JP_DAYS_SHORT, JP_DAYS_LONG, EN_DAYS_SHORT]) {
-            const idx = list.indexOf(first);
-            if (idx !== -1) {
-                const nextIdx = ((idx + stepIndex) % list.length + list.length) % list.length;
-                return list[nextIdx];
-            }
-        }
-
-        // 4. 文字列＋末尾数字（単一セルは+1、複数セルは増分ステップを計算）
-        const suffixMatch = first.match(/^(.*?)(\d+)$/);
-        if (suffixMatch) {
-            const prefix = suffixMatch[1];
-            const numPart = suffixMatch[2];
-            const startNum = parseInt(numPart, 10);
-            let numStep = 1;
-            if (n >= 2) {
-                const lastMatch = last.match(/^(.*?)(\d+)$/);
-                if (lastMatch && lastMatch[1] === prefix) {
-                    const diff = (parseInt(lastMatch[2], 10) - startNum) / (n - 1);
-                    if (Number.isInteger(diff)) numStep = diff;
-                }
-            }
-            const nextNum = Math.max(0, startNum + numStep * stepIndex);
-            return prefix + String(nextNum).padStart(numPart.length, "0");
-        }
-
-        return base;
-    }
-
-    function cloneCellProperties(sourceCell, targetCell, overrideValue = null) {
-        if (!sourceCell || !targetCell || sourceCell === targetCell) return;
-
-        if (sourceCell.dataset.numFormat) targetCell.dataset.numFormat = sourceCell.dataset.numFormat;
-        else delete targetCell.dataset.numFormat;
-
-        if (sourceCell.dataset.decimalPlaces !== undefined && sourceCell.dataset.decimalPlaces !== "") {
-            targetCell.dataset.decimalPlaces = sourceCell.dataset.decimalPlaces;
-        } else {
-            delete targetCell.dataset.decimalPlaces;
-        }
-
-        if (sourceCell.dataset.dropdownList) targetCell.dataset.dropdownList = sourceCell.dataset.dropdownList;
-        else delete targetCell.dataset.dropdownList;
-
-        if (sourceCell.dataset.dvRule) targetCell.dataset.dvRule = sourceCell.dataset.dvRule;
-        else delete targetCell.dataset.dvRule;
-
-        if (sourceCell.dataset.quotePrefix === "1") targetCell.dataset.quotePrefix = "1";
-        else delete targetCell.dataset.quotePrefix;
-
-        if (sourceCell.dataset.richRuns && overrideValue === null) {
-            targetCell.dataset.richRuns = sourceCell.dataset.richRuns;
-        } else {
-            delete targetCell.dataset.richRuns;
-        }
-
-        if (sourceCell.dataset.hyperlink) {
-            targetCell.dataset.hyperlink = sourceCell.dataset.hyperlink;
-            targetCell.classList.add("ss-hyperlink");
-            targetCell.title = sourceCell.title;
-        } else {
-            delete targetCell.dataset.hyperlink;
-            targetCell.classList.remove("ss-hyperlink");
-            targetCell.removeAttribute("title");
-        }
-
-        if (sourceCell.dataset.formula?.startsWith("=")) {
-            const rowOffset = (+targetCell.dataset.row) - (+sourceCell.dataset.row);
-            const colOffset = (+targetCell.dataset.col) - (+sourceCell.dataset.col);
-            const nextFormula = adjustFormula(sourceCell.dataset.formula, rowOffset, colOffset);
-            targetCell.dataset.formula = nextFormula;
-            // 呼び出し元の updateAllFormulas() でトポロジカル順＆キャッシュ付き一括評価するため個別評価を省略
-        } else {
-            delete targetCell.dataset.formula;
-            const nextVal = overrideValue !== null ? overrideValue : (sourceCell.dataset.rawValue ?? sourceCell.textContent);
-            setCellFormattedValue(targetCell, nextVal);
-        }
-
-        applyCellStyleData(targetCell, extractCellStyleObject(sourceCell));
-        targetCell.removeAttribute("contenteditable");
-        targetCell.classList.remove("selected", "fill-selected", "active-cell");
-    }
-
-    function extendConditionalFormatsForFill(srcRange, dstRange) {
-        const rules = sheets[activeSheetIndex]?.conditionalFormats;
-        if (!Array.isArray(rules) || !rules.length || !srcRange || !dstRange) return;
-
-        const isVerticalFill = dstRange.minCol === srcRange.minCol && dstRange.maxCol === srcRange.maxCol;
-        const isHorizontalFill = dstRange.minRow === srcRange.minRow && dstRange.maxRow === srcRange.maxRow;
-
-        rules.forEach(rule => {
-            const overlapsSrc = !(
-                rule.maxRow < srcRange.minRow || rule.minRow > srcRange.maxRow ||
-                rule.maxCol < srcRange.minCol || rule.minCol > srcRange.maxCol
-            );
-            if (!overlapsSrc) return;
-
-            if (isVerticalFill) {
-                if (dstRange.maxRow > rule.maxRow) {
-                    rule.maxRow = dstRange.maxRow;
-                }
-                if (dstRange.minRow < rule.minRow) {
-                    const rowShift = dstRange.minRow - rule.minRow;
-                    if (rule.formula && String(rule.formula).trim().startsWith("=")) {
-                        rule.formula = adjustFormula(rule.formula, rowShift, 0);
-                    }
-                    if (typeof rule.val1 === "string" && rule.val1.trim().startsWith("=")) {
-                        rule.val1 = adjustFormula(rule.val1, rowShift, 0);
-                    }
-                    if (typeof rule.val2 === "string" && rule.val2.trim().startsWith("=")) {
-                        rule.val2 = adjustFormula(rule.val2, rowShift, 0);
-                    }
-                    rule.minRow = dstRange.minRow;
-                }
-            } else if (isHorizontalFill && rule.minRow >= srcRange.minRow && rule.maxRow <= srcRange.maxRow) {
-                if (dstRange.maxCol > rule.maxCol) {
-                    rule.maxCol = dstRange.maxCol;
-                }
-                if (dstRange.minCol < rule.minCol) {
-                    const colShift = dstRange.minCol - rule.minCol;
-                    if (rule.formula && String(rule.formula).trim().startsWith("=")) {
-                        rule.formula = adjustFormula(rule.formula, 0, colShift);
-                    }
-                    if (typeof rule.val1 === "string" && rule.val1.trim().startsWith("=")) {
-                        rule.val1 = adjustFormula(rule.val1, 0, colShift);
-                    }
-                    if (typeof rule.val2 === "string" && rule.val2.trim().startsWith("=")) {
-                        rule.val2 = adjustFormula(rule.val2, 0, colShift);
-                    }
-                    rule.minCol = dstRange.minCol;
-                }
-            }
-        });
-    }
-
-    function updateFillHandle() {
-        tbody.querySelectorAll(".fill-handle").forEach(h => h.remove());
-        const selected = [...tbody.querySelectorAll("td.selected")];
-        if (!selected.length) return;
-
-        let minR = Infinity, maxR = -Infinity, minC = Infinity, maxC = -Infinity;
-        let coveredCount = 0;
-        for (const c of selected) {
-            const r0 = +c.dataset.row;
-            const c0 = +c.dataset.col;
-            const rs = +c.getAttribute("rowspan") || 1;
-            const cs = +c.getAttribute("colspan") || 1;
-            if (r0 < minR) minR = r0;
-            if (r0 + rs - 1 > maxR) maxR = r0 + rs - 1;
-            if (c0 < minC) minC = c0;
-            if (c0 + cs - 1 > maxC) maxC = c0 + cs - 1;
-            coveredCount += rs * cs;
-        }
-        // 非連続（複数範囲）選択時は Excel 同様にフィルハンドルを非表示にする
-        if (coveredCount !== (maxR - minR + 1) * (maxC - minC + 1)) return;
-
-        const target = getVisibleCell(maxR, maxC);
-
-        if (target && !target.isContentEditable && target.style.display !== "none") {
-            const fh = document.createElement("div");
-            fh.className = "fill-handle";
-            fh.title = "ドラッグで連続コピー / ダブルクリックで下端まで一括コピー";
-            target.appendChild(fh);
-
-            fh.addEventListener("dblclick", (e) => {
-                e.stopPropagation();
-                e.preventDefault();
-                const bounds = getSelectedRangeBounds();
-                if (!bounds) return;
-
-                const hasDataAt = (r, c) => {
-                    const cell = peekCell(r, c);
-                    if (!cell || cell.style.display === "none") return false;
-                    return Boolean(cell.dataset.formula || (cell.dataset.rawValue ?? cell.textContent).trim() !== "");
-                };
-
-                // 左隣列、なければ右隣列の連続データ最終行を検出
-                const refCol = bounds.minCol > 0 && hasDataAt(bounds.maxRow, bounds.minCol - 1)
-                    ? bounds.minCol - 1
-                    : (bounds.maxCol + 1 < currentColumns && hasDataAt(bounds.maxRow, bounds.maxCol + 1) ? bounds.maxCol + 1 : -1);
-                if (refCol === -1) return;
-
-                let endRow = bounds.maxRow;
-                while (endRow + 1 < rowCount && hasDataAt(endRow + 1, refCol)) {
-                    endRow++;
-                }
-                if (endRow <= bounds.maxRow) return;
-
-                // フィル先に既存の結合セルが含まれている場合は構造破損を防ぐため中止
-                for (let r = bounds.maxRow + 1; r <= endRow; r++) {
-                    for (let c = bounds.minCol; c <= bounds.maxCol; c++) {
-                        const cell = peekCell(r, c);
-                        if (!cell) continue;
-                        if (
-                            cell.style.display === "none" ||
-                            cell.classList.contains("merged") ||
-                            parseInt(cell.getAttribute("rowspan") || "1", 10) > 1 ||
-                            parseInt(cell.getAttribute("colspan") || "1", 10) > 1
-                        ) {
-                            showAlert("結合されたセルの一部を変更することはできません。", "オートフィルエラー");
-                            return;
-                        }
-                    }
-                }
-
-                const srcRows = bounds.maxRow - bounds.minRow + 1;
-                for (let c = bounds.minCol; c <= bounds.maxCol; c++) {
-                    const seeds = [];
-                    for (let r = bounds.minRow; r <= bounds.maxRow; r++) {
-                        const sc = getVisibleCell(r, c);
-                        seeds.push(sc?.dataset.rawValue ?? sc?.textContent ?? "");
-                    }
-                    for (let r = bounds.maxRow + 1; r <= endRow; r++) {
-                        const offset = r - bounds.minRow;
-                        const src = getVisibleCell(bounds.minRow + (offset % srcRows), c);
-                        const dst = getVisibleCell(r, c);
-                        if (!src || !dst) continue;
-                        const nextVal = src.dataset.formula ? null : generateSeriesStep(seeds, offset);
-                        cloneCellProperties(src, dst, nextVal);
-                    }
-                }
-                extendConditionalFormatsForFill(bounds, {
-                    minRow: bounds.minRow,
-                    maxRow: endRow,
-                    minCol: bounds.minCol,
-                    maxCol: bounds.maxCol
-                });
-                clearSelection();
-                selectionStart = { row: bounds.minRow, col: bounds.minCol };
-                selectionEnd = { row: endRow, col: bounds.maxCol };
-                updateSelection();
-                updateAllFormulas();
-                updateFillHandle();
-                setDirtyState(true);
-                debouncedSaveState();
-            }, { signal });
-
-            fh.addEventListener("mousedown", (e) => {
-                if (activeCell && activeCell.isContentEditable) return;
-                e.stopPropagation();
-                e.preventDefault();
-                isFillDragging = true;
-                fillDragStartCell = activeCell;
-                const startClientX = e.clientX;
-                const startClientY = e.clientY;
-
-                let minRow = Infinity, maxRow = -Infinity, minCol = Infinity, maxCol = -Infinity;
-                tbody.querySelectorAll("td.selected").forEach(c => {
-                    const r0 = +c.dataset.row, col0 = +c.dataset.col;
-                    const r1 = r0 + (+c.getAttribute("rowspan") || 1) - 1;
-                    const col1 = col0 + (+c.getAttribute("colspan") || 1) - 1;
-                    minRow = Math.min(minRow, r0);
-                    maxRow = Math.max(maxRow, r1);
-                    minCol = Math.min(minCol, col0);
-                    maxCol = Math.max(maxCol, col1);
-                });
-                initialFillRange = { minRow, maxRow, minCol, maxCol };
-
-                const clearFillPreview = () => {
-                    const fillEdgeClasses = ["fill-selected", "fill-edge-top", "fill-edge-bottom", "fill-edge-left", "fill-edge-right"];
-                    tbody.querySelectorAll("td.fill-selected").forEach(c => c.classList.remove(...fillEdgeClasses));
-                };
-
-                const onMove = (moveEv) => {
-                    if (!isFillDragging) return;
-                    const elem = document.elementFromPoint(moveEv.clientX, moveEv.clientY)?.closest("td");
-                    if (!elem || !tbody.contains(elem)) return;
-
-                    // 結合セル上をドラッグ中でもポインタ位置から正確な行・列座標を算出
-                    const rs = parseInt(elem.getAttribute("rowspan") || "1", 10);
-                    const cs = parseInt(elem.getAttribute("colspan") || "1", 10);
-                    const rect = elem.getBoundingClientRect();
-                    const subR = rs > 1 ? Math.min(rs - 1, Math.max(0, Math.floor(((moveEv.clientY - rect.top) / rect.height) * rs))) : 0;
-                    const subC = cs > 1 ? Math.min(cs - 1, Math.max(0, Math.floor(((moveEv.clientX - rect.left) / rect.width) * cs))) : 0;
-
-                    const hoverRow = (+elem.dataset.row) + subR;
-                    const hoverCol = (+elem.dataset.col) + subC;
-
-                    const upDist = Math.max(0, initialFillRange.minRow - hoverRow);
-                    const downDist = Math.max(0, hoverRow - initialFillRange.maxRow);
-                    const leftDist = Math.max(0, initialFillRange.minCol - hoverCol);
-                    const rightDist = Math.max(0, hoverCol - initialFillRange.maxCol);
-
-                    const vCellDist = Math.max(upDist, downDist);
-                    const hCellDist = Math.max(leftDist, rightDist);
-
-                    if (vCellDist === 0 && hCellDist === 0) {
-                        currentFillRange = null;
-                        clearFillPreview();
-                        return;
-                    }
-
-                    // 右下ハンドルから横へドラッグした際に下へ吸い込まれないよう、ピクセル移動量も加味して縦横を判定
-                    const movePxX = Math.abs(moveEv.clientX - startClientX);
-                    const movePxY = Math.abs(moveEv.clientY - startClientY);
-                    const isHorizontal = hCellDist > 0 && (vCellDist === 0 || movePxX >= movePxY);
-
-                    if (!isHorizontal) {
-                        if (downDist >= upDist) {
-                            currentFillRange = {
-                                minRow: initialFillRange.minRow,
-                                minCol: initialFillRange.minCol,
-                                maxRow: hoverRow,
-                                maxCol: initialFillRange.maxCol
-                            };
-                        } else {
-                            currentFillRange = {
-                                minRow: hoverRow,
-                                minCol: initialFillRange.minCol,
-                                maxRow: initialFillRange.maxRow,
-                                maxCol: initialFillRange.maxCol
-                            };
-                        }
-                    } else {
-                        if (rightDist >= leftDist) {
-                            currentFillRange = {
-                                minRow: initialFillRange.minRow,
-                                minCol: initialFillRange.minCol,
-                                maxRow: initialFillRange.maxRow,
-                                maxCol: hoverCol
-                            };
-                        } else {
-                            currentFillRange = {
-                                minRow: initialFillRange.minRow,
-                                minCol: hoverCol,
-                                maxRow: initialFillRange.maxRow,
-                                maxCol: initialFillRange.maxCol
-                            };
-                        }
-                    }
-
-                    clearFillPreview();
-                    for (let r = currentFillRange.minRow; r <= currentFillRange.maxRow; r++) {
-                        for (let c = currentFillRange.minCol; c <= currentFillRange.maxCol; c++) {
-                            const td = getVisibleCell(r, c) || getCell(r, c);
-                            if (!td) continue;
-                            td.classList.add("fill-selected");
-                            if (r === currentFillRange.minRow) td.classList.add("fill-edge-top");
-                            if (r === currentFillRange.maxRow) td.classList.add("fill-edge-bottom");
-                            if (c === currentFillRange.minCol) td.classList.add("fill-edge-left");
-                            if (c === currentFillRange.maxCol) td.classList.add("fill-edge-right");
-                        }
-                    }
-                };
-
-                const onUp = (upEv) => {
-                    const forceSeries = Boolean(upEv?.ctrlKey || upEv?.metaKey);
-                    document.removeEventListener("mousemove", onMove);
-                    document.removeEventListener("mouseup", onUp);
-                    clearFillPreview();
-
-                    if (!isFillDragging || !currentFillRange) {
-                        isFillDragging = false;
-                        return;
-                    }
-
-                    const isInInitial = (r, c) =>
-                        r >= initialFillRange.minRow && r <= initialFillRange.maxRow &&
-                        c >= initialFillRange.minCol && c <= initialFillRange.maxCol;
-
-                    // 拡張先に既存の結合セルが重なる場合は中止
-                    for (let r = currentFillRange.minRow; r <= currentFillRange.maxRow; r++) {
-                        for (let c = currentFillRange.minCol; c <= currentFillRange.maxCol; c++) {
-                            if (isInInitial(r, c)) continue;
-                            const cell = getCell(r, c);
-                            if (!cell) continue;
-                            const isMergedPart =
-                                cell.style.display === "none" ||
-                                cell.classList.contains("merged") ||
-                                Boolean(cell.dataset.mergeMinRow) ||
-                                Boolean(cell.dataset.mergeAnchorRow) ||
-                                parseInt(cell.getAttribute("rowspan") || "1", 10) > 1 ||
-                                parseInt(cell.getAttribute("colspan") || "1", 10) > 1;
-                            if (isMergedPart) {
-                                showAlert("結合されたセルの一部を変更することはできません。", "オートフィルエラー");
-                                isFillDragging = false;
-                                currentFillRange = null;
-                                return;
-                            }
-                        }
-                    }
-
-                    const fillSource = fillDragStartCell || activeCell;
-                    const initRCount = initialFillRange.maxRow - initialFillRange.minRow + 1;
-                    const initCCount = initialFillRange.maxCol - initialFillRange.minCol + 1;
-
-                    // コピー元パターン（結合情報含む）を事前にスナップショット取得
-                    const templateGrid = [];
-                    for (let rr = 0; rr < initRCount; rr++) {
-                        const rowTemplates = [];
-                        for (let cc = 0; cc < initCCount; cc++) {
-                            const sc = getCell(initialFillRange.minRow + rr, initialFillRange.minCol + cc);
-                            const rs = parseInt(sc?.getAttribute("rowspan") || "1", 10);
-                            const cs = parseInt(sc?.getAttribute("colspan") || "1", 10);
-                            const isHiddenSub = sc?.style.display === "none" && Boolean(sc?.dataset.mergeAnchorRow);
-                            rowTemplates.push({ cell: sc, rs, cs, isHiddenSub });
-                        }
-                        templateGrid.push(rowTemplates);
-                    }
-
-                    for (let r = currentFillRange.minRow; r <= currentFillRange.maxRow; r++) {
-                        for (let c = currentFillRange.minCol; c <= currentFillRange.maxCol; c++) {
-                            if (isInInitial(r, c)) continue;
-                            const tgt = getCell(r, c);
-                            if (!tgt) continue;
-
-                            const rOffset = r - initialFillRange.minRow;
-                            const cOffset = c - initialFillRange.minCol;
-                            // 上・左ドラッグ時（負のオフセット）でも正しく循環するよう正の剰余を使用
-                            const tplR = ((rOffset % initRCount) + initRCount) % initRCount;
-                            const tplC = ((cOffset % initCCount) + initCCount) % initCCount;
-                            const tpl = templateGrid[tplR][tplC];
-
-                            // 結合セル内の非表示サブセルはアンカー側で一括処理するためスキップ
-                            if (tpl.isHiddenSub) continue;
-
-                            const srcCell = tpl.cell || fillSource;
-                            let seriesVal = null;
-
-                            if (r > initialFillRange.maxRow && cOffset >= 0 && cOffset < initCCount) {
-                                // 下方向への連番・コピー
-                                const validSeeds = [];
-                                let seedPos = 0;
-                                for (let rr = 0; rr < initRCount; rr++) {
-                                    const entry = templateGrid[rr][tplC];
-                                    if (!entry.isHiddenSub) {
-                                        if (rr === tplR) seedPos = validSeeds.length;
-                                        validSeeds.push(entry.cell?.dataset.rawValue ?? entry.cell?.textContent ?? "");
-                                    }
-                                }
-                                const cycle = Math.floor(rOffset / initRCount);
-                                if (validSeeds.length > 0) {
-                                    seriesVal = generateSeriesStep(validSeeds, cycle * validSeeds.length + seedPos, { forceSeries });
-                                }
-                            } else if (r < initialFillRange.minRow && cOffset >= 0 && cOffset < initCCount) {
-                                // 上方向への逆方向連番・コピー
-                                const validSeeds = [];
-                                for (let rr = 0; rr < initRCount; rr++) {
-                                    const entry = templateGrid[rr][tplC];
-                                    if (!entry.isHiddenSub) {
-                                        validSeeds.push(entry.cell?.dataset.rawValue ?? entry.cell?.textContent ?? "");
-                                    }
-                                }
-                                if (validSeeds.length > 0) {
-                                    seriesVal = generateSeriesStep(validSeeds, r - initialFillRange.minRow, { forceSeries });
-                                }
-                            } else if (c > initialFillRange.maxCol && rOffset >= 0 && rOffset < initRCount) {
-                                // 右方向への連番・コピー
-                                const validSeeds = [];
-                                let seedPos = 0;
-                                for (let cc = 0; cc < initCCount; cc++) {
-                                    const entry = templateGrid[tplR][cc];
-                                    if (!entry.isHiddenSub) {
-                                        if (cc === tplC) seedPos = validSeeds.length;
-                                        validSeeds.push(entry.cell?.dataset.rawValue ?? entry.cell?.textContent ?? "");
-                                    }
-                                }
-                                const cycle = Math.floor(cOffset / initCCount);
-                                if (validSeeds.length > 0) {
-                                    seriesVal = generateSeriesStep(validSeeds, cycle * validSeeds.length + seedPos, { forceSeries });
-                                }
-                            } else if (c < initialFillRange.minCol && rOffset >= 0 && rOffset < initRCount) {
-                                // 左方向への逆方向連番・コピー
-                                const validSeeds = [];
-                                for (let cc = 0; cc < initCCount; cc++) {
-                                    const entry = templateGrid[tplR][cc];
-                                    if (!entry.isHiddenSub) {
-                                        validSeeds.push(entry.cell?.dataset.rawValue ?? entry.cell?.textContent ?? "");
-                                    }
-                                }
-                                if (validSeeds.length > 0) {
-                                    seriesVal = generateSeriesStep(validSeeds, c - initialFillRange.minCol, { forceSeries });
-                                }
-                            }
-
-                            if (tgt !== srcCell) {
-                                cloneCellProperties(srcCell, tgt, seriesVal);
-                            }
-
-                            // コピー元が結合セルの場合、コピー先にも同じ結合サイズと非表示サブセルを構築
-                            const spanR = Math.min(tpl.rs, currentFillRange.maxRow - r + 1);
-                            const spanC = Math.min(tpl.cs, currentFillRange.maxCol - c + 1);
-                            if (spanR > 1 || spanC > 1) {
-                                const maxMR = r + spanR - 1;
-                                const maxMC = c + spanC - 1;
-                                tgt.setAttribute("rowspan", String(spanR));
-                                tgt.setAttribute("colspan", String(spanC));
-                                tgt.classList.add("merged");
-                                tgt.dataset.mergeMinRow = String(r);
-                                tgt.dataset.mergeMaxRow = String(maxMR);
-                                tgt.dataset.mergeMinCol = String(c);
-                                tgt.dataset.mergeMaxCol = String(maxMC);
-
-                                for (let mr = r; mr <= maxMR; mr++) {
-                                    for (let mc = c; mc <= maxMC; mc++) {
-                                        if (mr === r && mc === c) continue;
-                                        const sub = getCell(mr, mc);
-                                        if (sub) {
-                                            sub.textContent = "";
-                                            sub.removeAttribute("style");
-                                            sub.removeAttribute("rowspan");
-                                            sub.removeAttribute("colspan");
-                                            sub.style.display = "none";
-                                            sub.className = "";
-                                            sub.dataset.mergeAnchorRow = String(r);
-                                            sub.dataset.mergeAnchorCol = String(c);
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    // フィル後の範囲（結合アンカー）を選択状態に揃える
-                    clearSelection();
-                    selectionStart = { row: currentFillRange.minRow, col: currentFillRange.minCol };
-                    selectionEnd = { row: currentFillRange.maxRow, col: currentFillRange.maxCol };
-                    for (let r = currentFillRange.minRow; r <= currentFillRange.maxRow; r++) {
-                        for (let c = currentFillRange.minCol; c <= currentFillRange.maxCol; c++) {
-                            const vis = getVisibleCell(r, c);
-                            if (vis && vis.style.display !== "none") {
-                                vis.classList.add("selected");
-                            }
-                        }
-                    }
-                    if (fillSource) fillSource.classList.add("active-cell");
-
-                    extendConditionalFormatsForFill(initialFillRange, currentFillRange);
-                    updateAllFormulas();
-                    updateSelectedCellsDisplay();
-                    updateFillHandle();
-                    setDirtyState(true);
-                    debouncedSaveState();
-                    isFillDragging = false;
-                    currentFillRange = null;
-                };
-
-                document.addEventListener("mousemove", onMove, { signal });
-                document.addEventListener("mouseup", onUp, { signal });
-            }, { signal });
-        }
-    }
+    const {
+        isFillDragging,
+        cloneCellProperties,
+        updateFillHandle,
+        hideAutoFillOptions,
+        syncAutoFillOptionButtonPosition
+    } = createAutoFillModule({
+        signal,
+        spreadsheetContent,
+        tbody,
+        getActiveCell: () => activeCell,
+        getSheets: () => sheets,
+        getActiveSheetIndex: () => activeSheetIndex,
+        getRowCount: () => rowCount,
+        getCurrentColumns: () => currentColumns,
+        isCurrentSheetProtected: () => isCurrentSheetProtected(),
+        isCellLockedForEdit: (cell) => isCellLockedForEdit(cell),
+        peekCell,
+        getCell,
+        getVisibleCell,
+        getCellPureText: (cell) => getCellPureText(cell),
+        getSelectedRangeBounds: () => getSelectedRangeBounds(),
+        getRangeLocalRect: (bounds) => getRangeLocalRect(bounds),
+        extractCellStyleObject: (cell) => extractCellStyleObject(cell),
+        applyCellStyleData: (cell, styleData) => applyCellStyleData(cell, styleData),
+        applyShrinkToFit: (cell) => applyShrinkToFit(cell),
+        syncCellAnnotationMark: (cell) => syncCellAnnotationMark(cell),
+        clearSpillCellsFromAnchor: (r, c) => clearSpillCellsFromAnchor(r, c),
+        adjustFormula: (f, dr, dc) => adjustFormula(f, dr, dc),
+        setCellFormattedValue: (cell, val) => setCellFormattedValue(cell, val),
+        clearSelection: () => clearSelection(),
+        setSelectionBounds: (start, end) => {
+            selectionStart = start;
+            selectionEnd = end;
+        },
+        updateSelection: () => updateSelection(),
+        updateAllFormulas: () => updateAllFormulas(),
+        applyConditionalFormats: () => applyConditionalFormats(),
+        syncCellGridlinesForBounds: (bounds) => syncCellGridlinesForBounds(bounds),
+        updateSelectedCellsDisplay: () => updateSelectedCellsDisplay(),
+        showAlert: (...args) => showAlert(...args),
+        setDirtyState: (flag) => setDirtyState(flag),
+        debouncedSaveState: (delay) => debouncedSaveState(delay)
+    });
 
     // =========================================================
     // セル結合・解除
@@ -4587,6 +4338,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 }
             }
         }
+        syncCellGridlinesForBounds({ minRow, maxRow, minCol, maxCol });
         clearSelection();
         setActiveCell(anchor, true);
         selectionStart = { row: minRow, col: minCol };
@@ -4648,6 +4400,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
             }
         });
 
+        syncCellGridlinesForCells(restoredCells);
         clearSelection();
         restoredCells.forEach(c => c.classList.add("selected"));
         if (restoredCells[0]) setActiveCell(restoredCells[0], true);
@@ -4691,10 +4444,12 @@ export default async function initSpreadsheetApp(content, options = {}) {
         hasMergeConflictOnDestination: (bounds, ignoreBounds) => hasMergeConflictOnDestination(bounds, ignoreBounds),
         extractCellStyleObject: (cell) => extractCellStyleObject(cell),
         applyCellStyleData: (cell, styleData) => applyCellStyleData(cell, styleData),
+        syncCellGridlinesForCells: (cells) => syncCellGridlinesForCells(cells),
         evaluateFormula: (...args) => evaluateFormula(...args),
         adjustFormula: (f, dr, dc) => adjustFormula(f, dr, dc),
         adjustMovedFormulaSelf: (f, srcBounds, dr, dc) => adjustMovedFormulaSelf(f, srcBounds, dr, dc),
         clearSpillCellsFromAnchor: (r, c) => clearSpillCellsFromAnchor(r, c),
+        commitCellValue: (cell, val, opts) => commitCellValue(cell, val, opts),
         setCellFormattedValue: (cell, val) => setCellFormattedValue(cell, val),
         syncCellAnnotationMark: (cell) => syncCellAnnotationMark(cell),
         applyShrinkToFit: (cell) => applyShrinkToFit(cell),
@@ -4767,6 +4522,9 @@ export default async function initSpreadsheetApp(content, options = {}) {
         const hasCF = Boolean(cell.dataset.cfApplied);
         for (const prop of PERSISTED_STYLE_PROPS) {
             let val = cell.style[prop];
+            if (prop === "fontSize" && cell.dataset.shrinkToFit === "1" && cell.dataset.origFontSize) {
+                val = cell.dataset.origFontSize;
+            }
             if (hasCF) {
                 if (prop === "backgroundColor") val = cell.dataset.cfOrigBg || "";
                 else if (prop === "color") val = cell.dataset.cfOrigColor || "";
@@ -4798,14 +4556,17 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 }
             }
         }
-        const isNowJustify = cell.style.textAlign === "justify";
-        if (cell.tagName === "TD" && (isNowJustify || hadJustifyDom)) {
-            const displayText = formatDisplayByNumFmt(
-                cell.dataset.rawValue ?? cell.textContent,
-                cell.dataset.numFormat,
-                cell
-            );
-            setCellTextPreservingControls(cell, displayText);
+        if (cell.tagName === "TD") {
+            syncCellGridlinesForCells([cell]);
+            const isNowJustify = cell.style.textAlign === "justify";
+            if (isNowJustify || hadJustifyDom) {
+                const displayText = formatDisplayByNumFmt(
+                    cell.dataset.rawValue ?? cell.textContent,
+                    cell.dataset.numFormat,
+                    cell
+                );
+                setCellTextPreservingControls(cell, displayText);
+            }
         }
     }
 
@@ -4924,6 +4685,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
         syncTableWidth,
         updateHiddenHeaderIndicators,
         getPageSize: () => getPageSize(),
+        getPrintOptions: () => getPrintOptions(),
         getFreezeRows: () => freezeRows,
         getFreezeCols: () => freezeCols,
         setFreezePanes,
@@ -4945,6 +4707,9 @@ export default async function initSpreadsheetApp(content, options = {}) {
         clearAllAutoFilters: (opts) => clearAllAutoFilters(opts),
         serializeAutoFilters: () => serializeAutoFilters(),
         restoreAutoFilters: (sheetData, opts) => restoreAutoFilters(sheetData, opts),
+        clearAllSlicers: () => clearAllSlicers(),
+        serializeSlicers: () => serializeSlicers(),
+        restoreSlicers: (sheetData) => restoreSlicers(sheetData),
         getSheetTables: (sIdx) => getSheetTables(sIdx),
         applyStructuredTableVisuals: (tbl) => applyStructuredTableVisuals(tbl),
         renderSheetTabs,
@@ -4958,11 +4723,13 @@ export default async function initSpreadsheetApp(content, options = {}) {
         setCellFormattedValue,
         updateAllFormulas: () => updateAllFormulas(),
         applyConditionalFormats: () => applyConditionalFormats(),
+        syncCellGridlinesForBounds: (bounds) => syncCellGridlinesForBounds(bounds),
         refreshVisibleRows: () => refreshVisibleRows(),
         refreshVisibleFloatingObjects: () => refreshVisibleFloatingObjects(),
         syncCellDropdownButtonPosition: () => syncCellDropdownButtonPosition(),
         setZoom: (z, opts) => setZoom(z, opts),
         setPageSize: (sz, opts) => setPageSize(sz, opts),
+        setPrintOptions: (opts, flags) => setPrintOptions(opts, flags),
         clearSelection,
         setActiveCell,
         updateSelectedCellsDisplay,
@@ -4989,6 +4756,8 @@ export default async function initSpreadsheetApp(content, options = {}) {
     // =========================================================
     const {
         getPageSize,
+        getPrintOptions,
+        setPrintOptions,
         setPageSize,
         togglePrintOrientation,
         togglePrintFit,
@@ -5301,6 +5070,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
         setCellFormattedValue: (cell, val) => setCellFormattedValue(cell, val),
         updateAllFormulas: () => updateAllFormulas(),
         applyConditionalFormats: () => applyConditionalFormats(),
+        syncCellGridlinesForBounds: (bounds) => syncCellGridlinesForBounds(bounds),
         updateFillHandle: () => updateFillHandle(),
         updateSelectedCellsDisplay: () => updateSelectedCellsDisplay(),
         openAppModal: (...args) => openAppModal(...args),
@@ -5353,6 +5123,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
         autoFitColumn: (c) => autoFitColumn(c),
         updateAllFormulas: () => updateAllFormulas(),
         applyConditionalFormats: () => applyConditionalFormats(),
+        syncCellGridlinesForBounds: (bounds) => syncCellGridlinesForBounds(bounds),
         hasAutoFilters: () => hasAutoFilters(),
         applyAutoFilterRows: () => applyAutoFilterRows(),
         clearSelection: () => clearSelection(),
@@ -5392,6 +5163,16 @@ export default async function initSpreadsheetApp(content, options = {}) {
         autoFitColumn: (c) => autoFitColumn(c),
         autoFitRow: (tr) => autoFitRow(tr),
         applyConditionalFormats: () => applyConditionalFormats(),
+        syncCellGridlinesForCells: (cells) => syncCellGridlinesForCells(cells),
+        syncCellGridlinesForBounds: (bounds) => syncCellGridlinesForBounds(bounds),
+        syncActiveFormulaBar: () => {
+            if (!activeCell) return;
+            if (isCurrentSheetProtected() && activeCell.dataset.formulaHidden === "1" && activeCell.dataset.formula) {
+                formulaBarInput.value = "";
+            } else {
+                formulaBarInput.value = getCellEditableValue(activeCell);
+            }
+        },
         scheduleTextOverflowUpdate: () => scheduleTextOverflowUpdate(),
         updateToolbarState: () => updateToolbarState(),
         flushPendingEdits: () => flushPendingEdits(),
@@ -5441,6 +5222,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
         applyAutoFilterRows: () => applyAutoFilterRows(),
         updateAllFormulas: () => updateAllFormulas(),
         applyConditionalFormats: () => applyConditionalFormats(),
+        syncCellGridlinesForBounds: (bounds) => syncCellGridlinesForBounds(bounds),
         getBackgroundSheetCellMap: (sheetObj) => getBackgroundSheetCellMap(sheetObj),
         openAppModal: (...args) => openAppModal(...args),
         openSheetRangePicker: (opts) => openSheetRangePicker(opts),
@@ -5457,7 +5239,11 @@ export default async function initSpreadsheetApp(content, options = {}) {
         getAutoFilterStates,
         hasAutoFilters,
         closeFilterDropdown,
+        getAutoFilterById,
         getAutoFilterByTableId,
+        getAutoFilterAtCoord,
+        findActiveAutoFilterForCell,
+        isRowMatchingOtherFilters,
         syncFilterButtonState,
         addAutoFilterForRange,
         removeAutoFilterById,
@@ -5484,10 +5270,48 @@ export default async function initSpreadsheetApp(content, options = {}) {
         sortSelectedRange: (asc) => sortSelectedRange(asc),
         refreshVisibleRows: () => refreshVisibleRows(),
         syncCopyAntsBoxPosition: () => syncCopyAntsBoxPosition(),
+        syncSelectionBoxPosition: () => syncSelectionBoxPosition(),
         syncCellDropdownButtonPosition: () => syncCellDropdownButtonPosition(),
         refreshFormulaRefOverlay: () => refreshFormulaRefOverlay(),
+        onAutoFilterChanged: () => refreshAllSlicers(),
         updateAllFormulas: () => updateAllFormulas(),
         showAlert: (...args) => showAlert(...args),
+        setDirtyState: (flag) => setDirtyState(flag),
+        debouncedSaveState: (delay) => debouncedSaveState(delay)
+    });
+
+    const {
+        hasSlicers,
+        openInsertSlicerDialog,
+        refreshAllSlicers,
+        shiftSlicersForMove,
+        serializeSlicers,
+        restoreSlicers,
+        clearAllSlicers
+    } = createSlicerModule({
+        win,
+        signal,
+        container,
+        spreadsheetContent,
+        tbody,
+        statusBarState,
+        getActiveCell: () => activeCell,
+        getVisibleCell,
+        getSelectedRangeBounds: () => getSelectedRangeBounds(),
+        detectDataBlockBounds: (cell) => detectDataBlockBounds(cell),
+        findTableAtCoord: (r, c, sIdx) => findTableAtCoord(r, c, sIdx),
+        getAutoFilterById: (id) => getAutoFilterById(id),
+        getAutoFilterByTableId: (id) => getAutoFilterByTableId(id),
+        getAutoFilterAtCoord: (r, c) => getAutoFilterAtCoord(r, c),
+        findActiveAutoFilterForCell: (cell) => findActiveAutoFilterForCell(cell),
+        addAutoFilterForRange: (opts) => addAutoFilterForRange(opts),
+        applyAutoFilterRows: (opts) => applyAutoFilterRows(opts),
+        isRowMatchingOtherFilters: (af, r, exCol) => isRowMatchingOtherFilters(af, r, exCol),
+        openAppModal: (...args) => openAppModal(...args),
+        showAlert: (...args) => showAlert(...args),
+        updateResizeTooltip,
+        hideResizeTooltip,
+        renderWindowStatusBar: () => renderWindowStatusBar(),
         setDirtyState: (flag) => setDirtyState(flag),
         debouncedSaveState: (delay) => debouncedSaveState(delay)
     });
@@ -5563,12 +5387,18 @@ export default async function initSpreadsheetApp(content, options = {}) {
                     statusBarState.stateText = "準備完了";
                 } else if (activeCell) {
                     formatPainterSnapshot = {
+                        persistent: false,
                         styleObj: extractCellStyleObject(activeCell),
                         numFormat: activeCell.dataset.numFormat || "",
-                        decimalPlaces: activeCell.dataset.decimalPlaces || ""
+                        decimalPlaces: activeCell.dataset.decimalPlaces || "",
+                        indent: activeCell.dataset.indent || "",
+                        shrinkToFit: activeCell.dataset.shrinkToFit || "",
+                        textRotation: activeCell.dataset.textRotation || "",
+                        locked: activeCell.dataset.locked || "",
+                        formulaHidden: activeCell.dataset.formulaHidden || ""
                     };
                     btn?.classList.add("selected");
-                    statusBarState.stateText = "書式コピー待機中（貼り付け先セルを選択）";
+                    statusBarState.stateText = "書式コピー待機中（ダブルクリックで連続適用 / Escで解除）";
                 }
                 renderWindowStatusBar();
                 break;
@@ -5576,25 +5406,46 @@ export default async function initSpreadsheetApp(content, options = {}) {
             case "clear-cells":
                 clearTargetCellsContent();
                 break;
-            case "clear-formats":
-                getTargetCells().forEach(c => {
+            case "clear-formats": {
+                const fmtTargets = getTargetCells();
+                const affectedRows = new Set();
+                fmtTargets.forEach(c => {
                     clearAppliedConditionalStyle(c);
                     c.removeAttribute("style");
+                    c.classList.remove("ss-has-numfmt-color");
+                    if (c.dataset.valueType === "date" && !c.dataset.formula) {
+                        const dt = resolveDateFromRawValue(c.dataset.rawValue ?? getCellPureText(c));
+                        if (dt) c.dataset.rawValue = String(dateToSerial(dt));
+                    }
                     delete c.dataset.numFormat;
                     delete c.dataset.decimalPlaces;
                     delete c.dataset.richRuns;
+                    delete c.dataset.indent;
+                    delete c.dataset.shrinkToFit;
+                    delete c.dataset.origFontSize;
+                    delete c.dataset.textRotation;
+                    delete c.dataset.quotePrefix;
+                    delete c.dataset.valueType;
+                    delete c.dataset.dateValue;
                     const raw = c.dataset.formula ? (c.dataset.rawValue ?? "") : (c.dataset.rawValue ?? getCellPureText(c));
                     setCellFormattedValue(c, raw);
+                    const tr = c.closest("tr");
+                    if (tr) affectedRows.add(tr);
                 });
+                affectedRows.forEach(tr => autoFitRow(tr));
+                syncCellGridlinesForCells(fmtTargets);
                 applyConditionalFormats();
+                if (activeCell) formulaBarInput.value = getCellEditableValue(activeCell);
                 scheduleTextOverflowUpdate();
                 updateToolbarState();
                 setDirtyState(true);
                 debouncedSaveState();
                 break;
+            }
             case "clear-all": {
                 const clearBounds = getSelectedRangeBounds();
-                getTargetCells().forEach(c => {
+                const allTargets = getTargetCells();
+                allTargets.forEach(c => {
                     clearAppliedConditionalStyle(c);
                     delete c.dataset.cfIcon;
                     c.style.removeProperty("--cf-icon-color");
@@ -5614,9 +5465,12 @@ export default async function initSpreadsheetApp(content, options = {}) {
                     delete c.dataset.locked;
                     delete c.dataset.formulaHidden;
                     c.querySelector(":scope > .ss-anno-mark")?.remove();
-                    c.classList.remove("ss-hyperlink");
+                    c.style.removeProperty("--ss-numfmt-color");
+                    c.style.removeProperty("--ss-fill-bg");
+                    c.classList.remove("ss-hyperlink", "ss-has-numfmt-color", "ss-has-fill", "ss-fill-seam-r", "ss-fill-seam-b", "ss-no-gl-r", "ss-no-gl-b");
                     c.removeAttribute("title");
                 });
+                syncCellGridlinesForCells(allTargets);
                 if (clearBounds) {
                     // 選択範囲内に完全に含まれる構造化テーブル定義を削除
                     if (sheets[activeSheetIndex] && Array.isArray(sheets[activeSheetIndex].tables)) {
@@ -5823,6 +5677,9 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 break;
             case "clear-autofilter":
                 clearAllAutoFilters();
+                break;
+            case "insert-slicer":
+                openInsertSlicerDialog();
                 break;
             case "custom-sort":
                 openCustomSortDialog();
@@ -6160,15 +6017,31 @@ export default async function initSpreadsheetApp(content, options = {}) {
             const fmt = numFmtBtn.dataset.numfmt;
             const targets = tbody.querySelectorAll("td.selected");
             (targets.length ? targets : (activeCell ? [activeCell] : [])).forEach(c => {
+                let raw = c.dataset.formula ? (c.dataset.rawValue ?? "") : (c.dataset.rawValue ?? getCellPureText(c));
                 if (fmt === "general") {
+                    // Excel準拠：日付セルを「標準」へ戻すと内部シリアル値をそのまま数値表示
+                    if (c.dataset.valueType === "date" && !c.dataset.formula) {
+                        const dt = resolveDateFromRawValue(raw);
+                        if (dt) raw = String(dateToSerial(dt));
+                    }
                     delete c.dataset.numFormat;
                     delete c.dataset.decimalPlaces;
+                    delete c.dataset.valueType;
+                    delete c.dataset.dateValue;
                 } else {
                     c.dataset.numFormat = fmt;
+                    if (isDateNumFormat(fmt) && !c.dataset.formula) {
+                        const dt = resolveDateFromRawValue(raw);
+                        if (dt) {
+                            c.dataset.valueType = "date";
+                            c.dataset.dateValue = String(dt.getTime());
+                            raw = String(dateToSerial(dt));
+                        }
+                    }
                 }
-                const raw = c.dataset.formula ? (c.dataset.rawValue ?? "") : (c.dataset.rawValue ?? getCellPureText(c));
                 setCellFormattedValue(c, raw);
             });
+            if (activeCell) formulaBarInput.value = getCellEditableValue(activeCell);
             scheduleTextOverflowUpdate();
             updateToolbarState();
             setDirtyState(true);
@@ -6199,21 +6072,25 @@ export default async function initSpreadsheetApp(content, options = {}) {
 
         const alignBtn = e.target.closest("[data-align]");
         if (alignBtn) {
-            appRoot.querySelectorAll("[data-align]").forEach(b => b.classList.remove("selected"));
-            alignBtn.classList.add("selected");
             const align = alignBtn.dataset.align;
-            const targets = tbody.querySelectorAll("td.selected");
-            (targets.length ? targets : (activeCell ? [activeCell] : [])).forEach(c => {
-                c.style.textAlign = align;
+            const targets = getTargetCells();
+            if (!targets.length) return;
+            // Excel準拠：選択セルすべてに同じ配置が明示設定済みなら解除して「標準」に戻す
+            const allSameAlign = targets.every(c => c.style.textAlign === align);
+            const nextAlign = allSameAlign ? "" : align;
+
+            targets.forEach(c => {
+                c.style.textAlign = nextAlign;
                 if (c.tagName === "TD") {
-                    const displayText = formatDisplayByNumFmt(
-                        c.dataset.rawValue ?? c.textContent,
-                        c.dataset.numFormat,
-                        c
-                    );
+                    const raw = c.dataset.rawValue ?? getCellPureText(c);
+                    const displayText = formatDisplayByNumFmt(raw, c.dataset.numFormat, c);
                     setCellTextPreservingControls(c, displayText);
+                    if (nextAlign === "") {
+                        updateCellAutoAlignment(c, raw);
+                    }
                 }
             });
+            updateToolbarState();
             updateTextOverflowDisplay();
             setDirtyState(true);
             debouncedSaveState();
@@ -6230,6 +6107,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
             const selected = Array.from(tbody.querySelectorAll("td.selected"));
             if (selected.length) {
                 const covered = buildSelectedCoordsSet(selected);
+                const gridlineSyncTargets = new Set(selected);
                 selected.forEach(c => {
                     const r0 = +c.dataset.row;
                     const c0 = +c.dataset.col;
@@ -6270,23 +6148,32 @@ export default async function initSpreadsheetApp(content, options = {}) {
                         c.style.borderLeft = "";
                         c.style.borderRight = "";
                         if (isTop && r0 > 1) {
-                            const above = getVisibleCell(r0 - 1, c0);
-                            if (above) above.style.borderBottom = "";
+                            for (let col = c0; col <= c1; col++) {
+                                const above = getVisibleCell(r0 - 1, col);
+                                if (above) { above.style.borderBottom = ""; gridlineSyncTargets.add(above); }
+                            }
                         }
                         if (isBottom) {
-                            const below = getVisibleCell(r1 + 1, c0);
-                            if (below) below.style.borderTop = "";
+                            for (let col = c0; col <= c1; col++) {
+                                const below = getVisibleCell(r1 + 1, col);
+                                if (below) { below.style.borderTop = ""; gridlineSyncTargets.add(below); }
+                            }
                         }
                         if (isLeft && c0 > 0) {
-                            const left = getVisibleCell(r0, c0 - 1);
-                            if (left) left.style.borderRight = "";
+                            for (let row = r0; row <= r1; row++) {
+                                const left = getVisibleCell(row, c0 - 1);
+                                if (left) { left.style.borderRight = ""; gridlineSyncTargets.add(left); }
+                            }
                         }
                         if (isRight) {
-                            const right = getVisibleCell(r0, c1 + 1);
-                            if (right) right.style.borderLeft = "";
+                            for (let row = r0; row <= r1; row++) {
+                                const right = getVisibleCell(row, c1 + 1);
+                                if (right) { right.style.borderLeft = ""; gridlineSyncTargets.add(right); }
+                            }
                         }
                     }
                 });
+                syncCellGridlinesForCells(gridlineSyncTargets);
                 setDirtyState(true);
                 debouncedSaveState();
             }
@@ -6315,9 +6202,30 @@ export default async function initSpreadsheetApp(content, options = {}) {
         }
     };
 
+    // 書式コピーボタンのダブルクリックで連続書式コピーモード（Excel準拠）
+    appRoot.querySelector(".ss-format-painter-btn")?.addEventListener("dblclick", (e) => {
+        e.stopPropagation();
+        if (!activeCell) return;
+        formatPainterSnapshot = {
+            persistent: true,
+            styleObj: extractCellStyleObject(activeCell),
+            numFormat: activeCell.dataset.numFormat || "",
+            decimalPlaces: activeCell.dataset.decimalPlaces || "",
+            indent: activeCell.dataset.indent || "",
+            shrinkToFit: activeCell.dataset.shrinkToFit || "",
+            textRotation: activeCell.dataset.textRotation || "",
+            locked: activeCell.dataset.locked || "",
+            formulaHidden: activeCell.dataset.formulaHidden || ""
+        };
+        appRoot.querySelector(".ss-format-painter-btn")?.classList.add("selected");
+        statusBarState.stateText = "連続書式コピー中（Esc または書式ボタンで終了）";
+        renderWindowStatusBar();
+    }, { signal });
+
     appRoot.querySelector(".ss-font-family")?.addEventListener("change", (e) => {
         getTargetCells().forEach(c => {
             c.style.fontFamily = e.target.value;
+            if (c.dataset?.shrinkToFit === "1") applyShrinkToFit(c);
         });
         scheduleTextOverflowUpdate();
         updateToolbarState();
@@ -6330,6 +6238,8 @@ export default async function initSpreadsheetApp(content, options = {}) {
         const affectedRows = new Set();
         getTargetCells().forEach(c => {
             c.style.fontSize = e.target.value;
+            delete c.dataset?.origFontSize;
+            if (c.dataset?.shrinkToFit === "1") applyShrinkToFit(c);
             const tr = c.closest("tr");
             if (tr) affectedRows.add(tr);
         });
@@ -6457,15 +6367,25 @@ export default async function initSpreadsheetApp(content, options = {}) {
     }, { signal });
 
     appRoot.querySelector(".ss-toggle-wrap").addEventListener("click", () => {
-        getTargetCells().forEach(c => {
-            if (c.style.whiteSpace === "pre-wrap") {
+        const targets = getTargetCells();
+        const allWrapped = targets.length > 0 && targets.every(c => c.style.whiteSpace === "pre-wrap");
+        const affectedRows = new Set();
+        targets.forEach(c => {
+            if (allWrapped) {
                 c.style.whiteSpace = "";
                 c.style.wordBreak = "";
             } else {
                 c.style.whiteSpace = "pre-wrap";
                 c.style.wordBreak = "break-all";
+                if (c.dataset?.shrinkToFit === "1") {
+                    delete c.dataset.shrinkToFit;
+                    applyShrinkToFit(c);
+                }
             }
+            const tr = c.closest("tr");
+            if (tr) affectedRows.add(tr);
         });
+        affectedRows.forEach(tr => autoFitRow(tr));
         updateTextOverflowDisplay();
         updateToolbarState();
         setDirtyState(true);
@@ -6485,10 +6405,12 @@ export default async function initSpreadsheetApp(content, options = {}) {
     };
 
     const applyManualCellColor = (colorVal) => {
-        getTargetCells().forEach(c => {
+        const targets = getTargetCells();
+        targets.forEach(c => {
             c.style.backgroundColor = colorVal;
             if (c.dataset.cfApplied) c.dataset.cfOrigBg = colorVal;
         });
+        syncCellGridlinesForCells(targets);
         applyConditionalFormats();
     };
 
@@ -6769,10 +6691,12 @@ export default async function initSpreadsheetApp(content, options = {}) {
         getSheetTables: (sIdx) => getSheetTables(sIdx),
         applyStructuredTableVisuals: (tbl) => applyStructuredTableVisuals(tbl),
         shiftAutoFiltersForMove: (srcBounds, dr, dc) => shiftAutoFiltersForMove(srcBounds, dr, dc),
+        shiftSlicersForMove: (srcBounds, dr, dc) => shiftSlicersForMove(srcBounds, dr, dc),
         hasAutoFilters: () => hasAutoFilters(),
         applyAutoFilterRows: () => applyAutoFilterRows(),
         updateAllFormulas: () => updateAllFormulas(),
         applyConditionalFormats: () => applyConditionalFormats(),
+        syncCellGridlinesForBounds: (bounds) => syncCellGridlinesForBounds(bounds),
         refreshVisibleFloatingObjects: () => refreshVisibleFloatingObjects(),
         updateSelectedCellsDisplay: () => updateSelectedCellsDisplay(),
         updateFillHandle: () => updateFillHandle(),
@@ -6915,6 +6839,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
         if (!cell || !tbody.contains(cell)) return;
         if (isCellEditing(cell)) return;
         if (e.button !== 0) return;
+        hideAutoFillOptions();
 
         // 選択範囲の外周エッジを掴んだ場合は範囲移動を開始
         if (!isInFormulaEdit() && isPointerOnSelectionEdge(e, cell)) {
@@ -7049,7 +6974,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
             return;
         }
 
-        if (!isScrollingNow && !isSelecting && !isRowSelecting && !isColSelecting && !isFillDragging) {
+        if (!isScrollingNow && !isSelecting && !isRowSelecting && !isColSelecting && !isFillDragging()) {
             const hoverCell = resolveCellFromPoint(e);
             if (hoverCell && tbody.contains(hoverCell)) {
                 const nextCursor = isPointerOnSelectionEdge(e, hoverCell) ? "move" : "";
@@ -7170,21 +7095,42 @@ export default async function initSpreadsheetApp(content, options = {}) {
 
             if (formatPainterSnapshot && !isInFormulaEdit()) {
                 const targets = Array.from(tbody.querySelectorAll("td.selected"));
+                const affectedRows = new Set();
                 targets.forEach(td => {
                     applyCellStyleData(td, formatPainterSnapshot.styleObj);
                     if (formatPainterSnapshot.numFormat) td.dataset.numFormat = formatPainterSnapshot.numFormat;
                     else delete td.dataset.numFormat;
                     if (formatPainterSnapshot.decimalPlaces) td.dataset.decimalPlaces = formatPainterSnapshot.decimalPlaces;
                     else delete td.dataset.decimalPlaces;
+                    if (formatPainterSnapshot.indent) td.dataset.indent = formatPainterSnapshot.indent;
+                    else delete td.dataset.indent;
+                    if (formatPainterSnapshot.shrinkToFit === "1") td.dataset.shrinkToFit = "1";
+                    else {
+                        delete td.dataset.shrinkToFit;
+                        delete td.dataset.origFontSize;
+                    }
+                    if (formatPainterSnapshot.textRotation) td.dataset.textRotation = formatPainterSnapshot.textRotation;
+                    else delete td.dataset.textRotation;
+                    if (formatPainterSnapshot.locked === "0") td.dataset.locked = "0";
+                    else delete td.dataset.locked;
+                    if (formatPainterSnapshot.formulaHidden === "1") td.dataset.formulaHidden = "1";
+                    else delete td.dataset.formulaHidden;
+
                     const raw = td.dataset.formula ? (td.dataset.rawValue ?? "") : (td.dataset.rawValue ?? getCellPureText(td));
                     setCellFormattedValue(td, raw);
+                    if (formatPainterSnapshot.shrinkToFit === "1") applyShrinkToFit(td);
+                    const tr = td.closest("tr");
+                    if (tr && (td.style.whiteSpace === "pre-wrap" || td.style.fontSize)) affectedRows.add(tr);
                 });
-                formatPainterSnapshot = null;
-                appRoot.querySelector(".ss-format-painter-btn")?.classList.remove("selected");
+                affectedRows.forEach(tr => autoFitRow(tr));
+                if (!formatPainterSnapshot.persistent) {
+                    formatPainterSnapshot = null;
+                    appRoot.querySelector(".ss-format-painter-btn")?.classList.remove("selected");
+                    statusBarState.stateText = "書式を適用しました";
+                }
                 applyConditionalFormats();
                 scheduleTextOverflowUpdate();
                 updateToolbarState();
-                statusBarState.stateText = "書式を適用しました";
                 renderWindowStatusBar();
                 setDirtyState(true);
                 debouncedSaveState();
@@ -7201,7 +7147,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
             }
             updateFillHandle();
         }
-        if (formatPainterSnapshot && !e.target.closest(".ss-format-painter-btn")) {
+        if (formatPainterSnapshot && !formatPainterSnapshot.persistent && !e.target.closest(".ss-format-painter-btn")) {
             formatPainterSnapshot = null;
             appRoot.querySelector(".ss-format-painter-btn")?.classList.remove("selected");
             statusBarState.stateText = "準備完了";
@@ -7467,7 +7413,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
 
     document.addEventListener("keydown", (e) => {
         if (!isAppFocused()) return;
-        if (e.target.closest(".floating-textbox, .ss-find-win-body, .ss-find-dialog")) return;
+        if (e.target.closest(".floating-textbox, .floating-slicer, .ss-find-win-body, .ss-find-dialog")) return;
         if (isCellEditing() || document.activeElement === cellEditor) return;
 
         // Alt単押し待機フラグ制御
@@ -7775,9 +7721,15 @@ export default async function initSpreadsheetApp(content, options = {}) {
                     appRoot.querySelector(".ss-toggle-strike")?.click();
                     return;
                 }
-                if (e.shiftKey && (e.code === "Digit1" || e.code === "Digit4" || e.code === "Digit5")) {
+                if (e.shiftKey && (e.code === "Digit1" || e.code === "Digit3" || e.code === "Digit4" || e.code === "Digit5" || e.code === "Backquote")) {
                     e.preventDefault();
-                    const fmtMap = { Digit1: "comma", Digit4: "currency", Digit5: "percent" };
+                    const fmtMap = {
+                        Backquote: "general",
+                        Digit1: "comma",
+                        Digit3: "date-jp",
+                        Digit4: "currency",
+                        Digit5: "percent"
+                    };
                     appRoot.querySelector(`[data-numfmt="${fmtMap[e.code]}"]`)?.click();
                     return;
                 }
@@ -7863,9 +7815,16 @@ export default async function initSpreadsheetApp(content, options = {}) {
             return;
         }
 
-        // Escapeでコピーアニメ解除
+        // Escapeでコピーアニメ・書式コピーモード・オートフィルオプション解除
         if (e.key === "Escape") {
+            hideAutoFillOptions();
             clearCopyAnimation();
+            if (formatPainterSnapshot) {
+                formatPainterSnapshot = null;
+                appRoot.querySelector(".ss-format-painter-btn")?.classList.remove("selected");
+                statusBarState.stateText = "準備完了";
+                renderWindowStatusBar();
+            }
             return;
         }
 
@@ -7912,7 +7871,9 @@ export default async function initSpreadsheetApp(content, options = {}) {
 
         if ((e.key === "PageUp" || e.key === "PageDown") && activeCell) {
             e.preventDefault();
-            const pageRows = Math.max(1, Math.floor((container.clientHeight - 30) / 30));
+            const zoom = parseFloat(spreadsheetContent.style.zoom || "1") || 1;
+            const visibleH = Math.max(DEFAULT_ROW_HEIGHT, container.clientHeight / zoom - DEFAULT_HEADER_HEIGHT);
+            const pageRows = Math.max(1, Math.floor(visibleH / DEFAULT_ROW_HEIGHT));
             const curR = parseInt(activeCell.dataset.row, 10);
             const curC = parseInt(activeCell.dataset.col, 10);
             const nextR = e.key === "PageDown" ? curR + pageRows : Math.max(1, curR - pageRows);
@@ -8681,8 +8642,10 @@ export default async function initSpreadsheetApp(content, options = {}) {
         tbody.querySelectorAll("td[data-formula]").forEach(td => {
             const raw = td.dataset.rawValue ?? "";
             setCellFormattedValue(td, raw);
+            if (td.dataset.shrinkToFit === "1") applyShrinkToFit(td);
         });
         updateTextOverflowDisplay();
+        syncSelectionBoxPosition();
         statusBarState.stateText = showFormulasMode ? "数式の表示モード: ON" : "数式の表示モード: OFF";
         renderWindowStatusBar();
     }
@@ -8844,7 +8807,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
     }
 
     function refreshVisibleFloatingObjects() {
-        const boxes = spreadsheetContent.querySelectorAll(".floating-textbox");
+        const boxes = spreadsheetContent.querySelectorAll(".floating-textbox, .floating-slicer");
         if (!boxes.length) return;
 
         if (isWindowMinimizedOrHidden()) {
@@ -8855,8 +8818,8 @@ export default async function initSpreadsheetApp(content, options = {}) {
         }
 
         const zoom = parseFloat(spreadsheetContent.style.zoom || "1") || 1;
-        const headerH = 30;
-        const rowHeaderW = parseInt(colgroup.children[0]?.style.width, 10) || 54;
+        const headerH = theadRow.offsetHeight || DEFAULT_HEADER_HEIGHT;
+        const rowHeaderW = parseInt(colgroup.children[0]?.style.width, 10) || DEFAULT_ROW_HEADER_WIDTH;
         const viewTop = (container.scrollTop + headerH) / zoom;
         const viewBottom = (container.scrollTop + container.clientHeight) / zoom;
         const viewLeft = (container.scrollLeft + rowHeaderW) / zoom;
@@ -8892,6 +8855,8 @@ export default async function initSpreadsheetApp(content, options = {}) {
     function refreshVisibleRows() {
         if (isWindowMinimizedOrHidden()) return;
         refreshVisibleFloatingObjects();
+        syncSelectionBoxPosition();
+        syncAutoFillOptionButtonPosition();
     }
 
     // ウィンドウ最小化・復元とコンテンツエリアの表示・オーバーフロー隠蔽を連動
@@ -8904,7 +8869,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
             appRoot.style.visibility = "hidden";
             container.style.overflowY = "hidden";
             container.style.overflowX = "hidden";
-            spreadsheetContent.querySelectorAll(".floating-textbox").forEach(box => {
+            spreadsheetContent.querySelectorAll(".floating-textbox, .floating-slicer").forEach(box => {
                 box.classList.remove("ss-obj-offscreen");
             });
         } else {
@@ -8990,6 +8955,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
             refreshVisibleFloatingObjects();
             if (freezeRows > 0 || freezeCols > 0) {
                 refreshFormulaRefOverlay();
+                syncSelectionBoxPosition();
             }
         });
     }, { passive: true, signal });
@@ -9009,6 +8975,8 @@ export default async function initSpreadsheetApp(content, options = {}) {
         signal,
         refreshVisibleRows: () => refreshVisibleRows(),
         syncCellDropdownButtonPosition: () => syncCellDropdownButtonPosition(),
+        syncCopyAntsBoxPosition: () => syncCopyAntsBoxPosition(),
+        scheduleTextOverflowUpdate: () => scheduleTextOverflowUpdate(),
         refreshFormulaRefOverlay: () => refreshFormulaRefOverlay(),
         setDirtyState: (flag) => setDirtyState(flag),
         debouncedSaveState: (delay) => debouncedSaveState(delay)

@@ -1,7 +1,45 @@
 // format-utils.js
 // HTMLエスケープ・座標変換・数値/日付書式変換・セル基本描画ユーティリティ
 
-import { EXCEL_ERROR_RE, parseExcelDate } from "./formula-functions.js";
+import {
+    EXCEL_ERROR_RE,
+    parseExcelDate,
+    parseJapaneseDateInput,
+    formatDateByPattern
+} from "./formula-functions.js";
+
+// =========================================================
+// 最新版 Microsoft Excel（日本語ロケール・100%表示）基準メトリクス定数
+// =========================================================
+export const DEFAULT_COL_WIDTH = 84;          // 標準列幅 (日本語11pt基準・約8.38文字相当)
+export const DEFAULT_ROW_HEIGHT = 25;         // 標準行高さ (18.75pt = 25px)
+export const DEFAULT_HEADER_HEIGHT = 22;      // 列見出し高さ
+export const DEFAULT_ROW_HEADER_WIDTH = 42;   // 行番号見出し幅
+export const DEFAULT_FONT_FAMILY = "'Yu Gothic', '游ゴシック', 'Meiryo', 'MS PGothic', sans-serif";
+export const DEFAULT_FONT_SIZE_PT = 11;       // 標準フォントサイズ (11pt)
+export const DEFAULT_FONT_SIZE_CSS = "11pt";
+export const DEFAULT_FONT_SIZE_PX = (DEFAULT_FONT_SIZE_PT * 96) / 72; // 14.6667px
+
+export function cssFontSizeToPx(sizeStr, fallbackPx = DEFAULT_FONT_SIZE_PX) {
+    if (typeof sizeStr === "number" && Number.isFinite(sizeStr)) return sizeStr;
+    const s = String(sizeStr ?? "").trim().toLowerCase();
+    if (!s) return fallbackPx;
+    const num = parseFloat(s);
+    if (!Number.isFinite(num) || num <= 0) return fallbackPx;
+    if (s.endsWith("pt")) return (num * 96) / 72;
+    return num;
+}
+
+export function cssFontSizeToPt(sizeStr, fallbackPt = DEFAULT_FONT_SIZE_PT) {
+    if (typeof sizeStr === "number" && Number.isFinite(sizeStr)) return sizeStr;
+    const s = String(sizeStr ?? "").trim().toLowerCase();
+    if (!s) return fallbackPt;
+    const num = parseFloat(s);
+    if (!Number.isFinite(num) || num <= 0) return fallbackPt;
+    if (s.endsWith("pt")) return Math.round(num * 2) / 2;
+    if (s.endsWith("px")) return Math.round(((num * 72) / 96) * 2) / 2;
+    return Math.round(num * 2) / 2;
+}
 
 export function escapeHtml(str) {
     return String(str ?? "")
@@ -52,26 +90,146 @@ export function getCellReferenceByCoord(row, col) {
 // =========================================================
 // 日付・数値書式変換 ＆ 数式前処理ヘルパー
 // =========================================================
-export function isDateFormat(str) {
-    const s = String(str ?? "").trim();
-    const ymd = s.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
-    if (ymd) {
-        const m = Number(ymd[2]), d = Number(ymd[3]);
-        return m >= 1 && m <= 12 && d >= 1 && d <= 31;
-    }
-    const short = s.match(/^(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{2,4}))?$/);
-    if (short) {
-        const p1 = Number(short[1]), p2 = Number(short[2]);
-        return p1 >= 1 && p1 <= 12 && p2 >= 1 && p2 <= 31;
+const NAMED_DATE_FORMATS = {
+    "date-ymd": { pattern: "yyyy/m/d", preferGannen: false },
+    "date-ymd-pad": { pattern: "yyyy/mm/dd", preferGannen: false },
+    "date-jp": { pattern: 'yyyy"年"m"月"d"日"', preferGannen: false },
+    "date-jp-week": { pattern: 'yyyy"年"m"月"d"日"(aaa)', preferGannen: false },
+    "date-md": { pattern: "m/d", preferGannen: false },
+    "date-md-jp": { pattern: 'm"月"d"日"', preferGannen: false },
+    "date-ym-jp": { pattern: 'yyyy"年"m"月"', preferGannen: false },
+    "wareki-jp": { pattern: 'ggge"年"m"月"d"日"', preferGannen: true },
+    "wareki-jp-week": { pattern: 'ggge"年"m"月"d"日"(aaa)', preferGannen: true },
+    "wareki-ym": { pattern: 'ggge"年"m"月"', preferGannen: true },
+    "wareki-short": { pattern: "ge/m/d", preferGannen: false },
+    "wareki-dot": { pattern: "ge.m.d", preferGannen: false },
+    "wareki-kanji-short": { pattern: "gge.m.d", preferGannen: false },
+    "datetime": { pattern: "yyyy/m/d h:mm", preferGannen: false },
+    "time-hm": { pattern: "h:mm", preferGannen: false },
+    "time-hms": { pattern: "h:mm:ss", preferGannen: false },
+    "time-jp": { pattern: 'h"時"mm"分"', preferGannen: false }
+};
+
+export function isTimeNumFormat(fmt) {
+    return fmt === "time-hm" || fmt === "time-hms" || fmt === "time-jp";
+}
+
+export function isDateNumFormat(fmt) {
+    if (!fmt) return false;
+    if (Object.prototype.hasOwnProperty.call(NAMED_DATE_FORMATS, fmt)) return true;
+    if (fmt.startsWith("custom:")) {
+        const clean = fmt.slice(7).split(";")[0].replace(/"[^"]*"/g, "").replace(/\[[^\]]*\]/g, "").trim();
+        return clean.toLowerCase() !== "general" && /[ymdaghe]/i.test(clean) && !/[#0]/.test(clean);
     }
     return false;
 }
 
+export function parseTimeInput(rawStr) {
+    const str = String(rawStr ?? "")
+        .trim()
+        .replace(/[０-９]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0xFEE0))
+        .replace(/：/g, ":");
+    const m = str.match(/^(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?$/);
+    if (!m) return null;
+    const h = parseInt(m[1], 10);
+    const mi = parseInt(m[2], 10);
+    const s = m[3] !== undefined ? parseInt(m[3], 10) : 0;
+    if (h > 23 || mi > 59 || s > 59) return null;
+    const serial = (h * 3600 + mi * 60 + s) / 86400;
+    return {
+        serial,
+        autoNumFormat: m[3] !== undefined ? "time-hms" : "time-hm"
+    };
+}
+
+export function formatTimeFromSerial(serial, withSeconds = true) {
+    const n = Number(serial);
+    if (!Number.isFinite(n)) return "";
+    const frac = ((n % 1) + 1) % 1;
+    let totalSec = Math.round(frac * 86400);
+    if (totalSec >= 86400) totalSec = 0;
+    const h = Math.floor(totalSec / 3600);
+    const m = Math.floor((totalSec % 3600) / 60);
+    const s = totalSec % 60;
+    const mm = String(m).padStart(2, "0");
+    const ss = String(s).padStart(2, "0");
+    return withSeconds ? `${h}:${mm}:${ss}` : `${h}:${mm}`;
+}
+
+export function isDateFormat(str) {
+    return parseJapaneseDateInput(String(str ?? ""), { allowShortMD: true }) !== null;
+}
+
 export function formatDate(date) {
     const y = date.getFullYear();
-    const m = String(date.getMonth() + 1).padStart(2, "0");
-    const d = String(date.getDate()).padStart(2, "0");
+    const m = date.getMonth() + 1;
+    const d = date.getDate();
+    const h = date.getHours();
+    const mi = date.getMinutes();
+    const s = date.getSeconds();
+    if (h !== 0 || mi !== 0 || s !== 0) {
+        const hh = String(h);
+        const mm = String(mi).padStart(2, "0");
+        const ss = s !== 0 ? `:${String(s).padStart(2, "0")}` : "";
+        return `${y}/${m}/${d} ${hh}:${mm}${ss}`;
+    }
     return `${y}/${m}/${d}`;
+}
+
+export function resolveDateFromRawValue(rawVal) {
+    const str = String(rawVal ?? "").trim();
+    if (!str || str.startsWith("#")) return null;
+    const num = parseFormattedNumber(str);
+    if (!isNaN(num) && num >= -11500 && num <= 2958465) {
+        return parseExcelDate(num);
+    }
+    return parseExcelDate(str);
+}
+
+const EXCEL_NUMFMT_COLOR_MAP = {
+    赤: "#d13438", red: "#d13438",
+    青: "#005a9e", blue: "#005a9e",
+    緑: "#107c41", green: "#107c41",
+    黄: "#b8860b", yellow: "#b8860b",
+    黒: "#000000", black: "#000000",
+    白: "#ffffff", white: "#ffffff",
+    マゼンタ: "#a61c50", magenta: "#a61c50",
+    シアン: "#008287", cyan: "#008287"
+};
+
+function splitCustomFormatSections(pattern) {
+    const sections = [];
+    let buf = "";
+    let inQ = false;
+    for (let i = 0; i < pattern.length; i++) {
+        const ch = pattern[i];
+        if (ch === '"') inQ = !inQ;
+        if (ch === ";" && !inQ) {
+            sections.push(buf);
+            buf = "";
+        } else {
+            buf += ch;
+        }
+    }
+    sections.push(buf);
+    return sections;
+}
+
+export function resolveCustomPatternColor(rawVal, fmt) {
+    if (!fmt || !fmt.startsWith("custom:")) return "";
+    const str = String(rawVal ?? "").trim();
+    if (!str || str.startsWith("#")) return "";
+    const num = parseFormattedNumber(str);
+    if (isNaN(num)) return "";
+
+    const sections = splitCustomFormatSections(fmt.slice(7));
+    let activeSec = sections[0] || "";
+    if (num < 0 && sections[1]) activeSec = sections[1];
+    else if (num === 0 && sections[2]) activeSec = sections[2];
+
+    const m = activeSec.match(/\[(赤|青|緑|黄|黒|白|マゼンタ|シアン|Red|Blue|Green|Yellow|Black|White|Magenta|Cyan)\]/i);
+    if (!m) return "";
+    return EXCEL_NUMFMT_COLOR_MAP[m[1].toLowerCase()] || "";
 }
 
 export function preprocessAllNestedIFs(expr) {
@@ -188,28 +346,14 @@ export function formatByCustomPattern(rawVal, pattern) {
     sections.push(buf);
 
     const num = parseFormattedNumber(str);
-    const dateObj = parseExcelDate(str);
 
-    // 日付カスタム書式（例: yyyy"年"m"月"d"日"(aaa)）
-    const firstClean = sections[0].replace(/"[^"]*"/g, "");
-    if (dateObj && /[ymda]/i.test(firstClean) && !/[#0]/.test(firstClean)) {
-        const lits = [];
-        const masked = sections[0].replace(/"([^"]*)"/g, (_, inner) => {
-            const tok = `\uE000${lits.length}\uE001`;
-            lits.push(inner);
-            return tok;
-        });
-        const daysJp = ["日", "月", "火", "水", "木", "金", "土"];
-        const formatted = masked
-            .replace(/yyyy/gi, String(dateObj.getFullYear()))
-            .replace(/yy/gi, String(dateObj.getFullYear()).slice(-2))
-            .replace(/mm/gi, String(dateObj.getMonth() + 1).padStart(2, "0"))
-            .replace(/m/gi, String(dateObj.getMonth() + 1))
-            .replace(/dd/gi, String(dateObj.getDate()).padStart(2, "0"))
-            .replace(/d/gi, String(dateObj.getDate()))
-            .replace(/aaaa/g, `${daysJp[dateObj.getDay()]}曜日`)
-            .replace(/aaa/g, daysJp[dateObj.getDay()]);
-        return formatted.replace(/\uE000(\d+)\uE001/g, (_, idx) => lits[Number(idx)]);
+    // 日付・和暦カスタム書式（例: yyyy"年"m"月"d"日"(aaa), ggge"年"m"月"d"日", [$-ja-JP]ggge"年"m"月"d"日", ge.m.d）
+    const firstClean = sections[0].replace(/"[^"]*"/g, "").replace(/\[[^\]]*\]/g, "").trim();
+    if (firstClean.toLowerCase() !== "general" && /[ymdaghe]/i.test(firstClean) && !/[#0]/.test(firstClean)) {
+        const dateObj = resolveDateFromRawValue(str);
+        if (dateObj) {
+            return formatDateByPattern(dateObj, sections[0]);
+        }
     }
 
     if (isNaN(num)) return str;
@@ -224,8 +368,10 @@ export function formatByCustomPattern(rawVal, pattern) {
         useAbs = true;
     }
 
-    // [赤] などの色タグは表示文字列から除去
-    activeSec = activeSec.replace(/^\[(赤|青|緑|黄|黒|白|Red|Blue|Green|Yellow|Black|White)\]/i, "");
+    // [赤] などの色タグ・ロケールタグは表示文字列から除去
+    activeSec = activeSec
+        .replace(/\[(赤|青|緑|黄|黒|白|マゼンタ|シアン|Red|Blue|Green|Yellow|Black|White|Magenta|Cyan)\]/gi, "")
+        .replace(/\[\$-[^\]]*\]/g, "");
 
     const lits = [];
     const masked = activeSec.replace(/"([^"]*)"/g, (_, inner) => {
@@ -234,12 +380,21 @@ export function formatByCustomPattern(rawVal, pattern) {
         return tok;
     });
 
-    const coreMatch = masked.match(/[#0,.]+%?/);
+    const coreMatch = masked.match(/[#0,.]+(?:E[+-]0+|%)?/i);
     if (!coreMatch) {
         return masked.replace(/\uE000(\d+)\uE001/g, (_, idx) => lits[Number(idx)]);
     }
 
     const core = coreMatch[0];
+    if (/E[+-]0+$/i.test(core)) {
+        const decPart = (core.split(".")[1] || "").replace(/E[+-]0+$/i, "");
+        const digits = (decPart.match(/[0#]/g) || []).length;
+        const val = useAbs ? Math.abs(num) : num;
+        const sci = val.toExponential(digits).toUpperCase().replace(/E([+-])(\d)$/, "E$10$2");
+        const replaced = masked.slice(0, coreMatch.index) + sci + masked.slice(coreMatch.index + core.length);
+        return replaced.replace(/\uE000(\d+)\uE001/g, (_, idx) => lits[Number(idx)]);
+    }
+
     const isPct = core.endsWith("%");
     const val = (useAbs ? Math.abs(num) : num) * (isPct ? 100 : 1);
     const [intPart = "", decPart = ""] = core.replace(/%$/, "").split(".");
@@ -275,34 +430,35 @@ export function formatDisplayByNumFmt(rawVal, fmt, cell = null) {
     const hasDecimals = cell?.dataset?.decimalPlaces !== undefined && cell?.dataset?.decimalPlaces !== "";
     const dec = hasDecimals ? Math.max(0, Math.min(10, Number(cell.dataset.decimalPlaces))) : null;
 
-    if ((!fmt || fmt === "general") && !hasDecimals) return str;
     if (str.trim() === "" || str.startsWith("#")) return str;
+
+    if ((!fmt || fmt === "general") && !hasDecimals) {
+        if (cell?.dataset?.valueType === "date") {
+            const dt = resolveDateFromRawValue(str);
+            if (dt) return formatDate(dt);
+        }
+        return str;
+    }
 
     if (fmt && fmt.startsWith("custom:")) {
         return formatByCustomPattern(str, fmt.slice(7));
     }
 
-    if (fmt === "date-jp" || fmt === "date-md") {
-        const m = str.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})$/);
-        if (m) {
-            return fmt === "date-jp"
-                ? `${Number(m[1])}年${Number(m[2])}月${Number(m[3])}日`
-                : `${Number(m[2])}/${Number(m[3])}`;
-        }
-        const serialNum = parseFormattedNumber(str);
-        if (!isNaN(serialNum) && serialNum >= 0 && serialNum <= 2958465) {
-            const dt = parseExcelDate(serialNum);
-            if (dt) {
-                return fmt === "date-jp"
-                    ? `${dt.getFullYear()}年${dt.getMonth() + 1}月${dt.getDate()}日`
-                    : `${dt.getMonth() + 1}/${dt.getDate()}`;
-            }
+    if (fmt && Object.prototype.hasOwnProperty.call(NAMED_DATE_FORMATS, fmt)) {
+        const dt = resolveDateFromRawValue(str);
+        if (dt) {
+            const spec = NAMED_DATE_FORMATS[fmt];
+            return formatDateByPattern(dt, spec.pattern, { preferGannen: spec.preferGannen });
         }
         return str;
     }
     const num = parseFormattedNumber(str);
     if (isNaN(num)) return str;
 
+    if (fmt === "number") {
+        const digits = dec ?? 0;
+        return num.toFixed(digits);
+    }
     if (fmt === "comma") {
         return num.toLocaleString("ja-JP", {
             minimumFractionDigits: dec ?? 0,
@@ -311,14 +467,28 @@ export function formatDisplayByNumFmt(rawVal, fmt, cell = null) {
     }
     if (fmt === "currency") {
         const digits = dec ?? 0;
-        return "¥" + num.toLocaleString("ja-JP", {
+        const absStr = Math.abs(num).toLocaleString("ja-JP", {
             minimumFractionDigits: digits,
             maximumFractionDigits: digits
         });
+        return num < 0 ? `-¥${absStr}` : `¥${absStr}`;
+    }
+    if (fmt === "accounting") {
+        const digits = dec ?? 0;
+        if (num === 0) return "¥ -";
+        const absStr = Math.abs(num).toLocaleString("ja-JP", {
+            minimumFractionDigits: digits,
+            maximumFractionDigits: digits
+        });
+        return num < 0 ? `¥ -${absStr}` : `¥ ${absStr}`;
     }
     if (fmt === "percent") {
         const pct = num * 100;
         return dec !== null ? `${pct.toFixed(dec)}%` : `${pct.toFixed(1).replace(/\.0$/, "")}%`;
+    }
+    if (fmt === "scientific") {
+        const digits = dec ?? 2;
+        return num.toExponential(digits).toUpperCase().replace(/E([+-])(\d)$/, "E$10$2");
     }
     if (dec !== null) {
         return num.toFixed(dec);
@@ -330,6 +500,11 @@ export function updateCellAutoAlignment(cell, rawStr) {
     cell.classList.remove("ss-auto-align-right", "ss-auto-align-center");
     const trimmed = String(rawStr ?? "").trim();
     if (trimmed === "") return;
+
+    // 文字列プレフィックス(')または表示形式「文字列」は数値・日付に見えても常に左揃え（Excel準拠）
+    if (cell.dataset.quotePrefix === "1" || cell.dataset.numFormat === "text") {
+        return;
+    }
 
     const upper = trimmed.toUpperCase();
     if (

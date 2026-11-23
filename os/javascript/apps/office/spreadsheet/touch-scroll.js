@@ -11,6 +11,8 @@ export function createTouchScrollModule(ctx) {
         signal,
         refreshVisibleRows,
         syncCellDropdownButtonPosition,
+        syncCopyAntsBoxPosition,
+        scheduleTextOverflowUpdate,
         refreshFormulaRefOverlay,
         setDirtyState,
         debouncedSaveState
@@ -31,6 +33,8 @@ export function createTouchScrollModule(ctx) {
         zoomDisplay.textContent = `${zoomValue}%`;
         refreshVisibleRows();
         syncCellDropdownButtonPosition();
+        syncCopyAntsBoxPosition?.();
+        scheduleTextOverflowUpdate?.();
         refreshFormulaRefOverlay();
         if (changed && !silent) {
             setDirtyState(true);
@@ -116,7 +120,7 @@ export function createTouchScrollModule(ctx) {
             return;
         }
         if (e.touches.length === 1 && container.contains(e.target)) {
-            if (e.target.closest(".fill-handle, .col-resize-handle, .row-resize-handle, .floating-textbox")) return;
+            if (e.target.closest(".fill-handle, .col-resize-handle, .row-resize-handle, .floating-textbox, .floating-slicer")) return;
             const t = e.touches[0];
             isTouchPanning = true;
             touchPanStartX = touchLastX = t.clientX;

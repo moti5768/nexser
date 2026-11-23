@@ -3,6 +3,14 @@
 
 export const EXCEL_EPOCH_MS = Date.UTC(1899, 11, 30);
 
+export const JAPANESE_ERAS = [
+    { name: "令和", short: "令", alpha: "R", baseYear: 2019, startUtc: Date.UTC(2019, 4, 1), endUtc: Infinity },
+    { name: "平成", short: "平", alpha: "H", baseYear: 1989, startUtc: Date.UTC(1989, 0, 8), endUtc: Date.UTC(2019, 3, 30) },
+    { name: "昭和", short: "昭", alpha: "S", baseYear: 1926, startUtc: Date.UTC(1926, 11, 25), endUtc: Date.UTC(1989, 0, 7) },
+    { name: "大正", short: "大", alpha: "T", baseYear: 1912, startUtc: Date.UTC(1912, 6, 30), endUtc: Date.UTC(1926, 11, 24) },
+    { name: "明治", short: "明", alpha: "M", baseYear: 1868, startUtc: Date.UTC(1868, 8, 8), endUtc: Date.UTC(1912, 6, 29) }
+];
+
 export function dateToSerial(dateObj) {
     const utc = Date.UTC(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate());
     return Math.round((utc - EXCEL_EPOCH_MS) / 86400000);
@@ -13,12 +21,251 @@ export function serialToDate(serial) {
     return new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
 }
 
+export function getJapaneseEraInfo(dateObj) {
+    if (!(dateObj instanceof Date) || isNaN(dateObj.getTime())) return null;
+    const utc = Date.UTC(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate());
+    for (let i = 0; i < JAPANESE_ERAS.length; i++) {
+        const era = JAPANESE_ERAS[i];
+        if (utc >= era.startUtc && utc <= era.endUtc) {
+            return {
+                ...era,
+                eraYear: dateObj.getFullYear() - era.baseYear + 1
+            };
+        }
+    }
+    return null;
+}
+
+function normalizeDateInputText(raw) {
+    return String(raw ?? "")
+        .trim()
+        .replace(/[０-９Ａ-Ｚａ-ｚ]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0xFEE0))
+        .replace(/／/g, "/")
+        .replace(/－/g, "-")
+        .replace(/．/g, ".");
+}
+
+function buildStrictCalendarDate(year, month, day, hour = 0, minute = 0, second = 0) {
+    if (!Number.isInteger(year) || !Number.isInteger(month) || !Number.isInteger(day)) return null;
+    if (year < 1868 || year > 9999 || month < 1 || month > 12 || day < 1 || day > 31) return null;
+    const dt = new Date(year, month - 1, day, hour, minute, second);
+    if (
+        isNaN(dt.getTime()) ||
+        dt.getFullYear() !== year ||
+        dt.getMonth() !== month - 1 ||
+        dt.getDate() !== day
+    ) {
+        return null;
+    }
+    return dt;
+}
+
+function findJapaneseEraByToken(token) {
+    const t = String(token ?? "").trim().toUpperCase();
+    return JAPANESE_ERAS.find(e => e.name === t || e.short === t || e.alpha === t) || null;
+}
+
+/**
+ * 西暦・短縮日付（2/6, 2月6日）・和暦（令和/R, 平成/H, 昭和/S, 大正/T, 明治/M, 元年・境界日検証）を統一パース
+ */
+export function parseJapaneseDateInput(rawStr, { allowShortMD = true } = {}) {
+    if (typeof rawStr !== "string") return null;
+    const str = normalizeDateInputText(rawStr);
+    if (!str) return null;
+
+    // 1. 和暦（漢字表記：令和元年5月1日 / 令和8年2月6日 / R8年2月6日）
+    let m = str.match(/^(令和|平成|昭和|大正|明治|令|平|昭|大|明|[RHSTM])\s*(元|\d{1,2})\s*年\s*(\d{1,2})\s*月\s*(\d{1,2})\s*日$/i);
+    if (m) {
+        const era = findJapaneseEraByToken(m[1]);
+        const eraYear = m[2] === "元" ? 1 : parseInt(m[2], 10);
+        if (!era || !Number.isInteger(eraYear) || eraYear < 1) return null;
+        const gYear = era.baseYear + eraYear - 1;
+        const month = parseInt(m[3], 10);
+        const day = parseInt(m[4], 10);
+        const dt = buildStrictCalendarDate(gYear, month, day);
+        if (!dt) return null;
+        const utc = Date.UTC(gYear, month - 1, day);
+        if (utc < era.startUtc || utc > era.endUtc) return null;
+        return { date: dt, serial: dateToSerial(dt), autoNumFormat: "wareki-jp" };
+    }
+
+    // 2. 和暦（区切り表記：R8/2/6, R1.5.1, H31/4/30, S64-1-7, 令和8/2/6）
+    m = str.match(/^(令和|平成|昭和|大正|明治|令|平|昭|大|明|[RHSTM])\s*(元|\d{1,2})\s*([\/\-.])\s*(\d{1,2})\s*\3\s*(\d{1,2})$/i);
+    if (m) {
+        const era = findJapaneseEraByToken(m[1]);
+        const eraYear = m[2] === "元" ? 1 : parseInt(m[2], 10);
+        if (!era || !Number.isInteger(eraYear) || eraYear < 1) return null;
+        const gYear = era.baseYear + eraYear - 1;
+        const sep = m[3];
+        const month = parseInt(m[4], 10);
+        const day = parseInt(m[5], 10);
+        const dt = buildStrictCalendarDate(gYear, month, day);
+        if (!dt) return null;
+        const utc = Date.UTC(gYear, month - 1, day);
+        if (utc < era.startUtc || utc > era.endUtc) return null;
+        const isAlpha = /^[RHSTM]$/i.test(m[1]);
+        const autoNumFormat = isAlpha
+            ? (sep === "." ? "wareki-dot" : "wareki-short")
+            : "wareki-jp";
+        return { date: dt, serial: dateToSerial(dt), autoNumFormat };
+    }
+
+    // 3. 和暦 年月のみ（令和8年2月 / 令和元年5月）
+    m = str.match(/^(令和|平成|昭和|大正|明治|令|平|昭|大|明|[RHSTM])\s*(元|\d{1,2})\s*年\s*(\d{1,2})\s*月$/i);
+    if (m) {
+        const era = findJapaneseEraByToken(m[1]);
+        const eraYear = m[2] === "元" ? 1 : parseInt(m[2], 10);
+        if (!era || !Number.isInteger(eraYear) || eraYear < 1) return null;
+        const gYear = era.baseYear + eraYear - 1;
+        const month = parseInt(m[3], 10);
+        const dt = buildStrictCalendarDate(gYear, month, 1);
+        if (!dt) return null;
+        const utc = Date.UTC(gYear, month - 1, 1);
+        if (utc < era.startUtc || utc > era.endUtc) return null;
+        return { date: dt, serial: dateToSerial(dt), autoNumFormat: "wareki-ym" };
+    }
+
+    // 4. 西暦 漢字表記（2026年2月6日）
+    m = str.match(/^(\d{4})\s*年\s*(\d{1,2})\s*月\s*(\d{1,2})\s*日$/);
+    if (m) {
+        const dt = buildStrictCalendarDate(parseInt(m[1], 10), parseInt(m[2], 10), parseInt(m[3], 10));
+        if (!dt) return null;
+        return { date: dt, serial: dateToSerial(dt), autoNumFormat: "date-jp" };
+    }
+
+    // 5. 西暦 年月のみ（2026年2月）
+    m = str.match(/^(\d{4})\s*年\s*(\d{1,2})\s*月$/);
+    if (m) {
+        const dt = buildStrictCalendarDate(parseInt(m[1], 10), parseInt(m[2], 10), 1);
+        if (!dt) return null;
+        return { date: dt, serial: dateToSerial(dt), autoNumFormat: "date-ym-jp" };
+    }
+
+    // 6. 短縮 漢字表記（2月6日）
+    if (allowShortMD) {
+        m = str.match(/^(\d{1,2})\s*月\s*(\d{1,2})\s*日$/);
+        if (m) {
+            const dt = buildStrictCalendarDate(new Date().getFullYear(), parseInt(m[1], 10), parseInt(m[2], 10));
+            if (!dt) return null;
+            return { date: dt, serial: dateToSerial(dt), autoNumFormat: "date-md-jp" };
+        }
+    }
+
+    // 7. 西暦 YYYY/M/D または YYYY-M-D（任意時刻付き）
+    m = str.match(/^(\d{4})([\/\-])(\d{1,2})\2(\d{1,2})(?:\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?$/);
+    if (m) {
+        const hasTime = Boolean(m[5]);
+        const h = m[5] ? parseInt(m[5], 10) : 0;
+        const mi = m[6] ? parseInt(m[6], 10) : 0;
+        const s = m[7] ? parseInt(m[7], 10) : 0;
+        if (h > 23 || mi > 59 || s > 59) return null;
+        const dt = buildStrictCalendarDate(parseInt(m[1], 10), parseInt(m[3], 10), parseInt(m[4], 10), h, mi, s);
+        if (!dt) return null;
+        return { date: dt, serial: dateToExcelSerial(dt), autoNumFormat: hasTime ? "datetime" : "date-ymd" };
+    }
+
+    // 8. 2桁年 YY/M/D（日本語ロケール Y/M/D 順・Excel 1930-2029 ウィンドウ準拠）
+    m = str.match(/^(\d{2})([\/\-])(\d{1,2})\2(\d{1,2})$/);
+    if (m) {
+        const y2 = parseInt(m[1], 10);
+        const fullYear = y2 <= 29 ? 2000 + y2 : 1900 + y2;
+        const dt = buildStrictCalendarDate(fullYear, parseInt(m[3], 10), parseInt(m[4], 10));
+        if (!dt) return null;
+        return { date: dt, serial: dateToSerial(dt), autoNumFormat: "date-ymd" };
+    }
+
+    // 9. 短縮 M/D または M-D（例: 2/6 → 当年日付シリアル保持＆「2月6日」表示）
+    if (allowShortMD) {
+        m = str.match(/^(\d{1,2})([\/\-])(\d{1,2})$/);
+        if (m) {
+            const dt = buildStrictCalendarDate(new Date().getFullYear(), parseInt(m[1], 10), parseInt(m[3], 10));
+            if (!dt) return null;
+            return { date: dt, serial: dateToSerial(dt), autoNumFormat: "date-md-jp" };
+        }
+    }
+
+    return null;
+}
+
+/**
+ * Excel 互換の日付・和暦カスタム書式フォーマッター（セル書式・TEXT関数共通）
+ */
+export function formatDateByPattern(dateObj, pattern, { preferGannen = false } = {}) {
+    if (!(dateObj instanceof Date) || isNaN(dateObj.getTime())) return "";
+    let src = String(pattern ?? "");
+    let useGannen = preferGannen;
+    if (/\[\$-(?:ja-JP|411|F800)[^\]]*\]/i.test(src)) {
+        useGannen = true;
+    }
+    src = src.replace(/\[[^\]]*\]/g, "");
+
+    const era = getJapaneseEraInfo(dateObj);
+    const y = dateObj.getFullYear();
+    const mo = dateObj.getMonth() + 1;
+    const d = dateObj.getDate();
+    const h = dateObj.getHours();
+    const mi = dateObj.getMinutes();
+    const s = dateObj.getSeconds();
+    const dow = dateObj.getDay();
+    const daysJp = ["日", "月", "火", "水", "木", "金", "土"];
+    const daysEnShort = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    const daysEnLong = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    const hasGgg = /ggg/i.test(src.replace(/"[^"]*"/g, ""));
+
+    const tokenRe = /"([^"]*)"|yyyy|yy|ggg|gg|g|ee|e|mm|m|dd|d|aaaa|aaa|dddd|ddd|hh|h|ss|s/gi;
+    return src.replace(tokenRe, (tok, lit, offset, fullStr) => {
+        if (lit !== undefined) return lit;
+        const lower = tok.toLowerCase();
+        if (lower === "yyyy") return String(y);
+        if (lower === "yy") return String(y).slice(-2);
+        if (lower === "ggg") return era ? era.name : "";
+        if (lower === "gg") return era ? era.short : "";
+        if (lower === "g") return era ? era.alpha : "";
+        if (lower === "ee") {
+            if (!era) return String(y).slice(-2);
+            return String(era.eraYear).padStart(2, "0");
+        }
+        if (lower === "e") {
+            if (!era) return String(y);
+            if (era.eraYear === 1 && useGannen && hasGgg) return "元";
+            return String(era.eraYear);
+        }
+        if (lower === "mm" || lower === "m") {
+            const before = fullStr.slice(Math.max(0, offset - 3), offset);
+            const after = fullStr.slice(offset + tok.length, offset + tok.length + 3);
+            const isMinute = /h\s*:?\s*$/i.test(before) || /^\s*:?\s*s/i.test(after);
+            const val = isMinute ? mi : mo;
+            return lower === "mm" ? String(val).padStart(2, "0") : String(val);
+        }
+        if (lower === "dd") return String(d).padStart(2, "0");
+        if (lower === "d") return String(d);
+        if (lower === "aaaa") return `${daysJp[dow]}曜日`;
+        if (lower === "aaa") return daysJp[dow];
+        if (lower === "dddd") return daysEnLong[dow];
+        if (lower === "ddd") return daysEnShort[dow];
+        if (lower === "hh") return String(h).padStart(2, "0");
+        if (lower === "h") return String(h);
+        if (lower === "ss") return String(s).padStart(2, "0");
+        if (lower === "s") return String(s);
+        return tok;
+    });
+}
+
 export function tryParseDateToSerial(str) {
-    if (typeof str !== "string" || str.indexOf("/") === -1) return null;
-    const m = str.trim().match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})$/);
-    if (!m) return null;
-    const dt = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
-    return isNaN(dt.getTime()) ? null : dateToSerial(dt);
+    if (typeof str !== "string") return null;
+    if (
+        str.indexOf("/") === -1 &&
+        str.indexOf("-") === -1 &&
+        str.indexOf(".") === -1 &&
+        str.indexOf("年") === -1 &&
+        str.indexOf("／") === -1 &&
+        str.indexOf("－") === -1 &&
+        str.indexOf("．") === -1
+    ) {
+        return null;
+    }
+    const parsed = parseJapaneseDateInput(str, { allowShortMD: false });
+    return parsed ? parsed.serial : null;
 }
 
 export const EXCEL_BLANK_CELL = Object.freeze({
@@ -48,13 +295,8 @@ function normalizeDateToSerial(v) {
 
 function tryParseCriterionDateSerial(str) {
     if (typeof str !== "string") return null;
-    const m = str.trim().match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
-    if (!m) return null;
-    const y = Number(m[1]), mo = Number(m[2]), d = Number(m[3]);
-    if (mo < 1 || mo > 12 || d < 1 || d > 31) return null;
-    const dt = new Date(y, mo - 1, d);
-    if (isNaN(dt.getTime()) || dt.getFullYear() !== y || dt.getMonth() !== mo - 1 || dt.getDate() !== d) return null;
-    return dateToSerial(dt);
+    const parsed = parseJapaneseDateInput(str, { allowShortMD: false });
+    return parsed ? parsed.serial : null;
 }
 
 export function excelEquals(a, b) {
@@ -97,10 +339,10 @@ export function parseExcelDate(input) {
     }
     const str = String(val ?? "").trim();
     if (!str) return null;
-    const m = str.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})(?:\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?$/);
-    if (m) {
-        return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), Number(m[4] || 0), Number(m[5] || 0), Number(m[6] || 0));
-    }
+    const jp = parseJapaneseDateInput(str, { allowShortMD: true });
+    if (jp) return jp.date;
+    // 英語日付文字列などのフォールバック（純粋な数値文字列はシリアル誤認を防ぐため除外）
+    if (/^[+-]?\d+(?:\.\d+)?$/.test(str)) return null;
     const parsed = new Date(str);
     return isNaN(parsed.getTime()) ? null : parsed;
 }
@@ -1481,17 +1723,9 @@ export const FORMULA_FUNCTIONS = {
         const val = unwrapBlank(value);
         const fmt = String(unwrapBlank(formatText) ?? "");
         const d = parseExcelDate(val);
-        if (d && /[ymd]/i.test(fmt) && !/[#0]/.test(fmt)) {
-            const daysJp = ["日", "月", "火", "水", "木", "金", "土"];
-            return fmt
-                .replace(/yyyy/gi, String(d.getFullYear()))
-                .replace(/yy/gi, String(d.getFullYear()).slice(-2))
-                .replace(/mm/gi, String(d.getMonth() + 1).padStart(2, "0"))
-                .replace(/m/gi, String(d.getMonth() + 1))
-                .replace(/dd/gi, String(d.getDate()).padStart(2, "0"))
-                .replace(/d/gi, String(d.getDate()))
-                .replace(/aaaa/g, `${daysJp[d.getDay()]}曜日`)
-                .replace(/aaa/g, daysJp[d.getDay()]);
+        const cleanFmt = fmt.replace(/"[^"]*"/g, "").replace(/\[[^\]]*\]/g, "").trim();
+        if (d && cleanFmt.toLowerCase() !== "general" && /[ymdaghe]/i.test(cleanFmt) && !/[#0]/.test(cleanFmt)) {
+            return formatDateByPattern(d, fmt);
         }
         const num = Number(val);
         if (isNaN(num)) return String(val ?? "");

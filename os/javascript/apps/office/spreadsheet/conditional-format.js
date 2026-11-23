@@ -108,6 +108,7 @@ export function createConditionalFormattingModule(ctx) {
         adjustFormula,
         evaluateFormula,
         getSelectedRangeBounds,
+        syncCellGridlinesForCells,
         openAppModal,
         openSheetRangePicker,
         parseRangeReference,
@@ -245,6 +246,7 @@ export function createConditionalFormattingModule(ctx) {
 
     function applyConditionalFormats(dirtyCoords = null) {
         const rules = getActiveSheet()?.conditionalFormats || [];
+        const gridlineTouchedCells = new Set();
 
         // ルール0件時のみ既存適用を完全クリアして終了
         if (!rules.length) {
@@ -256,8 +258,14 @@ export function createConditionalFormattingModule(ctx) {
                 appliedCfIconCells.clear();
             }
             if (appliedCfCells.size > 0) {
-                appliedCfCells.forEach(td => clearAppliedConditionalStyle(td));
+                appliedCfCells.forEach(td => {
+                    clearAppliedConditionalStyle(td);
+                    gridlineTouchedCells.add(td);
+                });
                 appliedCfCells.clear();
+            }
+            if (gridlineTouchedCells.size > 0) {
+                syncCellGridlinesForCells?.(gridlineTouchedCells);
             }
             return;
         }
@@ -340,12 +348,16 @@ export function createConditionalFormattingModule(ctx) {
         }
         if (appliedCfCells.size > 0) {
             if (!isPartialUpdate) {
-                appliedCfCells.forEach(td => clearAppliedConditionalStyle(td));
+                appliedCfCells.forEach(td => {
+                    clearAppliedConditionalStyle(td);
+                    gridlineTouchedCells.add(td);
+                });
                 appliedCfCells.clear();
             } else {
                 appliedCfCells.forEach(td => {
                     if (!td.isConnected || isCellInTargetRules(td)) {
                         clearAppliedConditionalStyle(td);
+                        if (td.isConnected) gridlineTouchedCells.add(td);
                         appliedCfCells.delete(td);
                     }
                 });
@@ -556,6 +568,13 @@ export function createConditionalFormattingModule(ctx) {
                     }
                 }
             }
+        }
+
+        appliedCfCells.forEach(td => {
+            if (td.isConnected) gridlineTouchedCells.add(td);
+        });
+        if (gridlineTouchedCells.size > 0) {
+            syncCellGridlinesForCells?.(gridlineTouchedCells);
         }
     }
 

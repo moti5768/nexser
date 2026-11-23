@@ -20,8 +20,10 @@ export function createAutoFilterModule(ctx) {
         sortSelectedRange,
         refreshVisibleRows,
         syncCopyAntsBoxPosition,
+        syncSelectionBoxPosition,
         syncCellDropdownButtonPosition,
         refreshFormulaRefOverlay,
+        onAutoFilterChanged,
         updateAllFormulas,
         showAlert,
         setDirtyState,
@@ -265,6 +267,48 @@ export function createAutoFilterModule(ctx) {
         return true;
     }
 
+    function isRowMatchingOtherFilters(af, rowNum, excludeColIdx) {
+        if (!af) return true;
+        if (af.filters && af.filters.size > 0) {
+            for (const [colIdx, allowedSet] of af.filters.entries()) {
+                if (colIdx === excludeColIdx) continue;
+                const cell = getVisibleCell(rowNum, colIdx);
+                const val = (cell?.textContent ?? "").trim();
+                if (!allowedSet.has(val)) return false;
+            }
+        }
+        if (af.conditions && af.conditions.size > 0) {
+            const startR = af.headerRow + 1;
+            const endR = Math.min(af.maxRow, tbody.rows.length);
+            for (const [colIdx, cond] of af.conditions.entries()) {
+                if (colIdx === excludeColIdx) continue;
+                let stats = null;
+                if (["aboveAvg", "belowAvg", "topN", "bottomN"].includes(cond.op)) {
+                    const nums = [];
+                    for (let r = startR; r <= endR; r++) {
+                        const c = getVisibleCell(r, colIdx);
+                        const n = parseFormattedNumber(c?.dataset.rawValue ?? c?.textContent ?? "");
+                        if (!isNaN(n)) nums.push(n);
+                    }
+                    const sum = nums.reduce((a, b) => a + b, 0);
+                    const avg = nums.length ? sum / nums.length : 0;
+                    const rank = Math.max(1, Math.trunc(Number(cond.val1) || 10));
+                    const desc = [...nums].sort((a, b) => b - a);
+                    const asc = [...nums].sort((a, b) => a - b);
+                    stats = {
+                        avg,
+                        topCut: desc[Math.min(desc.length - 1, rank - 1)] ?? Infinity,
+                        bottomCut: asc[Math.min(asc.length - 1, rank - 1)] ?? -Infinity
+                    };
+                }
+                const cell = getVisibleCell(rowNum, colIdx);
+                const rawVal = (cell?.dataset.rawValue ?? cell?.textContent ?? "").trim();
+                if (!matchAutoFilterCondition(rawVal, cond, stats)) return false;
+            }
+        }
+        return true;
+    }
+
     function applyAutoFilterRows({ skipRecalc = false } = {}) {
         const totalRows = tbody.rows.length;
         let visibilityChanged = false;
@@ -281,8 +325,10 @@ export function createAutoFilterModule(ctx) {
             syncFilterButtonState();
             refreshVisibleRows();
             syncCopyAntsBoxPosition();
+            syncSelectionBoxPosition?.();
             syncCellDropdownButtonPosition?.();
             refreshFormulaRefOverlay?.();
+            onAutoFilterChanged?.();
             if (!skipRecalc && visibilityChanged) updateAllFormulas();
             return;
         }
@@ -377,8 +423,10 @@ export function createAutoFilterModule(ctx) {
         syncFilterButtonState();
         refreshVisibleRows();
         syncCopyAntsBoxPosition();
+        syncSelectionBoxPosition?.();
         syncCellDropdownButtonPosition?.();
         refreshFormulaRefOverlay?.();
+        onAutoFilterChanged?.();
         if (!skipRecalc && visibilityChanged) updateAllFormulas();
     }
 
@@ -568,8 +616,10 @@ export function createAutoFilterModule(ctx) {
         syncFilterButtonState();
         refreshVisibleRows();
         syncCopyAntsBoxPosition();
+        syncSelectionBoxPosition?.();
         syncCellDropdownButtonPosition?.();
         refreshFormulaRefOverlay?.();
+        onAutoFilterChanged?.();
         if (!skipRecalc) {
             updateAllFormulas();
         }
@@ -644,7 +694,11 @@ export function createAutoFilterModule(ctx) {
         getAutoFilterStates,
         hasAutoFilters,
         closeFilterDropdown,
+        getAutoFilterById,
         getAutoFilterByTableId,
+        getAutoFilterAtCoord,
+        findActiveAutoFilterForCell,
+        isRowMatchingOtherFilters,
         syncFilterButtonState,
         renderAutoFilterArrows,
         addAutoFilterForRange,

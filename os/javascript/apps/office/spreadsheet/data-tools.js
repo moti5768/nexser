@@ -76,6 +76,7 @@ export function createDataToolsModule(ctx) {
         autoFitColumn,
         updateAllFormulas,
         applyConditionalFormats,
+        syncCellGridlinesForBounds,
         hasAutoFilters,
         applyAutoFilterRows,
         clearSelection,
@@ -354,6 +355,7 @@ export function createDataToolsModule(ctx) {
             }
         }
 
+        syncCellGridlinesForBounds?.(bounds);
         updateAllFormulas();
         if (hasAutoFilters()) applyAutoFilterRows();
         updateFillHandle();
@@ -947,6 +949,13 @@ export function createDataToolsModule(ctx) {
 
             renderedRows = rowKeys.length;
             renderedCols = totalColsCount;
+
+            syncCellGridlinesForBounds?.({
+                minRow: startR,
+                maxRow: Math.max(grandR + 1, headerR + renderedRows + 1),
+                minCol: startC,
+                maxCol: startC + totalColsCount
+            });
 
             // 列幅を自動調整して見切れを防止
             for (let c = startC; c <= startC + totalColsCount; c++) {

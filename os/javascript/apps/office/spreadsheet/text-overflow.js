@@ -1,6 +1,13 @@
 // text-overflow.js
 // セル内テキストの横書き・縦書きはみ出し描画＆隣接セル境界クリップ制御
 
+import {
+    DEFAULT_ROW_HEIGHT,
+    DEFAULT_FONT_FAMILY,
+    DEFAULT_FONT_SIZE_CSS,
+    cssFontSizeToPx
+} from "./format-utils.js";
+
 export function unwrapOverflowSpan(td) {
     const wrap = td.querySelector(":scope > .ss-overflow-wrap");
     if (!wrap) return;
@@ -88,9 +95,10 @@ export function createTextOverflowModule(ctx) {
             if (totalRows <= 120) {
                 rowsToScan = tbody.rows;
             } else {
-                // 行高さが可変でも正確に可視領域を特定（二分探索）
-                const viewTop = Math.max(0, container.scrollTop - 300);
-                const viewBottom = container.scrollTop + container.clientHeight + 450;
+                // 行高さが可変＆ズーム変更時でも正確に可視領域を特定（二分探索）
+                const zoom = parseFloat(container.firstElementChild?.style.zoom || "1") || 1;
+                const viewTop = Math.max(0, container.scrollTop / zoom - 300);
+                const viewBottom = (container.scrollTop + container.clientHeight) / zoom + 450;
                 let lo = 0, hi = totalRows - 1, startIdx = 0;
                 while (lo <= hi) {
                     const mid = (lo + hi) >> 1;
@@ -111,7 +119,7 @@ export function createTextOverflowModule(ctx) {
         }
 
         const allRows = tbody.rows;
-        const getRowHeightPx = (rTr) => (rTr ? (parseInt(rTr.style.height, 10) || rTr.offsetHeight || 30) : 30);
+        const getRowHeightPx = (rTr) => (rTr ? (parseInt(rTr.style.height, 10) || rTr.offsetHeight || DEFAULT_ROW_HEIGHT) : DEFAULT_ROW_HEIGHT);
         const occupiedVerticalCells = new Set();
 
         for (const tr of rowsToScan) {
@@ -156,7 +164,7 @@ export function createTextOverflowModule(ctx) {
                     const cellInnerH = Math.max(8, cellTotalH - 4);
                     const cellInnerW = Math.max(8, cellTotalW - 8);
 
-                    const fSizeNum = parseFloat(td.style.fontSize || "14px") || 14;
+                    const fSizeNum = cssFontSizeToPx(td.style.fontSize || DEFAULT_FONT_SIZE_CSS);
                     const lines = text.split("\n");
                     let maxChars = 0;
                     for (let i = 0; i < lines.length; i++) {
@@ -289,11 +297,11 @@ export function createTextOverflowModule(ctx) {
                 // テキスト実幅を計測し、セル内に収まっている場合はラッパー不要
                 const fStyle = td.style.fontStyle || "normal";
                 const fWeight = td.style.fontWeight || "normal";
-                const fSize = td.style.fontSize || "14px";
-                const fSizeNum = parseFloat(fSize) || 14;
-                const fFamily = td.style.fontFamily || "'MS PGothic', 'MS Gothic', sans-serif";
+                const fSize = td.style.fontSize || DEFAULT_FONT_SIZE_CSS;
+                const fSizeNum = cssFontSizeToPx(fSize);
+                const fFamily = td.style.fontFamily || DEFAULT_FONT_FAMILY;
                 if (measureCtx) {
-                    measureCtx.font = `${fStyle} ${fWeight} ${fSize} ${fFamily}`;
+                    measureCtx.font = `${fStyle} ${fWeight} ${fSizeNum}px ${fFamily}`;
                 }
                 let maxLineW = 0;
                 const lines = text.split("\n");

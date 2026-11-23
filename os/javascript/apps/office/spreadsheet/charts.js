@@ -2,6 +2,9 @@
 // フローティングテキストボックス・8方向リサイズ/回転ハンドル・SVGグラフ描画・設定モーダル・範囲連動スナップショット
 
 import {
+    DEFAULT_ROW_HEIGHT,
+    DEFAULT_HEADER_HEIGHT,
+    DEFAULT_ROW_HEADER_WIDTH,
     getCellReferenceByCoord,
     parseFormattedNumber
 } from "./format-utils.js";
@@ -907,8 +910,8 @@ export function createChartsModule(ctx) {
     // =========================================================
     function getRangeLocalRect(bounds) {
         if (!bounds) return null;
-        const theadHeight = theadRow.offsetHeight || 30;
-        const rowHeaderWidth = parseInt(colgroup.children[0]?.style.width, 10) || 54;
+        const theadHeight = theadRow.offsetHeight || DEFAULT_HEADER_HEIGHT;
+        const rowHeaderWidth = parseInt(colgroup.children[0]?.style.width, 10) || DEFAULT_ROW_HEADER_WIDTH;
 
         let left = rowHeaderWidth;
         for (let c = 0; c < bounds.minCol; c++) {
@@ -922,7 +925,7 @@ export function createChartsModule(ctx) {
         const getRowHeightPx = (r) => {
             const tr = getRow(r);
             if (!tr || tr.style.display === "none") return 0;
-            return parseInt(tr.style.height, 10) || tr.offsetHeight || 30;
+            return parseInt(tr.style.height, 10) || tr.offsetHeight || DEFAULT_ROW_HEIGHT;
         };
 
         let top = theadHeight;

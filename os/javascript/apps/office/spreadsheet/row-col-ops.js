@@ -1,11 +1,36 @@
 // row-col-ops.js
-// 行列の挿入・削除（結合・数式・フィルター・条件付き書式・テーブル・グラフ追従）＆単一/複数キー並べ替え
+// 行列の挿入・削除（結合・数式・フィルター・条件付き書式・テーブル・グラフ・スライサー追従）＆単一/複数キー並べ替え
 
 import {
     escapeHtml,
     getColumnName,
-    columnLettersToIndex
+    columnLettersToIndex,
+    isDateNumFormat,
+    resolveDateFromRawValue,
+    parseFormattedNumber
 } from "./format-utils.js";
+import { parseJapaneseDateInput } from "./formula-functions.js";
+
+function parseSortComparable(cell, rawStr) {
+    if (!rawStr) return { type: "empty", val: "" };
+    if (cell?.dataset.quotePrefix === "1" || cell?.dataset.numFormat === "text") {
+        return { type: "str", val: rawStr };
+    }
+    if (cell?.dataset.dateValue) {
+        const numTs = Number(cell.dataset.dateValue);
+        const ts = Number.isFinite(numTs) ? numTs : Date.parse(cell.dataset.dateValue);
+        if (!isNaN(ts)) return { type: "num", val: ts };
+    }
+    if (cell?.dataset.valueType === "date" || isDateNumFormat(cell?.dataset.numFormat)) {
+        const dt = resolveDateFromRawValue(rawStr);
+        if (dt) return { type: "num", val: dt.getTime() };
+    }
+    const jpDate = parseJapaneseDateInput(rawStr, { allowShortMD: false });
+    if (jpDate) return { type: "num", val: jpDate.date.getTime() };
+    const num = parseFormattedNumber(rawStr);
+    if (!isNaN(num)) return { type: "num", val: num };
+    return { type: "str", val: rawStr };
+}
 
 export function shiftFormulaForRowCol(formula, mode, targetRow, targetCol, isSameSheet = true, targetSheetName = "") {
     if (!formula || !String(formula).startsWith("=")) return formula;
@@ -130,6 +155,7 @@ export function createRowColOpsModule(ctx) {
         setCellFormattedValue,
         updateAllFormulas,
         applyConditionalFormats,
+        syncCellGridlinesForBounds,
         updateFillHandle,
         updateSelectedCellsDisplay,
         openAppModal,
@@ -373,6 +399,25 @@ export function createRowColOpsModule(ctx) {
             }).filter(Boolean);
         }
 
+        // スライサーの対象見出し行・対象列も行・列の挿入・削除に追従
+        if (Array.isArray(snap.slicers) && snap.slicers.length > 0) {
+            snap.slicers = snap.slicers.map(sl => {
+                const next = { ...sl };
+                if (mode === "insert-row") {
+                    if (next.headerRow >= targetRow) next.headerRow += 1;
+                } else if (mode === "delete-row") {
+                    if (next.headerRow === targetRow) return null;
+                    if (next.headerRow > targetRow) next.headerRow -= 1;
+                } else if (mode === "insert-col") {
+                    if (next.colIdx >= targetCol) next.colIdx += 1;
+                } else if (mode === "delete-col") {
+                    if (next.colIdx === targetCol) return null;
+                    if (next.colIdx > targetCol) next.colIdx -= 1;
+                }
+                return next;
+            }).filter(Boolean);
+        }
+
         // 条件付き書式の適用範囲も行列の挿入・削除に追従
         if (Array.isArray(snap.conditionalFormats)) {
             snap.conditionalFormats = snap.conditionalFormats.map(rule => {
@@ -587,28 +632,6 @@ export function createRowColOpsModule(ctx) {
         const sortKeyCol = (keyCol >= minC && keyCol <= maxC) ? keyCol : minC;
         const rowsData = [];
 
-        const parseSortComparable = (cell, rawStr) => {
-            if (!rawStr) return { type: "empty", val: "" };
-            if (cell?.dataset.quotePrefix === "1") return { type: "str", val: rawStr };
-            if (cell?.dataset.dateValue) {
-                const numTs = Number(cell.dataset.dateValue);
-                const ts = Number.isFinite(numTs) ? numTs : Date.parse(cell.dataset.dateValue);
-                if (!isNaN(ts)) return { type: "num", val: ts };
-            }
-            if (/^\d{4}[\/\-]\d{1,2}[\/\-]\d{1,2}(?:\s+\d{1,2}:\d{2}(?::\d{2})?)?$/.test(rawStr)) {
-                const ts = Date.parse(rawStr.replace(/-/g, "/"));
-                if (!isNaN(ts)) return { type: "num", val: ts };
-            }
-            const cleanedNum = rawStr.replace(/^[¥$€]\s*/, "").replace(/,/g, "");
-            if (cleanedNum.endsWith("%")) {
-                const pct = Number(cleanedNum.slice(0, -1));
-                if (!isNaN(pct)) return { type: "num", val: pct / 100 };
-            }
-            const num = Number(cleanedNum);
-            if (!isNaN(num)) return { type: "num", val: num };
-            return { type: "str", val: rawStr };
-        };
-
         for (const r of targetRowIndices) {
             const rowCells = [];
             for (let c = minC; c <= maxC; c++) {
@@ -725,6 +748,7 @@ export function createRowColOpsModule(ctx) {
             });
         });
 
+        syncCellGridlinesForBounds?.({ minRow: minR, maxRow: maxR, minCol: minC, maxCol: maxC });
         updateAllFormulas();
         if (hasAutoFilters()) applyAutoFilterRows();
         updateFillHandle();
@@ -761,28 +785,6 @@ export function createRowColOpsModule(ctx) {
             targetRowIndices.push(r);
         }
         if (targetRowIndices.length <= 1) return false;
-
-        const parseSortComparable = (cell, rawStr) => {
-            if (!rawStr) return { type: "empty", val: "" };
-            if (cell?.dataset.quotePrefix === "1") return { type: "str", val: rawStr };
-            if (cell?.dataset.dateValue) {
-                const numTs = Number(cell.dataset.dateValue);
-                const ts = Number.isFinite(numTs) ? numTs : Date.parse(cell.dataset.dateValue);
-                if (!isNaN(ts)) return { type: "num", val: ts };
-            }
-            if (/^\d{4}[\/\-]\d{1,2}[\/\-]\d{1,2}(?:\s+\d{1,2}:\d{2}(?::\d{2})?)?$/.test(rawStr)) {
-                const ts = Date.parse(rawStr.replace(/-/g, "/"));
-                if (!isNaN(ts)) return { type: "num", val: ts };
-            }
-            const cleanedNum = rawStr.replace(/^[¥$€]\s*/, "").replace(/,/g, "");
-            if (cleanedNum.endsWith("%")) {
-                const pct = Number(cleanedNum.slice(0, -1));
-                if (!isNaN(pct)) return { type: "num", val: pct / 100 };
-            }
-            const num = Number(cleanedNum);
-            if (!isNaN(num)) return { type: "num", val: num };
-            return { type: "str", val: rawStr };
-        };
 
         const rowsData = targetRowIndices.map(r => {
             const cells = [];
@@ -887,6 +889,7 @@ export function createRowColOpsModule(ctx) {
             });
         });
 
+        syncCellGridlinesForBounds?.({ minRow: minR, maxRow: maxR, minCol: minC, maxCol: maxC });
         updateAllFormulas();
         if (hasAutoFilters()) applyAutoFilterRows();
         updateFillHandle();

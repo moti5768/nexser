@@ -72,38 +72,36 @@ export const SPREADSHEET_TEMPLATE_HTML = `
                     <div class="ss-ribbon-group">
                         <div class="ss-ribbon-group-body">
                             <div class="ss-ribbon-col">
-                                <div class="ss-ribbon-row">
+                               <div class="ss-ribbon-row">
                                     <label>
                                         <select class="ss-font-family" style="outline:none; width:108px;" title="フォント">
-                                            <option value="'MS PGothic', 'MS Gothic', sans-serif" selected>MS Pゴシック</option>
+                                            <option value="'Yu Gothic', '游ゴシック', 'Meiryo', 'MS PGothic', sans-serif" selected>游ゴシック</option>
                                             <option value="'Meiryo', 'メイリオ', sans-serif">メイリオ</option>
-                                            <option value="'Yu Gothic', '游ゴシック', sans-serif">游ゴシック</option>
-                                            <option value="'MS PMincho', 'MS Mincho', serif">MS P明朝</option>
+                                            <option value="'MS PGothic', 'MS Gothic', sans-serif">MS Pゴシック</option>
                                             <option value="'Yu Mincho', '游明朝', serif">游明朝</option>
+                                            <option value="'MS PMincho', 'MS Mincho', serif">MS P明朝</option>
                                             <option value="Arial, Helvetica, sans-serif">Arial</option>
                                             <option value="Consolas, 'Courier New', monospace">Consolas</option>
                                         </select>
                                     </label>
                                     <label>
-                                        <select class="ss-font-size" style="outline:none; width:44px;" title="フォントサイズ">
-                                            <option value="8px">8</option>
-                                            <option value="9px">9</option>
-                                            <option value="10px">10</option>
-                                            <option value="11px">11</option>
-                                            <option value="12px">12</option>
-                                            <option value="14px" selected>14</option>
-                                            <option value="16px">16</option>
-                                            <option value="18px">18</option>
-                                            <option value="20px">20</option>
-                                            <option value="24px">24</option>
-                                            <option value="26px">26</option>
-                                            <option value="28px">28</option>
-                                            <option value="36px">36</option>
-                                            <option value="48px">48</option>
-                                            <option value="72px">72</option>
-                                            <option value="96px">96</option>
-                                            <option value="120px">120</option>
-                                            <option value="144px">144</option>
+                                        <select class="ss-font-size" style="outline:none; width:46px;" title="フォントサイズ (pt)">
+                                            <option value="8pt">8</option>
+                                            <option value="9pt">9</option>
+                                            <option value="10pt">10</option>
+                                            <option value="11pt" selected>11</option>
+                                            <option value="12pt">12</option>
+                                            <option value="14pt">14</option>
+                                            <option value="16pt">16</option>
+                                            <option value="18pt">18</option>
+                                            <option value="20pt">20</option>
+                                            <option value="22pt">22</option>
+                                            <option value="24pt">24</option>
+                                            <option value="26pt">26</option>
+                                            <option value="28pt">28</option>
+                                            <option value="36pt">36</option>
+                                            <option value="48pt">48</option>
+                                            <option value="72pt">72</option>
                                         </select>
                                     </label>
                                 </div>
@@ -531,6 +529,15 @@ export const SPREADSHEET_TEMPLATE_HTML = `
                     </div>
                     <div class="ss-ribbon-group">
                         <div class="ss-ribbon-group-body">
+                            <span class="button ss-btn-large" data-action="insert-slicer" title="テーブルやデータ範囲をボタン操作で絞り込むスライサーを挿入">
+                                <span class="ss-btn-ico-lg">🎛</span>
+                                <span class="ss-btn-lbl">スライサー</span>
+                            </span>
+                        </div>
+                        <div class="ss-ribbon-group-title">フィルター</div>
+                    </div>
+                    <div class="ss-ribbon-group">
+                        <div class="ss-ribbon-group-body">
                             <span class="button ss-btn-large" data-action="insert-textbox">
                                 <span class="ss-btn-ico-lg">📝</span>
                                 <span class="ss-btn-lbl">テキストボックス</span>
@@ -819,6 +826,7 @@ export const SPREADSHEET_TEMPLATE_HTML = `
                             </span>
                             <div class="ss-ribbon-col">
                                 <span class="button" data-action="clear-autofilter" title="フィルター条件をすべてクリア">クリア</span>
+                                <span class="button" data-action="insert-slicer" title="選択中の表にスライサーを挿入">🎛 スライサー</span>
                             </div>
                         </div>
                         <div class="ss-ribbon-group-title">並べ替えとフィルター</div>
@@ -921,7 +929,7 @@ export const SPREADSHEET_TEMPLATE_HTML = `
             <div class="ss-spreadsheet-content">
                 <table class="ss-table">
                     <colgroup>
-                        <col style="width: 54px;">
+                        <col style="width: 42px;">
                     </colgroup>
                     <thead>
                         <tr>

@@ -46,6 +46,7 @@ export function createStructuredTableModule(ctx) {
         applyAutoFilterRows,
         updateAllFormulas,
         applyConditionalFormats,
+        syncCellGridlinesForBounds,
         getBackgroundSheetCellMap,
         openAppModal,
         openSheetRangePicker,
@@ -103,6 +104,7 @@ export function createStructuredTableModule(ctx) {
                 }
             }
         }
+        syncCellGridlinesForBounds?.(tbl);
     }
 
     function generateNextTableName() {
@@ -396,6 +398,7 @@ export function createStructuredTableModule(ctx) {
             tbl.hasTotalRow = false;
             const tblFilter = getAutoFilterByTableId(tbl.id);
             if (tblFilter) tblFilter.maxRow = tbl.maxRow;
+            syncCellGridlinesForBounds?.({ minRow: oldTotalR, maxRow: oldTotalR, minCol: tbl.minCol, maxCol: tbl.maxCol });
             applyStructuredTableVisuals(tbl);
         } else {
             // 集計行を1行下に追加

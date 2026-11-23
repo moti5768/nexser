@@ -64,10 +64,12 @@ export function createClipboardModule(ctx) {
         hasMergeConflictOnDestination,
         extractCellStyleObject,
         applyCellStyleData,
+        syncCellGridlinesForCells,
         evaluateFormula,
         adjustFormula,
         adjustMovedFormulaSelf,
         clearSpillCellsFromAnchor,
+        commitCellValue,
         setCellFormattedValue,
         syncCellAnnotationMark,
         applyShrinkToFit,
@@ -134,13 +136,14 @@ export function createClipboardModule(ctx) {
         tbody.querySelectorAll(".copy-marching-ants").forEach(c => c.classList.remove("copy-marching-ants"));
     }
 
-    function buildTSVFromRange(minRow, maxRow, minCol, maxCol) {
+    function buildTSVFromRange(minRow, maxRow, minCol, maxCol, skipHiddenRows = false) {
         const lines = [];
         for (let r = minRow; r <= maxRow; r++) {
+            if (skipHiddenRows && getRow(r)?.style.display === "none") continue;
             const cols = [];
             for (let c = minCol; c <= maxCol; c++) {
                 const cell = getCell(r, c);
-                const val = (cell && cell.style.display !== "none") ? cell.textContent : "";
+                const val = (cell && cell.style.display !== "none" && !cell.classList.contains("ss-col-hidden")) ? cell.textContent : "";
                 if (/[\t\r\n"]/.test(val)) {
                     cols.push(`"${val.replace(/"/g, '""')}"`);
                 } else {
@@ -175,13 +178,15 @@ export function createClipboardModule(ctx) {
             coveredCount += rs * cs;
         });
         const isContiguous = coveredCount === (maxRow - minRow + 1) * (maxCol - minCol + 1);
+        const skipHiddenRows = !isCut && isContiguous && Boolean(hasAutoFilters?.());
+
         if (isContiguous) {
             copyAntsBounds = { minRow, maxRow, minCol, maxCol };
             syncCopyAntsBoxPosition();
         } else {
             selectedCells.forEach(c => c.classList.add("copy-marching-ants"));
         }
-        const tsvText = buildTSVFromRange(minRow, maxRow, minCol, maxCol);
+        const tsvText = buildTSVFromRange(minRow, maxRow, minCol, maxCol, skipHiddenRows);
 
         const snapshotCell = (cell) => ({
             row: +cell.dataset.row,
@@ -229,6 +234,7 @@ export function createClipboardModule(ctx) {
 
         if (isContiguous) {
             for (let r = minRow; r <= maxRow; r++) {
+                if (skipHiddenRows && getRow(r)?.style.display === "none") continue;
                 const rowData = [];
                 for (let c = minCol; c <= maxCol; c++) {
                     const cell = getCell(r, c);
@@ -280,6 +286,11 @@ export function createClipboardModule(ctx) {
 
         const writeTextToCell = (dest, text) => {
             if (!dest || dest.style.display === "none") return;
+            const raw = String(text ?? "");
+            if (commitCellValue) {
+                commitCellValue(dest, raw, { deferRecalc: true, skipValidation: true });
+                return;
+            }
             clearSpillCellsFromAnchor?.(parseInt(dest.dataset.row, 10), parseInt(dest.dataset.col, 10));
             delete dest.dataset.spillOrigin;
             delete dest.dataset.richRuns;
@@ -287,14 +298,12 @@ export function createClipboardModule(ctx) {
             delete dest.dataset.valueType;
             delete dest.dataset.dateValue;
 
-            const raw = String(text ?? "");
             const trimmed = raw.trim();
             if (raw.startsWith("'")) {
                 delete dest.dataset.formula;
                 dest.dataset.quotePrefix = "1";
                 setCellFormattedValue(dest, raw.slice(1));
             } else if (trimmed.startsWith("=")) {
-                // ループ末尾の updateAllFormulas() で一括キャッシュ評価するため個別評価を省略
                 dest.dataset.formula = trimmed;
             } else {
                 delete dest.dataset.formula;
@@ -500,7 +509,7 @@ export function createClipboardModule(ctx) {
             cell.style.removeProperty("--cf-icon-color");
             cell.textContent = "";
             cell.removeAttribute("title");
-            cell.classList.remove("ss-auto-align-right", "ss-auto-align-center", "ss-hyperlink", "merged");
+            cell.classList.remove("ss-auto-align-right", "ss-auto-align-center", "ss-hyperlink", "merged", "ss-has-fill", "ss-no-gl-r", "ss-no-gl-b");
             if (clearStyle) cell.removeAttribute("style");
             else cell.style.display = "";
             cell.removeAttribute("rowspan");
@@ -508,6 +517,7 @@ export function createClipboardModule(ctx) {
             Object.keys(cell.dataset).forEach(k => {
                 if (k !== "row" && k !== "col") delete cell.dataset[k];
             });
+            syncCellGridlinesForCells?.([cell]);
         };
 
         // 通常切り取り貼り付け時は、先に切り取り元（結合含む）をクリアしてから書き込むことで重なり移動の破損を防止
@@ -624,9 +634,23 @@ export function createClipboardModule(ctx) {
                 else delete dest.dataset.numFormat;
                 if (item.decimalPlaces !== undefined && item.decimalPlaces !== "") dest.dataset.decimalPlaces = item.decimalPlaces;
                 else delete dest.dataset.decimalPlaces;
+                if (item.indent) dest.dataset.indent = item.indent;
+                else delete dest.dataset.indent;
+                if (item.shrinkToFit === "1") dest.dataset.shrinkToFit = "1";
+                else {
+                    delete dest.dataset.shrinkToFit;
+                    delete dest.dataset.origFontSize;
+                }
+                if (item.textRotation) dest.dataset.textRotation = item.textRotation;
+                else delete dest.dataset.textRotation;
+                if (item.locked === "0") dest.dataset.locked = "0";
+                else delete dest.dataset.locked;
+                if (item.formulaHidden === "1") dest.dataset.formulaHidden = "1";
+                else delete dest.dataset.formulaHidden;
                 applyCellStyleData(dest, item.styleObj);
                 const curRaw = dest.dataset.formula ? (dest.dataset.rawValue ?? "") : (dest.dataset.rawValue ?? getCellPureText(dest));
                 setCellFormattedValue(dest, curRaw);
+                if (item.shrinkToFit === "1") applyShrinkToFit?.(dest);
                 return;
             }
 
@@ -774,8 +798,8 @@ export function createClipboardModule(ctx) {
             } else {
                 activeData.forEach((rowArr, r) => {
                     rowArr.forEach((item, c) => {
-                        const origR = clipboardData.startRow + (isTranspose ? c : r);
-                        const origC = clipboardData.startCol + (isTranspose ? r : c);
+                        const origR = Number.isFinite(item?.row) ? item.row : (clipboardData.startRow + (isTranspose ? c : r));
+                        const origC = Number.isFinite(item?.col) ? item.col : (clipboardData.startCol + (isTranspose ? r : c));
                         const destR = targetRow + r;
                         const destC = targetCol + c;
                         applyCellData(getCell(destR, destC), item, destR - origR, destC - origC);

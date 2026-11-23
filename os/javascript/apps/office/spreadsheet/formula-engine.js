@@ -4,6 +4,7 @@
 import {
     getColumnName,
     columnLettersToIndex,
+    isDateNumFormat,
     isDateFormat,
     formatDate,
     preprocessAllNestedIFs,
@@ -225,7 +226,15 @@ export function createFormulaEngineModule(ctx) {
                         if (up === "TRUE") { rowVals[outIdx] = true; continue; }
                         if (up === "FALSE") { rowVals[outIdx] = false; continue; }
                     }
-                    if (trimmed.indexOf("/") !== -1) {
+                    if (
+                        trimmed.indexOf("/") !== -1 ||
+                        trimmed.indexOf("-") !== -1 ||
+                        trimmed.indexOf(".") !== -1 ||
+                        trimmed.indexOf("年") !== -1 ||
+                        trimmed.indexOf("／") !== -1 ||
+                        trimmed.indexOf("－") !== -1 ||
+                        trimmed.indexOf("．") !== -1
+                    ) {
                         const dateSerial = tryParseDateToSerial(trimmed);
                         if (dateSerial !== null) {
                             rowVals[outIdx] = dateSerial;
@@ -795,15 +804,17 @@ export function createFormulaEngineModule(ctx) {
                 }
             }
 
-            const returnsNumericDateInfo = /^\s*=\s*(YEAR|MONTH|DAY|HOUR|MINUTE|SECOND|WEEKDAY|DAYS|DATEDIF|NETWORKDAYS|DATEVALUE|TIMEVALUE)\s*\(/i.test(rawFormula);
-            const hasDateFunc = !returnsNumericDateInfo && /\b(TODAY|NOW|DATE|EDATE|EOMONTH|WORKDAY)\s*\(/i.test(rawFormula);
+            const returnsNumericDateInfo = /^\s*=\s*(YEAR|MONTH|DAY|HOUR|MINUTE|SECOND|WEEKDAY|DAYS|DATEDIF|NETWORKDAYS|DATEVALUE|TIMEVALUE|COUNT|COUNTA|COUNTBLANK|COUNTIF|COUNTIFS|MATCH|XMATCH|ROW|COLUMN|LEN|FIND|SEARCH|TYPE|N)\s*\(/i.test(rawFormula);
+            const dateFuncMatches = strippedForRefs.match(/\b(TODAY|NOW|DATE|EDATE|EOMONTH|WORKDAY)\s*\(/gi);
+            const dateFuncCount = dateFuncMatches ? dateFuncMatches.length : 0;
 
             const entry = {
                 fn,
                 directRef,
                 hasPlusMinus,
                 dateCandidateRefs,
-                hasDateFunc
+                returnsNumericDateInfo,
+                dateFuncCount
             };
 
             if (compiledFormulaCache.size > 3000) compiledFormulaCache.clear();
@@ -1019,22 +1030,28 @@ export function createFormulaEngineModule(ctx) {
 
             // Date オブジェクト（DATE/TODAY/NOW/EDATE/EOMONTH/WORKDAY 等）は表示用文字列と計算用シリアル値を分離保持
             if (rawEval instanceof Date && !isNaN(rawEval.getTime())) {
-                return { display: formatDate(rawEval), typed: dateToSerial(rawEval) };
+                return { display: formatDate(rawEval), typed: dateToSerial(rawEval), isDate: true };
             }
 
             let result = normalizeResultItem(rawEval);
             if (typeof result === "string" && /^#(ERROR!|DIV\/0!|N\/A|VALUE!|CIRCULAR!|REF!|NAME\?|NUM!|CALC!|SPILL!)$/.test(result)) {
-                return { display: result, typed: result };
+                return { display: result, typed: result, isDate: false };
             }
 
             const isDateCellAt = (sIdx, rNum, cIdx) => {
                 if (sIdx === activeSheetIndex) {
                     const refCell = peekCell(rNum, cIdx);
-                    return refCell?.dataset.valueType === "date" || isDateFormat((refCell?.dataset.rawValue ?? refCell?.textContent ?? "").trim());
+                    if (!refCell) return false;
+                    if (refCell.dataset.valueType === "date") return true;
+                    if (isDateNumFormat(refCell.dataset.numFormat)) return true;
+                    return isDateFormat((refCell.dataset.rawValue ?? refCell.textContent ?? "").trim());
                 }
                 if (sheets[sIdx]) {
                     const entry = getBackgroundSheetCellMap(sheets[sIdx]).get(`${rNum},${cIdx}`);
-                    return entry?.vt === "date" || isDateFormat(String(entry?.v ?? "").trim());
+                    if (!entry) return false;
+                    if (entry.vt === "date") return true;
+                    if (isDateNumFormat(entry.nf)) return true;
+                    return isDateFormat(String(entry.v ?? "").trim());
                 }
                 return false;
             };
@@ -1047,22 +1064,35 @@ export function createFormulaEngineModule(ctx) {
                 }
             }
 
-            let hasDateCellRef = isDirectDateRef;
-            if (!hasDateCellRef && typeof result === "number" && result >= 36526 && result <= 73050 && compiled.hasPlusMinus) {
-                for (const ref of compiled.dateCandidateRefs) {
-                    const sIdx = findSheetIdx(ref.sheetName);
-                    if (sIdx >= 0 && isDateCellAt(sIdx, ref.row, ref.col)) {
-                        hasDateCellRef = true;
-                        break;
+            let resultIsDate = false;
+            if (typeof result === "number" && isFinite(result)) {
+                if (isDirectDateRef) {
+                    resultIsDate = true;
+                } else if (!compiled.returnsNumericDateInfo && result >= 1 && result <= 2958465) {
+                    if (compiled.hasPlusMinus) {
+                        // 日付±数値（日付オペランド1個）は日付結果、日付-日付（2個以上）は日数差（数値）として扱う
+                        let dateRefCount = 0;
+                        for (let i = 0; i < compiled.dateCandidateRefs.length; i++) {
+                            const ref = compiled.dateCandidateRefs[i];
+                            const sIdx = findSheetIdx(ref.sheetName);
+                            if (sIdx >= 0 && isDateCellAt(sIdx, ref.row, ref.col)) {
+                                dateRefCount++;
+                            }
+                        }
+                        if (compiled.dateFuncCount + dateRefCount === 1) {
+                            resultIsDate = true;
+                        }
+                    } else if (compiled.dateFuncCount > 0) {
+                        resultIsDate = true;
                     }
                 }
             }
 
-            if ((isDirectDateRef || compiled.hasDateFunc || hasDateCellRef) && typeof result === "number" && isFinite(result)) {
-                return { display: formatDate(serialToDate(result)), typed: result };
+            if (resultIsDate) {
+                return { display: formatDate(serialToDate(result)), typed: result, isDate: true };
             }
             const finalVal = typeof result === "function" ? "" : result;
-            return { display: finalVal, typed: finalVal };
+            return { display: finalVal, typed: finalVal, isDate: false };
         } catch {
             return { display: "#ERROR!", typed: "#ERROR!" };
         }
@@ -1441,11 +1471,17 @@ export function createFormulaEngineModule(ctx) {
                     continue;
                 }
                 const visited = new Set([cellKey]);
-                const { display, typed } = evaluateFormulaTyped(entry.f, visited, sIdx, { row: r, col: c });
+                const { display, typed, isDate } = evaluateFormulaTyped(entry.f, visited, sIdx, { row: r, col: c });
                 const normalizedDisplay = Array.isArray(display) ? (display[0]?.[0] ?? "") : display;
                 const normalizedTyped = Array.isArray(typed) ? (typed[0]?.[0] ?? "") : typed;
                 formulaEvalCache.set(cellKey, normalizedTyped);
-                entry.v = normalizedDisplay != null ? String(normalizedDisplay) : "";
+                if (isDate && typeof normalizedTyped === "number" && isFinite(normalizedTyped)) {
+                    entry.v = String(normalizedTyped);
+                    entry.vt = "date";
+                } else {
+                    entry.v = normalizedDisplay != null ? String(normalizedDisplay) : "";
+                    delete entry.vt;
+                }
             }
             backgroundSheetsDirty = false;
         } finally {
@@ -1469,7 +1505,7 @@ export function createFormulaEngineModule(ctx) {
 
             const cellKey = `${activeSheetIndex}:${r},${c}`;
             const visited = new Set([cellKey]);
-            const { display: rawResult, typed: typedResult } = evaluateFormulaTyped(
+            const { display: rawResult, typed: typedResult, isDate } = evaluateFormulaTyped(
                 cell.dataset.formula,
                 visited,
                 activeSheetIndex,
@@ -1495,7 +1531,15 @@ export function createFormulaEngineModule(ctx) {
                 }
             } else {
                 formulaEvalCache.set(cellKey, typedResult);
-                setCellFormattedValue(cell, rawResult);
+                if (isDate && typeof typedResult === "number" && isFinite(typedResult)) {
+                    cell.dataset.valueType = "date";
+                    cell.dataset.dateValue = String(serialToDate(typedResult).getTime());
+                    setCellFormattedValue(cell, String(typedResult));
+                } else {
+                    delete cell.dataset.valueType;
+                    delete cell.dataset.dateValue;
+                    setCellFormattedValue(cell, rawResult);
+                }
                 const nextRaw = cell.dataset.rawValue ?? "";
                 if (hadSpill || prevRaw !== nextRaw) {
                     const tr = cell.closest("tr");

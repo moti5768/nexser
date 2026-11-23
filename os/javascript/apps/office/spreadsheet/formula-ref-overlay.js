@@ -2,6 +2,9 @@
 // 数式参照トークン解析・色枠オーバーレイ描画・1セル精度4辺移動/4隅リサイズドラッグ
 
 import {
+    DEFAULT_ROW_HEIGHT,
+    DEFAULT_HEADER_HEIGHT,
+    DEFAULT_ROW_HEADER_WIDTH,
     getColumnName,
     columnLettersToIndex
 } from "./format-utils.js";
@@ -165,8 +168,8 @@ export function createFormulaRefOverlayModule(ctx) {
     function buildGridAxisMetrics() {
         const zoom = parseFloat(spreadsheetContent.style.zoom || "1") || 1;
         const contentRect = spreadsheetContent.getBoundingClientRect();
-        const rowHeaderW = theadRow.cells[0]?.offsetWidth || parseInt(colgroup.children[0]?.style.width, 10) || 54;
-        const theadH = theadRow.offsetHeight || 30;
+        const rowHeaderW = theadRow.cells[0]?.offsetWidth || parseInt(colgroup.children[0]?.style.width, 10) || DEFAULT_ROW_HEADER_WIDTH;
+        const theadH = theadRow.offsetHeight || DEFAULT_HEADER_HEIGHT;
         const scrollShiftX = container.scrollLeft / zoom;
         const scrollShiftY = container.scrollTop / zoom;
         const colCount = getCurrentColumns();
@@ -189,7 +192,7 @@ export function createFormulaRefOverlayModule(ctx) {
         for (let r = 0; r < tbody.rows.length; r++) {
             const tr = tbody.rows[r];
             const hidden = !tr || tr.style.display === "none";
-            const h = hidden ? 0 : (parseInt(tr.style.height, 10) || tr.offsetHeight || 30);
+            const h = hidden ? 0 : (parseInt(tr.style.height, 10) || tr.offsetHeight || DEFAULT_ROW_HEIGHT);
             const top = (r < freezeRows) ? accY + scrollShiftY : accY;
             rows.push({ top, height: h, hidden });
             accY += h;

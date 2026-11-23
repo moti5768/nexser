@@ -2,6 +2,8 @@
 // セル内ドロップダウンリスト・データの入力規則（検証/ツールチップ/設定モーダル）・ハイパーリンク管理
 
 import {
+    DEFAULT_COL_WIDTH,
+    DEFAULT_ROW_HEIGHT,
     escapeHtml,
     columnLettersToIndex,
     parseFormattedNumber,
@@ -164,8 +166,8 @@ export function createDataValidationModule(ctx) {
 
         const left = (cellRect.left - contentRect.left) / zoom;
         const top = (cellRect.top - contentRect.top) / zoom;
-        const cellW = (cellRect.width / zoom) || 120;
-        const cellH = (cellRect.height / zoom) || 30;
+        const cellW = (cellRect.width / zoom) || DEFAULT_COL_WIDTH;
+        const cellH = (cellRect.height / zoom) || DEFAULT_ROW_HEIGHT;
         const btnW = 18;
         const btnH = Math.min(cellH, 22);
 

@@ -2,6 +2,9 @@
 // セル範囲移動・複製・プレビュー枠描画・結合衝突判定・数式/テーブル/フィルター/条件付き書式追従
 
 import {
+    DEFAULT_ROW_HEIGHT,
+    DEFAULT_HEADER_HEIGHT,
+    DEFAULT_ROW_HEADER_WIDTH,
     getColumnName,
     columnLettersToIndex
 } from "./format-utils.js";
@@ -52,10 +55,12 @@ export function createRangeMoveModule(ctx) {
         getSheetTables,
         applyStructuredTableVisuals,
         shiftAutoFiltersForMove,
+        shiftSlicersForMove,
         hasAutoFilters,
         applyAutoFilterRows,
         updateAllFormulas,
         applyConditionalFormats,
+        syncCellGridlinesForBounds,
         refreshVisibleFloatingObjects,
         updateSelectedCellsDisplay,
         updateFillHandle,
@@ -75,8 +80,8 @@ export function createRangeMoveModule(ctx) {
 
     function getMovePreviewLocalRect(bounds) {
         if (!bounds) return null;
-        const theadHeight = theadRow.offsetHeight || 30;
-        const rowHeaderWidth = theadRow.cells[0]?.offsetWidth || parseInt(colgroup.children[0]?.style.width, 10) || 54;
+        const theadHeight = theadRow.offsetHeight || DEFAULT_HEADER_HEIGHT;
+        const rowHeaderWidth = theadRow.cells[0]?.offsetWidth || parseInt(colgroup.children[0]?.style.width, 10) || DEFAULT_ROW_HEADER_WIDTH;
 
         let left = rowHeaderWidth;
         for (let c = 0; c < bounds.minCol; c++) {
@@ -89,9 +94,9 @@ export function createRangeMoveModule(ctx) {
 
         const getRowH = (r) => {
             const tr = getRow(r);
-            if (!tr) return 30;
+            if (!tr) return DEFAULT_ROW_HEIGHT;
             if (tr.style.display === "none") return 0;
-            return parseInt(tr.style.height, 10) || tr.offsetHeight || 30;
+            return parseInt(tr.style.height, 10) || tr.offsetHeight || DEFAULT_ROW_HEIGHT;
         };
 
         let top = theadHeight;
@@ -139,7 +144,7 @@ export function createRangeMoveModule(ctx) {
             for (let i = 0; i < rs; i++) {
                 const tr = getRow(baseRow + i);
                 const h = (tr && tr.style.display !== "none")
-                    ? (parseInt(tr.style.height, 10) || tr.offsetHeight || 30)
+                    ? (parseInt(tr.style.height, 10) || tr.offsetHeight || DEFAULT_ROW_HEIGHT)
                     : 0;
                 rowHeights.push(h);
                 totalH += h;
@@ -403,8 +408,9 @@ export function createRangeMoveModule(ctx) {
             applyStructuredTableVisuals(tbl);
         });
 
-        // 2. 移動範囲内に含まれるすべてのオートフィルターの座標・対象列・▼ボタンを移動先へ追従
+        // 2. 移動範囲内に含まれるすべてのオートフィルター・スライサーの座標・対象列を移動先へ追従
         shiftAutoFiltersForMove(srcBounds, rowDelta, colDelta);
+        shiftSlicersForMove?.(srcBounds, rowDelta, colDelta);
 
         // 3. 条件付き書式ルールの適用範囲・内部数式を移動先へ追従（部分移動・$絶対参照も対応）
         shiftConditionalFormatsForMoveOrCopy(srcBounds, rowDelta, colDelta, { copyMode: false });
@@ -832,6 +838,8 @@ export function createRangeMoveModule(ctx) {
         const newActive = getVisibleCell(destTopLeft.row, destTopLeft.col);
         if (newActive) setActiveCell(newActive, true);
 
+        if (!copyMode) syncCellGridlinesForBounds?.(srcBounds);
+        syncCellGridlinesForBounds?.(destBounds);
         updateAllFormulas();
         if (hasAutoFilters()) applyAutoFilterRows();
         refreshVisibleFloatingObjects();

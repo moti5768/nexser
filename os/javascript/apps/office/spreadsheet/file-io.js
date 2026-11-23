@@ -4,7 +4,11 @@
 import { forceSave, lockFile, unlockFile, setBulkUpdating } from "../../../fs.js";
 import { getFileContent } from "../../../fs-db.js";
 import { resolveFS, normalizePath, basename, validateName, isSystemMetaKey } from "../../../fs-utils.js";
-import { escapeHtml } from "./format-utils.js";
+import {
+    DEFAULT_COL_WIDTH,
+    DEFAULT_ROW_HEIGHT,
+    escapeHtml
+} from "./format-utils.js";
 
 export function parseCSVRows(text) {
     const rows = [];
@@ -74,6 +78,7 @@ export function createFileIOModule(ctx) {
         syncTableWidth,
         updateHiddenHeaderIndicators,
         getPageSize,
+        getPrintOptions,
         getFreezeRows,
         getFreezeCols,
         setFreezePanes,
@@ -95,6 +100,9 @@ export function createFileIOModule(ctx) {
         clearAllAutoFilters,
         serializeAutoFilters,
         restoreAutoFilters,
+        clearAllSlicers,
+        serializeSlicers,
+        restoreSlicers,
         getSheetTables,
         applyStructuredTableVisuals,
         renderSheetTabs,
@@ -108,11 +116,13 @@ export function createFileIOModule(ctx) {
         setCellFormattedValue,
         updateAllFormulas,
         applyConditionalFormats,
+        syncCellGridlinesForBounds,
         refreshVisibleRows,
         refreshVisibleFloatingObjects,
         syncCellDropdownButtonPosition,
         setZoom,
         setPageSize,
+        setPrintOptions,
         clearSelection,
         setActiveCell,
         updateSelectedCellsDisplay,
@@ -481,15 +491,16 @@ export function createFileIOModule(ctx) {
             }
         }
         // 列幅と非表示属性をまとめてリセットし、syncTableWidth を1回だけ実行
+        const defaultWidthPx = `${DEFAULT_COL_WIDTH}px`;
         for (let c = 0; c < curCols; c++) {
             const colEl = colgroup.children[c + 1];
             const thEl = theadRow.children[c + 1];
             if (colEl) {
-                colEl.style.width = "120px";
+                colEl.style.width = defaultWidthPx;
                 delete colEl.dataset.prevWidth;
             }
             if (thEl) {
-                thEl.style.width = "120px";
+                thEl.style.width = defaultWidthPx;
                 thEl.classList.remove("ss-col-hidden", "ss-has-hidden-next");
             }
         }
@@ -498,8 +509,10 @@ export function createFileIOModule(ctx) {
         closeCellDropdownList();
         hideCellDropdownButton();
         clearCopyAnimation();
+        clearAllSlicers?.();
         clearAllAutoFilters({ skipRecalc: true });
         setFreezePanes(0, 0, { silent: true });
+        setPrintOptions?.({ orientation: "portrait", fitToWidth: true, showGridlines: false }, { silent: true });
         if (resetHistory) {
             setDefinedNames({});
             const blankSheets = [createBlankSheetModel("Sheet1")];
@@ -616,13 +629,14 @@ export function createFileIOModule(ctx) {
             .filter(Boolean);
 
         const curCols = getCurrentColumns();
+        const defaultWidthPx = `${DEFAULT_COL_WIDTH}px`;
         const savedColumns = [];
         for (let c = 0; c < curCols; c++) {
             const colEl = colgroup.children[c + 1];
             const thEl = theadRow.children[c + 1];
             const hidden = Boolean(thEl?.classList.contains("ss-col-hidden"));
-            const w = hidden ? (colEl?.dataset.prevWidth || "120px") : (colEl?.style.width || "120px");
-            if (hidden || w !== "120px") {
+            const w = hidden ? (colEl?.dataset.prevWidth || defaultWidthPx) : (colEl?.style.width || defaultWidthPx);
+            if (hidden || w !== defaultWidthPx) {
                 const obj = { c, w };
                 if (hidden) obj.hidden = 1;
                 savedColumns.push(obj);
@@ -678,11 +692,13 @@ export function createFileIOModule(ctx) {
         target.columns = savedColumns;
         target.zoom = zoom;
         target.pageSize = getPageSize();
+        target.printOptions = getPrintOptions?.() || { orientation: "portrait", fitToWidth: true, showGridlines: false };
         target.freezeRows = getFreezeRows();
         target.freezeCols = getFreezeCols();
         target.textboxes = textboxes;
         target.autoFilters = serializeAutoFilters();
         target.autoFilter = null;
+        target.slicers = serializeSlicers?.() || [];
         target.activeCoord = activeCell
             ? { row: parseInt(activeCell.dataset.row, 10), col: parseInt(activeCell.dataset.col, 10) }
             : { row: 1, col: 0 };
@@ -723,6 +739,7 @@ export function createFileIOModule(ctx) {
         const z = parseInt(String(zoomVal).replace("%", ""), 10) || 100;
         setZoom(z, { silent: true });
         setPageSize(sheetData.pageSize || "A4", { silent: true });
+        setPrintOptions?.(sheetData.printOptions || { orientation: "portrait", fitToWidth: true, showGridlines: false }, { silent: true });
 
         const MAX_SAFE_ROWS = 10000;
         const MAX_SAFE_COLS = 500;
@@ -880,9 +897,18 @@ export function createFileIOModule(ctx) {
         });
 
         (getSheets()[getActiveSheetIndex()]?.tables || []).forEach(tbl => applyStructuredTableVisuals(tbl));
+        if (maxRow >= 1) {
+            syncCellGridlinesForBounds?.({
+                minRow: 1,
+                maxRow: Math.min(tbody.rows.length, maxRow + 1),
+                minCol: 0,
+                maxCol: Math.min(getCurrentColumns() - 1, maxCol + 1)
+            });
+        }
         // フィルター状態を先に適用してから一括計算（SUBTOTAL等の再計算重複を解消）
         restoreAutoFilters(sheetData, { skipRecalc: true });
         updateAllFormulas();
+        restoreSlicers?.(sheetData);
 
         if (Array.isArray(textboxes)) {
             textboxes.forEach(tb => {
@@ -927,11 +953,12 @@ export function createFileIOModule(ctx) {
         }
 
         if (hiddenColsToRestore.length) {
+            const defaultWidthPx = `${DEFAULT_COL_WIDTH}px`;
             hiddenColsToRestore.forEach(c => {
                 const colEl = colgroup.children[c + 1];
                 const thEl = theadRow.children[c + 1];
                 if (!colEl || !thEl) return;
-                colEl.dataset.prevWidth = colEl.style.width || "120px";
+                colEl.dataset.prevWidth = colEl.style.width || defaultWidthPx;
                 colEl.style.width = "0px";
                 thEl.classList.add("ss-col-hidden");
                 for (const tr of tbody.rows) tr.cells[c + 1]?.classList.add("ss-col-hidden");
@@ -961,8 +988,8 @@ export function createFileIOModule(ctx) {
             const targetTop = Math.max(0, Number(sheetData.scrollTop) || 0);
             const targetLeft = Math.max(0, Number(sheetData.scrollLeft) || 0);
 
-            const neededRows = Math.ceil((targetTop + container.clientHeight) / 30) + 5;
-            const neededCols = Math.ceil((targetLeft + container.clientWidth) / 120) + 2;
+            const neededRows = Math.ceil((targetTop + container.clientHeight) / DEFAULT_ROW_HEIGHT) + 5;
+            const neededCols = Math.ceil((targetLeft + container.clientWidth) / DEFAULT_COL_WIDTH) + 2;
             if (neededRows >= getRowCount()) loadRowsSync(Math.min(500, neededRows - getRowCount() + 1));
             if (neededCols >= getCurrentColumns()) loadColumnsSync(Math.min(200, neededCols - getCurrentColumns() + 1));
 

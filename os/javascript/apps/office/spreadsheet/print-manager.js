@@ -36,6 +36,22 @@ export function createPrintManagerModule(ctx) {
         return currentPageSize;
     }
 
+    function getPrintOptions() {
+        return {
+            orientation: printOrientation,
+            fitToWidth: printFitToWidth,
+            showGridlines: printShowGridlines
+        };
+    }
+
+    function syncPrintButtonsUI() {
+        const btn = appRoot.querySelector(".ss-print-orient-btn");
+        const lbl = btn?.querySelector(".ss-btn-lbl") || btn;
+        if (lbl) lbl.textContent = `向き: ${printOrientation === "landscape" ? "横" : "縦"}`;
+        appRoot.querySelector(".ss-print-fit-btn")?.classList.toggle("selected", printFitToWidth);
+        appRoot.querySelector(".ss-print-grid-btn")?.classList.toggle("selected", printShowGridlines);
+    }
+
     function updatePageStyleRule() {
         let styleTag = document.getElementById(pageStyleId);
         if (!styleTag) {
@@ -44,6 +60,26 @@ export function createPrintManagerModule(ctx) {
             document.head.appendChild(styleTag);
         }
         styleTag.textContent = `@page { size: ${currentPageSize} ${printOrientation}; margin: 1cm; }`;
+    }
+
+    function setPrintOptions(opts = {}, { silent = false } = {}) {
+        const nextOrientation = opts?.orientation === "landscape" ? "landscape" : "portrait";
+        const nextFit = opts?.fitToWidth !== undefined ? Boolean(opts.fitToWidth) : true;
+        const nextGrid = opts?.showGridlines !== undefined ? Boolean(opts.showGridlines) : false;
+        const changed =
+            printOrientation !== nextOrientation ||
+            printFitToWidth !== nextFit ||
+            printShowGridlines !== nextGrid;
+
+        printOrientation = nextOrientation;
+        printFitToWidth = nextFit;
+        printShowGridlines = nextGrid;
+        syncPrintButtonsUI();
+        updatePageStyleRule();
+        if (changed && !silent) {
+            setDirtyState(true);
+            debouncedSaveState();
+        }
     }
 
     function setPageSize(sizeVal, { silent = false } = {}) {
@@ -59,23 +95,27 @@ export function createPrintManagerModule(ctx) {
     }
 
     function togglePrintOrientation() {
-        printOrientation = printOrientation === "portrait" ? "landscape" : "portrait";
-        const btn = appRoot.querySelector(".ss-print-orient-btn");
-        const lbl = btn?.querySelector(".ss-btn-lbl") || btn;
-        if (lbl) lbl.textContent = `向き: ${printOrientation === "landscape" ? "横" : "縦"}`;
-        updatePageStyleRule();
-        setDirtyState(true);
-        debouncedSaveState();
+        setPrintOptions({
+            orientation: printOrientation === "portrait" ? "landscape" : "portrait",
+            fitToWidth: printFitToWidth,
+            showGridlines: printShowGridlines
+        });
     }
 
     function togglePrintFit() {
-        printFitToWidth = !printFitToWidth;
-        appRoot.querySelector(".ss-print-fit-btn")?.classList.toggle("selected", printFitToWidth);
+        setPrintOptions({
+            orientation: printOrientation,
+            fitToWidth: !printFitToWidth,
+            showGridlines: printShowGridlines
+        });
     }
 
     function togglePrintGrid() {
-        printShowGridlines = !printShowGridlines;
-        appRoot.querySelector(".ss-print-grid-btn")?.classList.toggle("selected", printShowGridlines);
+        setPrintOptions({
+            orientation: printOrientation,
+            fitToWidth: printFitToWidth,
+            showGridlines: !printShowGridlines
+        });
     }
 
     function cleanupPrintStyles() {
@@ -140,7 +180,7 @@ export function createPrintManagerModule(ctx) {
             : 1;
         const gridRule = printShowGridlines
             ? ""
-            : `.ss-printing-active .ss-table td { border-color: transparent; }`;
+            : `.ss-printing-active .ss-table td { --ss-gl-r: 0 0 0 0 transparent !important; --ss-gl-b: 0 0 0 0 transparent !important; }`;
 
         // 印刷時のみOSデスクトップ・ウィンドウ枠・リボン・スクロール制限を解除する専用スタイルを注入
         appRoot.classList.add("ss-printing-active");
@@ -168,13 +208,17 @@ export function createPrintManagerModule(ctx) {
                 .ss-printing-active .ss-formula-bar-container,
                 .ss-printing-active .ss-bottom-bar,
                 .ss-printing-active .fill-handle,
+                .ss-printing-active .ss-autofill-opt-btn,
+                .ss-printing-active .ss-selection-box,
                 .ss-printing-active .ss-filter-arrow,
                 .ss-printing-active .ss-cell-dropdown-btn,
                 .ss-printing-active .floating-textbox-delete,
                 .ss-printing-active .floating-chart-settings,
                 .ss-printing-active .ss-obj-handle,
                 .ss-printing-active .ss-obj-rotate-line,
-                .ss-printing-active .ss-obj-rotate-handle {
+                .ss-printing-active .ss-obj-rotate-handle,
+                .ss-printing-active .ss-slicer-ctrls,
+                .ss-printing-active .ss-slicer-resizer {
                     display: none !important;
                 }
                 .ss-printing-active .ss-spreadsheet-container {
@@ -233,6 +277,8 @@ export function createPrintManagerModule(ctx) {
 
     return {
         getPageSize,
+        getPrintOptions,
+        setPrintOptions,
         updatePageStyleRule,
         setPageSize,
         togglePrintOrientation,
